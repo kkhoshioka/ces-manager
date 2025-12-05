@@ -1,0 +1,18 @@
+.container {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--color-background);
+}
+
+.mainContent {
+    flex: 1;
+    margin-left: 260px;
+    /* Match sidebar width */
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.contentWrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+}
