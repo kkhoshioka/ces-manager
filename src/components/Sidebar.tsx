@@ -1,16 +1,26 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Package } from 'lucide-react';
+import { LayoutDashboard, Wrench, Package, X, Settings } from 'lucide-react';
 import styles from './Sidebar.module.css';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
       <div className={styles.logoContainer}>
-        <div className={styles.logoIcon}>
-          <Wrench size={24} color="white" />
+        <div className={styles.logoInfo}>
+          <div className={styles.logoIcon}>
+            <Wrench size={24} color="white" />
+          </div>
+          <h1 className={styles.logoText}>CES Manager</h1>
         </div>
-        <h1 className={styles.logoText}>CES Manager</h1>
+        <button className={styles.closeButton} onClick={onClose}>
+          <X size={24} />
+        </button>
       </div>
 
       <nav className={styles.nav}>
@@ -18,6 +28,7 @@ const Sidebar: React.FC = () => {
           to="/"
           className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
           end
+          onClick={onClose}
         >
           <LayoutDashboard size={20} />
           <span>ダッシュボード</span>
@@ -26,6 +37,7 @@ const Sidebar: React.FC = () => {
         <NavLink
           to="/repairs"
           className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+          onClick={onClose}
         >
           <Wrench size={20} />
           <span>修理管理</span>
@@ -34,9 +46,19 @@ const Sidebar: React.FC = () => {
         <NavLink
           to="/inventory"
           className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+          onClick={onClose}
         >
           <Package size={20} />
           <span>部品在庫</span>
+        </NavLink>
+
+        <NavLink
+          to="/masters"
+          className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+          onClick={onClose}
+        >
+          <Settings size={20} />
+          <span>マスター管理</span>
         </NavLink>
       </nav>
 

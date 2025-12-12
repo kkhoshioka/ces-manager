@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// 1. Customers Master
+model Customer {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects         Project[]
+  customerMachines CustomerMachine[]
+}
+
+// 2. Products/Services Master
+model Product {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique
+  name           String
+  category       String? // 部品, 修理, 外注, レンタル
+  standardPrice  Decimal  @default(0)
+  standardCost   Decimal  @default(0)
+  stockQuantity  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  projectDetails ProjectDetail[]
+}
+
+// 3. Owned Machines Master
+model CustomerMachine {
+  id           Int      @id @default(autoincrement())
+  customerId   Int
+  machineModel String
+  serialNumber String
+  purchaseDate DateTime?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer     Customer  @relation(fields: [customerId], references: [id])
+  projects     Project[]
+
+  @@unique([machineModel, serialNumber])
+}
+
+// 4. Projects Header
+model Project {
+  id                Int       @id @default(autoincrement())
+  customerId        Int
+  customerMachineId Int?
+  
+  // Snapshot fields
+  machineModel      String?
+  serialNumber      String?
+  
+  orderDate         DateTime?
+  completionDate    DateTime?
+  status            String    @default("received") // received, diagnosing, in_progress, completed, delivered
+  totalAmount       Decimal   @default(0)
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  customer          Customer         @relation(fields: [customerId], references: [id])
+  customerMachine   CustomerMachine? @relation(fields: [customerMachineId], references: [id])
+  
+  details           ProjectDetail[]
+  photos            ProjectPhoto[]
+}
+
+// 5. Project Details
+model ProjectDetail {
+  id              Int      @id @default(autoincrement())
+  projectId       Int
+  productId       Int?
+  
+  lineType        String   // labor, part, outsourcing, other, travel
+  description     String
+  supplier        String?
+  remarks         String?
+  
+  quantity        Decimal  @default(1)
+  unitCost        Decimal  @default(0)
+  unitPrice       Decimal  @default(0)
+  
+  // Calculated fields are not directly supported in Prisma schema as DB columns in SQLite easily without raw SQL, 
+  // but we can compute them in application logic or use default values. 
+  // For SQLite, generated columns are supported in newer versions but Prisma support might be limited.
+  // We will store them as regular columns and calculate in app logic for now to be safe.
+  amountCost      Decimal  @default(0) 
+  amountSales     Decimal  @default(0)
+  
+  outsourcingCost Decimal  @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  product         Product? @relation(fields: [productId], references: [id])
+}
+
+// 6. Project Photos
+model ProjectPhoto {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  filePath    String
+  fileName    String
+  description String?
+  uploadedAt  DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// 7. Masters
+model ProductCategory {
+  id        Int      @id @default(autoincrement())
+  code      String?  @unique
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OperatingExpense {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  unit          String?
+  standardCost  Decimal  @default(0)
+  standardPrice Decimal  @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

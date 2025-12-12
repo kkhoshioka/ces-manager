@@ -1,58 +1,56 @@
 import type { Part, NewPart } from '../types/inventory';
 
-const STORAGE_KEY = 'ces_inventory';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 export const InventoryService = {
-    getAll: (): Part[] => {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
+    getAll: async (): Promise<Part[]> => {
+        const response = await fetch(`${API_BASE_URL}/products`);
+        if (!response.ok) throw new Error('Failed to fetch parts');
+        return response.json();
     },
 
-    getById: (id: string): Part | undefined => {
-        const parts = InventoryService.getAll();
+    getById: async (id: number): Promise<Part | undefined> => {
+        // We might need to implement GET /products/:id in backend if needed
+        const parts = await InventoryService.getAll();
         return parts.find(p => p.id === id);
     },
 
-    add: (part: NewPart): Part => {
-        const parts = InventoryService.getAll();
-        const newPart: Part = {
-            ...part,
-            id: crypto.randomUUID(),
-        };
-
-        parts.push(newPart);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(parts));
-        return newPart;
+    add: async (part: NewPart): Promise<Part> => {
+        const response = await fetch(`${API_BASE_URL}/products`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(part),
+        });
+        if (!response.ok) throw new Error('Failed to add part');
+        return response.json();
     },
 
-    update: (id: string, updates: Partial<Part>): Part | undefined => {
-        const parts = InventoryService.getAll();
-        const index = parts.findIndex(p => p.id === id);
-
-        if (index === -1) return undefined;
-
-        const updatedPart = { ...parts[index], ...updates };
-        parts[index] = updatedPart;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(parts));
-        return updatedPart;
+    update: async (id: number, updates: Partial<Part>): Promise<Part> => {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+        if (!response.ok) throw new Error('Failed to update part');
+        return response.json();
     },
 
-    delete: (id: string): boolean => {
-        const parts = InventoryService.getAll();
-        const filteredParts = parts.filter(p => p.id !== id);
-
-        if (parts.length === filteredParts.length) return false;
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredParts));
+    delete: async (id: number): Promise<boolean> => {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete part');
         return true;
     },
 
-    search: (query: string): Part[] => {
-        const parts = InventoryService.getAll();
+    search: async (query: string): Promise<Part[]> => {
+        const allParts = await InventoryService.getAll();
+        if (!query) return allParts;
+
         const lowerQuery = query.toLowerCase();
-        return parts.filter(p =>
-            p.partNumber.toLowerCase().includes(lowerQuery) ||
-            p.name.toLowerCase().includes(lowerQuery)
+        return allParts.filter(part =>
+            part.name.toLowerCase().includes(lowerQuery) ||
+            part.code.toLowerCase().includes(lowerQuery)
         );
     }
 };

@@ -1,12 +1,13 @@
 export interface Part {
-    id: string;
-    partNumber: string;
+    id: number;
+    code: string;
     name: string;
-    description?: string;
-    stock: number;
-    price: number;
-    location?: string;
-    minStockLevel?: number;
+    category?: string | null;
+    standardPrice: number;
+    standardCost: number;
+    stockQuantity: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
-export type NewPart = Omit<Part, 'id'>;
+export type NewPart = Omit<Part, 'id' | 'createdAt' | 'updatedAt'>;

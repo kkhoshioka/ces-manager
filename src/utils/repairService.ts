@@ -1,52 +1,49 @@
 import type { Repair, NewRepair } from '../types/repair';
-
-const STORAGE_KEY = 'ces_repairs';
+import { API_BASE_URL } from '../config';
 
 export const RepairService = {
-    getAll: (): Repair[] => {
-        const data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
+    getAll: async (): Promise<Repair[]> => {
+        const response = await fetch(`${API_BASE_URL}/projects`);
+        if (!response.ok) throw new Error('Failed to fetch repairs');
+        return response.json();
     },
 
-    getById: (id: string): Repair | undefined => {
-        const repairs = RepairService.getAll();
-        return repairs.find(r => r.id === id);
+    getById: async (id: number): Promise<Repair | undefined> => {
+        const response = await fetch(`${API_BASE_URL}/projects/${id}`);
+        if (response.status === 404) return undefined;
+        if (!response.ok) throw new Error('Failed to fetch repair');
+        return response.json();
     },
 
-    add: (repair: NewRepair): Repair => {
-        const repairs = RepairService.getAll();
-        const newRepair: Repair = {
-            ...repair,
-            id: crypto.randomUUID(),
-            status: 'received',
-            receivedDate: new Date().toISOString(),
-        };
-
-        repairs.push(newRepair);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(repairs));
-        return newRepair;
+    add: async (repair: NewRepair): Promise<Repair> => {
+        const response = await fetch(`${API_BASE_URL}/projects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(repair),
+        });
+        if (!response.ok) throw new Error('Failed to add repair');
+        return response.json();
     },
 
-    update: (id: string, updates: Partial<Repair>): Repair | undefined => {
-        const repairs = RepairService.getAll();
-        const index = repairs.findIndex(r => r.id === id);
-
-        if (index === -1) return undefined;
-
-        const updatedRepair = { ...repairs[index], ...updates };
-        repairs[index] = updatedRepair;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(repairs));
-        return updatedRepair;
+    update: async (id: number, updates: Partial<Repair>): Promise<Repair> => {
+        const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+        if (!response.ok) throw new Error('Failed to update repair');
+        return response.json();
     },
 
-    // Helper for search
-    search: (query: string): Repair[] => {
-        const repairs = RepairService.getAll();
+    search: async (query: string): Promise<Repair[]> => {
+        const allRepairs = await RepairService.getAll();
+        if (!query) return allRepairs;
+
         const lowerQuery = query.toLowerCase();
-        return repairs.filter(r =>
-            r.customerName.toLowerCase().includes(lowerQuery) ||
-            r.machineModel.toLowerCase().includes(lowerQuery) ||
-            r.serialNumber.toLowerCase().includes(lowerQuery)
+        return allRepairs.filter(repair =>
+            repair.customer?.name.toLowerCase().includes(lowerQuery) ||
+            repair.machineModel?.toLowerCase().includes(lowerQuery) ||
+            repair.serialNumber?.toLowerCase().includes(lowerQuery)
         );
     }
 };

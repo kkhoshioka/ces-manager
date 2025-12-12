@@ -63,7 +63,10 @@
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border);
     box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+    /* Enable horizontal scroll */
     flex: 1;
 }
 
@@ -229,4 +232,30 @@
     justify-content: flex-end;
     gap: 1rem;
     margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .header button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .controls {
+        flex-direction: column;
+    }
+
+    .formGrid,
+    .formGrid3 {
+        grid-template-columns: 1fr;
+    }
 }

@@ -3,6 +3,8 @@ import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Repairs from './pages/Repairs';
 import Inventory from './pages/Inventory';
+import Masters from './pages/Masters';
+
 
 function App() {
   return (
@@ -12,6 +14,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="repairs" element={<Repairs />} />
           <Route path="inventory" element={<Inventory />} />
+          <Route path="masters" element={<Masters />} />
         </Route>
       </Routes>
     </BrowserRouter>

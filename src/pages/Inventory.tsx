@@ -2,44 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, X, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import type { Part, NewPart } from '../types/inventory';
 import { InventoryService } from '../utils/inventoryService';
+import { formatNumber, formatCurrency } from '../utils/formatting';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import Textarea from '../components/ui/Textarea';
 import styles from './Inventory.module.css';
 
 const Inventory: React.FC = () => {
     const [parts, setParts] = useState<Part[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
 
     const initialFormState: NewPart = {
-        partNumber: '',
+        code: '',
         name: '',
-        description: '',
-        stock: 0,
-        price: 0,
-        location: '',
-        minStockLevel: 5
+        category: '',
+        stockQuantity: 0,
+        standardPrice: 0,
+        standardCost: 0,
     };
 
     const [formData, setFormData] = useState<NewPart>(initialFormState);
 
+    const loadParts = async () => {
+        try {
+            const data = await InventoryService.getAll();
+            setParts(data);
+        } catch (error) {
+            console.error('Failed to load parts', error);
+        }
+    };
+
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadParts();
     }, []);
 
-    const loadParts = () => {
-        setParts(InventoryService.getAll());
-    };
-
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;
         setSearchQuery(query);
-        if (query.trim() === '') {
-            loadParts();
-        } else {
-            setParts(InventoryService.search(query));
+        try {
+            if (query.trim() === '') {
+                await loadParts();
+            } else {
+                const results = await InventoryService.search(query);
+                setParts(results);
+            }
+        } catch (error) {
+            console.error('Search failed', error);
         }
     };
 
@@ -47,7 +57,7 @@ const Inventory: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'stock' || name === 'price' || name === 'minStockLevel' ? Number(value) : value
+            [name]: name === 'stockQuantity' || name === 'standardPrice' || name === 'standardCost' ? Number(value) : value
         }));
     };
 
@@ -55,13 +65,12 @@ const Inventory: React.FC = () => {
         if (part) {
             setEditingId(part.id);
             setFormData({
-                partNumber: part.partNumber,
+                code: part.code,
                 name: part.name,
-                description: part.description || '',
-                stock: part.stock,
-                price: part.price,
-                location: part.location || '',
-                minStockLevel: part.minStockLevel || 5
+                category: part.category || '',
+                stockQuantity: part.stockQuantity,
+                standardPrice: part.standardPrice,
+                standardCost: part.standardCost,
             });
         } else {
             setEditingId(null);
@@ -70,21 +79,31 @@ const Inventory: React.FC = () => {
         setIsFormOpen(true);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (editingId) {
-            InventoryService.update(editingId, formData);
-        } else {
-            InventoryService.add(formData);
+        try {
+            if (editingId) {
+                await InventoryService.update(editingId, formData);
+            } else {
+                await InventoryService.add(formData);
+            }
+            setIsFormOpen(false);
+            loadParts();
+        } catch (error) {
+            console.error('Failed to save part', error);
+            alert('保存に失敗しました');
         }
-        setIsFormOpen(false);
-        loadParts();
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: number) => {
         if (window.confirm('本当にこの部品を削除しますか？')) {
-            InventoryService.delete(id);
-            loadParts();
+            try {
+                await InventoryService.delete(id);
+                loadParts();
+            } catch (error) {
+                console.error('Failed to delete part', error);
+                alert('削除に失敗しました');
+            }
         }
     };
 
@@ -122,38 +141,40 @@ const Inventory: React.FC = () => {
                         <tr>
                             <th>部品番号</th>
                             <th>名称</th>
+                            <th>カテゴリ</th>
                             <th>在庫数</th>
-                            <th>単価</th>
-                            <th>保管場所</th>
+                            <th>標準売価</th>
+                            <th>標準原価</th>
                             <th>アクション</th>
                         </tr>
                     </thead>
                     <tbody>
                         {parts.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className={styles.emptyState}>
+                                <td colSpan={7} className={styles.emptyState}>
                                     データがありません
                                 </td>
                             </tr>
                         ) : (
                             parts.map(part => (
                                 <tr key={part.id}>
-                                    <td className={styles.partNumber}>{part.partNumber}</td>
+                                    <td className={styles.partNumber}>{part.code}</td>
                                     <td className={styles.partName}>
                                         {part.name}
-                                        {part.stock <= (part.minStockLevel || 0) && (
+                                        {part.stockQuantity <= 5 && (
                                             <span className={styles.lowStockBadge} title="在庫不足">
                                                 <AlertTriangle size={14} />
                                             </span>
                                         )}
                                     </td>
+                                    <td>{part.category || '-'}</td>
                                     <td>
-                                        <span className={`${styles.stockCount} ${part.stock <= (part.minStockLevel || 0) ? styles.lowStock : ''}`}>
-                                            {part.stock}
+                                        <span className={`${styles.stockCount} ${part.stockQuantity <= 5 ? styles.lowStock : ''}`}>
+                                            {formatNumber(part.stockQuantity)}
                                         </span>
                                     </td>
-                                    <td>¥{part.price.toLocaleString()}</td>
-                                    <td>{part.location || '-'}</td>
+                                    <td>{formatCurrency(part.standardPrice)}</td>
+                                    <td>{formatCurrency(part.standardCost)}</td>
                                     <td>
                                         <div className={styles.actions}>
                                             <button className={styles.actionButton} onClick={() => openForm(part)} title="編集">
@@ -184,9 +205,9 @@ const Inventory: React.FC = () => {
                         <form onSubmit={handleSubmit} className={styles.form}>
                             <div className={styles.formGrid}>
                                 <Input
-                                    label="部品番号"
-                                    name="partNumber"
-                                    value={formData.partNumber}
+                                    label="部品番号 (コード)"
+                                    name="code"
+                                    value={formData.code}
                                     onChange={handleInputChange}
                                     required
                                 />
@@ -201,46 +222,42 @@ const Inventory: React.FC = () => {
 
                             <div className={styles.formGrid3}>
                                 <Input
+                                    label="カテゴリ"
+                                    name="category"
+                                    value={formData.category || ''}
+                                    onChange={handleInputChange}
+                                />
+                                <Input
                                     label="在庫数"
-                                    name="stock"
+                                    name="stockQuantity"
                                     type="number"
                                     min="0"
-                                    value={formData.stock}
+                                    value={formData.stockQuantity}
                                     onChange={handleInputChange}
                                     required
-                                />
-                                <Input
-                                    label="単価 (円)"
-                                    name="price"
-                                    type="number"
-                                    min="0"
-                                    value={formData.price}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                                <Input
-                                    label="最低在庫数"
-                                    name="minStockLevel"
-                                    type="number"
-                                    min="0"
-                                    value={formData.minStockLevel}
-                                    onChange={handleInputChange}
                                 />
                             </div>
 
-                            <Input
-                                label="保管場所"
-                                name="location"
-                                value={formData.location}
-                                onChange={handleInputChange}
-                            />
-
-                            <Textarea
-                                label="説明・備考"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                            />
+                            <div className={styles.formGrid}>
+                                <Input
+                                    label="標準売価 (円)"
+                                    name="standardPrice"
+                                    type="number"
+                                    min="0"
+                                    value={formData.standardPrice}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                                <Input
+                                    label="標準原価 (円)"
+                                    name="standardCost"
+                                    type="number"
+                                    min="0"
+                                    value={formData.standardCost}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
 
                             <div className={styles.formActions}>
                                 <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>

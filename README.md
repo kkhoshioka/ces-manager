@@ -1,73 +1,69 @@
-# React + TypeScript + Vite
+# CES Repair Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+建設機械の修理・販売・在庫管理を行うWebアプリケーションです。
 
-Currently, two official plugins are available:
+## 1. 前提条件 (Prerequisites)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+このプロジェクトをローカル環境で実行するには、以下のソフトウェアが必要です。
 
-## React Compiler
+*   **Node.js**: v18以上 (推奨: v20 LTS)
+*   **npm**: Node.jsに同梱されています
+*   **Git**: バージョン管理用
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 2. 環境構築 (Setup)
 
-## Expanding the ESLint configuration
+### 2-1. リポジトリの取得
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone git@github.com:your-account/ces-app.git
+cd ces-app
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2-2. 依存関係のインストール
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
+
+### 2-3. 環境変数の設定
+
+ルートディレクトリに `.env` ファイルを作成し、データベース接続情報を設定してください。
+
+**`.env` の例:**
+
+```env
+# データベース接続URL (PostgreSQL / Google Cloud SQL)
+# 形式: postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
+DATABASE_URL="postgresql://postgres:password@localhost:5432/ces_db?schema=public"
+
+# サーバーポート (任意)
+PORT=3000
+```
+
+> [!IMPORTANT]
+> **データベースについて**:
+> 現在はクラウドデータベース（Google Cloud SQLなど）への接続を前提としています。
+> データのインポート（移行）手順については、別途 [README_MIGRATION.md](./README_MIGRATION.md) を参照してください。
+
+## 3. アプリケーションの起動 (Running the App)
+
+以下のコマンドで開発サーバーを起動します。
+
+```bash
+npm run dev
+```
+
+*   **Frontend**: http://localhost:5173
+*   **Backend**: http://localhost:3000
+
+## 4. プロジェクト構成
+
+*   `src/`: フロントエンド (React + Vite)
+*   `server/`: バックエンド (Express + Prisma)
+*   `prisma/`: データベーススキーマとマイグレーション
+*   `scripts/`: ユーティリティスクリプト (データダンプ等)
+
+## 5. その他
+
+*   **PDF生成**: 請求書・納品書のPDF生成機能があります。日本語フォントの設定については `server/pdfService.ts` を確認してください。
+*   **ダッシュボード**: `/dashboard` で売上集計を確認できます。
