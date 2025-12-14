@@ -4,9 +4,10 @@ import SupplierMaster from './masters/SupplierMaster';
 import CustomerMaster from './masters/CustomerMaster';
 import ProductTypeMaster from './masters/ProductTypeMaster';
 import ExpenseMaster from './masters/ExpenseMaster';
-import { Users, Tag, DollarSign, Settings, Truck } from 'lucide-react';
+import UserMaster from './masters/UserMaster';
+import { Users, Tag, DollarSign, Settings, Truck, UserCog } from 'lucide-react';
 
-type Tab = 'customer' | 'type' | 'expense' | 'supplier';
+type Tab = 'customer' | 'type' | 'expense' | 'supplier' | 'user';
 
 const Masters: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('customer');
@@ -50,6 +51,13 @@ const Masters: React.FC = () => {
                     <DollarSign size={18} />
                     営業費マスター
                 </button>
+                <button
+                    className={`${styles.tab} ${activeTab === 'user' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('user')}
+                >
+                    <UserCog size={18} />
+                    ユーザー管理
+                </button>
             </div>
 
             <div className={styles.content}>
@@ -57,6 +65,7 @@ const Masters: React.FC = () => {
                 {activeTab === 'supplier' && <SupplierMaster />}
                 {activeTab === 'type' && <ProductTypeMaster />}
                 {activeTab === 'expense' && <ExpenseMaster />}
+                {activeTab === 'user' && <UserMaster />}
             </div>
         </div>
     );

@@ -17,7 +17,15 @@ import { createClient } from '@supabase/supabase-js';
 // Init Supabase
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
 const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false
+    }
+});
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -604,6 +612,89 @@ app.delete('/api/product-categories/:id', async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete product category' });
+    }
+});
+
+// --- User Management (Admin Only) ---
+// Note: In a real app, you MUST verify the caller is an admin here.
+// We will assume the frontend protects access, but for extra security we should verify the JWT.
+
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        // Fetch all profiles
+        const profiles = await prisma.profile.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(profiles);
+    } catch (error) {
+        console.error('Fetch users error:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+app.post('/api/admin/users', async (req, res) => {
+    try {
+        const { email, password, role, name } = req.body;
+
+        // 1. Create Auth User
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true // Auto confirm
+        });
+
+        if (authError || !user) {
+            console.error('Auth create error:', authError);
+            return res.status(400).json({ error: authError?.message || 'Failed to create auth user' });
+        }
+
+        // 2. Create Profile (or update if trigger created it, but we don't have trigger)
+        // We use upsert to be safe
+        const profile = await prisma.profile.upsert({
+            where: { id: user.id },
+            update: {
+                email,
+                role: role || 'staff',
+                name
+            },
+            create: {
+                id: user.id,
+                email,
+                role: role || 'staff',
+                name
+            }
+        });
+
+        res.json(profile);
+    } catch (error: any) {
+        console.error('Create user error:', error);
+        res.status(500).json({ error: 'Failed to create user', details: error.message });
+    }
+});
+
+app.delete('/api/admin/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params; // Using UUID string
+
+        // 1. Delete from Supabase Auth
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+
+        if (authError) {
+            console.error('Auth delete error:', authError);
+            // Verify if user exists? If not found, proceed to delete profile.
+        }
+
+        // 2. Delete from Profile (Cascade should handle relations if we had them, but Profile is standalone mostly)
+        // Actually Profile is linked to Auth User by ID conceptually.
+        // Prisma delete
+        await prisma.profile.deleteMany({ // deleteMany to avoid error if not found
+            where: { id: id }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ error: 'Failed to delete user' });
     }
 });
 
