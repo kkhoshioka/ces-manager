@@ -1,0 +1,11 @@
+
+// 9. User Profiles (Auth)
+model Profile {
+  id        String   @id @default(uuid()) // Supabase User ID (UUID)
+  email     String   @unique
+  role      String   @default("staff") // 'admin' or 'staff'
+  name      String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

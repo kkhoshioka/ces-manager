@@ -18,10 +18,20 @@ export interface ProjectDetail {
     outsourcingCost: number;
 }
 
+export interface ProjectPhoto {
+    id: number;
+    projectId: number;
+    filePath: string;
+    fileName: string;
+    description?: string | null;
+    uploadedAt: string;
+}
+
 export interface Repair {
     id: number;
     customerId: number;
     customerMachineId?: number | null;
+    type?: 'repair' | 'sales' | 'inspection' | 'maintenance'; // Added project type
 
     // Snapshot fields
     machineModel?: string | null;
@@ -39,6 +49,7 @@ export interface Repair {
     customer?: Customer;
     customerMachine?: CustomerMachine;
     details?: ProjectDetail[];
+    photos?: ProjectPhoto[];
 }
 
 export type NewRepair = {
@@ -48,6 +59,7 @@ export type NewRepair = {
     serialNumber?: string;
     issueDescription?: string; // Mapped to notes or description in details? Let's use notes for now or create a detail.
     notes?: string;
+    type?: 'repair' | 'sales';
     status?: RepairStatus;
     details?: Omit<ProjectDetail, 'id' | 'projectId' | 'amountCost' | 'amountSales' | 'outsourcingCost'>[];
 };

@@ -1,0 +1,145 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { Link } from 'react-router-dom';
+import { Search, Plus, Edit } from 'lucide-react';
+import { format } from 'date-fns';
+import type { CustomerMachine } from '../../types/customer';
+import MachineForm from './MachineForm';
+import Button from '../../components/ui/Button';
+import styles from './MachineRegistry.module.css';
+
+const MachineRegistry: React.FC = () => {
+    const [machines, setMachines] = useState<CustomerMachine[]>([]);
+    const [filteredMachines, setFilteredMachines] = useState<CustomerMachine[]>([]);
+    const [filterText, setFilterText] = useState('');
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingMachine, setEditingMachine] = useState<CustomerMachine | undefined>(undefined);
+
+    const fetchMachines = useCallback(async () => {
+        try {
+            const res = await axios.get<CustomerMachine[]>('/api/machines');
+            setMachines(res.data);
+            setFilteredMachines(res.data);
+        } catch (error) {
+            console.error('Failed to fetch machines', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line
+        fetchMachines();
+    }, [fetchMachines]);
+
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const text = e.target.value;
+        setFilterText(text);
+        if (!text) {
+            setFilteredMachines(machines);
+        } else {
+            const lower = text.toLowerCase();
+            const filtered = machines.filter(m =>
+                m.customer?.name.toLowerCase().includes(lower) ||
+                m.machineModel.toLowerCase().includes(lower) ||
+                m.serialNumber.toLowerCase().includes(lower)
+            );
+            setFilteredMachines(filtered);
+        }
+    };
+
+    const handleEdit = (machine: CustomerMachine) => {
+        setEditingMachine(machine);
+        setIsFormOpen(true);
+    };
+
+    const handleAdd = () => {
+        setEditingMachine(undefined);
+        setIsFormOpen(true);
+    };
+
+    const handleSave = () => {
+        fetchMachines();
+        setIsFormOpen(false);
+    };
+
+    return (
+        <div className={styles.container}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>機材台帳</h1>
+                    <p className={styles.subtitle}>顧客保有機材の管理・登録</p>
+                </div>
+                <Button icon={<Plus size={18} />} onClick={handleAdd}>
+                    新規登録
+                </Button>
+            </div>
+
+            <div className={styles.controls}>
+                <div className={styles.searchWrapper}>
+                    <Search className={styles.searchIcon} size={18} />
+                    <input
+                        type="text"
+                        placeholder="顧客名、機種名、シリアルNoで検索..."
+                        className={styles.searchInput}
+                        value={filterText}
+                        onChange={handleSearch}
+                    />
+                </div>
+            </div>
+
+            <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                    <thead>
+                        <tr>
+                            <th>顧客名</th>
+                            <th>機種名 (モデル)</th>
+                            <th>シリアルNo</th>
+                            <th>購入日</th>
+                            <th style={{ width: '80px' }}>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredMachines.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className={styles.emptyState}>データがありません</td>
+                            </tr>
+                        ) : (
+                            filteredMachines.map((machine) => (
+                                <tr key={machine.id}>
+                                    <td>{machine.customer?.name}</td>
+                                    <td>
+                                        <Link to={`/machines/${machine.id}`} className={styles.modelName}>
+                                            {machine.machineModel}
+                                        </Link>
+                                    </td>
+                                    <td style={{ fontFamily: 'monospace' }}>{machine.serialNumber}</td>
+                                    <td>
+                                        {machine.purchaseDate ? format(new Date(machine.purchaseDate), 'yyyy/MM/dd') : '-'}
+                                    </td>
+                                    <td>
+                                        <div className={styles.actions}>
+                                            <button className={styles.actionButton} onClick={() => handleEdit(machine)} title="編集">
+                                                <Edit size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {isFormOpen && (
+                <MachineForm
+                    isOpen={isFormOpen}
+                    onClose={() => setIsFormOpen(false)}
+                    onSave={handleSave}
+                    machine={editingMachine}
+                />
+            )}
+        </div>
+    );
+};
+
+export default MachineRegistry;

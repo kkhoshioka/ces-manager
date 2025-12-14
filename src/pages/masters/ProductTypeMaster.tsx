@@ -7,6 +7,7 @@ import styles from '../Inventory.module.css';
 
 interface ProductCategory {
     id: number;
+    section: string;
     code: string | null;
     name: string;
 }
@@ -15,8 +16,11 @@ const ProductTypeMaster: React.FC = () => {
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [formData, setFormData] = useState({ code: '', name: '' });
+    const [formData, setFormData] = useState({ section: '', code: '', name: '' });
     const [isLoading, setIsLoading] = useState(false);
+
+    // Unique sections for suggestion/dropdown
+    const sections = Array.from(new Set(categories.map(c => c.section)));
 
     useEffect(() => {
         fetchCategories();
@@ -25,7 +29,7 @@ const ProductTypeMaster: React.FC = () => {
     const fetchCategories = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/product-categories`);
+            const res = await fetch(`${API_BASE_URL}/categories`);
             if (res.ok) {
                 const data = await res.json();
                 setCategories(data);
@@ -41,8 +45,8 @@ const ProductTypeMaster: React.FC = () => {
         e.preventDefault();
         try {
             const url = editingId
-                ? `${API_BASE_URL}/product-categories/${editingId}`
-                : `${API_BASE_URL}/product-categories`;
+                ? `${API_BASE_URL}/categories/${editingId}`
+                : `${API_BASE_URL}/categories`;
 
             const method = editingId ? 'PUT' : 'POST';
 
@@ -55,22 +59,27 @@ const ProductTypeMaster: React.FC = () => {
             if (res.ok) {
                 setIsModalOpen(false);
                 fetchCategories();
-                setFormData({ code: '', name: '' });
+                setFormData({ section: '', code: '', name: '' });
                 setEditingId(null);
+            } else {
+                alert('保存に失敗しました');
             }
         } catch (error) {
             console.error('Failed to save category', error);
+            alert('エラーが発生しました');
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('本当に削除しますか？')) return;
+        if (!confirm('本当に削除しますか？\n(注意: 製品で使用されている場合は削除できない可能性があります)')) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/product-categories/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/categories/${id}`, {
                 method: 'DELETE'
             });
             if (res.ok) {
                 fetchCategories();
+            } else {
+                alert('削除に失敗しました');
             }
         } catch (error) {
             console.error('Failed to delete category', error);
@@ -80,6 +89,7 @@ const ProductTypeMaster: React.FC = () => {
     const openEdit = (category: ProductCategory) => {
         setEditingId(category.id);
         setFormData({
+            section: category.section,
             code: category.code || '',
             name: category.name
         });
@@ -88,13 +98,14 @@ const ProductTypeMaster: React.FC = () => {
 
     const openAdd = () => {
         setEditingId(null);
-        setFormData({ code: '', name: '' });
+        setFormData({ section: '', code: '', name: '' });
         setIsModalOpen(true);
     };
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>商品種別マスタ</h2>
                 <Button icon={<Plus size={18} />} onClick={openAdd}>
                     新規登録
                 </Button>
@@ -104,27 +115,29 @@ const ProductTypeMaster: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th>コード</th>
-                            <th>種別名 (カテゴリ)</th>
+                            <th>部門</th>
+                            <th style={{ width: '120px' }}>コード</th>
+                            <th>種別名</th>
                             <th style={{ width: '100px' }}>アクション</th>
                         </tr>
                     </thead>
                     <tbody>
                         {isLoading ? (
-                            <tr><td colSpan={3} style={{ textAlign: 'center', padding: '2rem' }}>読み込み中...</td></tr>
+                            <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>読み込み中...</td></tr>
                         ) : categories.length === 0 ? (
-                            <tr><td colSpan={3} className={styles.emptyState}>データがありません</td></tr>
+                            <tr><td colSpan={4} className={styles.emptyState}>データがありません</td></tr>
                         ) : (
-                            categories.map(cat => (
-                                <tr key={cat.id}>
-                                    <td className={styles.partNumber}>{cat.code || '-'}</td>
-                                    <td>{cat.name}</td>
+                            categories.map(category => (
+                                <tr key={category.id}>
+                                    <td style={{ fontWeight: 600 }}>{category.section}</td>
+                                    <td className={styles.partNumber}>{category.code || '-'}</td>
+                                    <td>{category.name}</td>
                                     <td>
                                         <div className={styles.actions}>
-                                            <button className={styles.actionButton} onClick={() => openEdit(cat)}>
+                                            <button className={styles.actionButton} onClick={() => openEdit(category)}>
                                                 <Edit size={16} />
                                             </button>
-                                            <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(cat.id)}>
+                                            <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(category.id)}>
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
@@ -140,23 +153,53 @@ const ProductTypeMaster: React.FC = () => {
                 <div className={styles.modalOverlay}>
                     <div className={styles.modal} style={{ maxWidth: '400px' }}>
                         <div className={styles.modalHeader}>
-                            <h2>{editingId ? '種別編集' : '新規種別登録'}</h2>
+                            <h2>
+                                {editingId ? '編集' : '新規登録'}
+                            </h2>
                             <button className={styles.closeButton} onClick={() => setIsModalOpen(false)}>
                                 <X size={24} />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit} className={styles.form}>
+                            {/* Section Input with Datalist for suggestions */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#4b5563' }}>
+                                    部門（カテゴリー） <span style={{ color: 'red' }}>*</span>
+                                </label>
+                                <input
+                                    list="sections"
+                                    value={formData.section}
+                                    onChange={e => setFormData({ ...formData, section: e.target.value })}
+                                    required
+                                    placeholder="例: 新車販売"
+                                    style={{
+                                        padding: '0.5rem',
+                                        borderRadius: '0.375rem',
+                                        border: '1px solid #d1d5db',
+                                        fontSize: '0.9375rem',
+                                        width: '100%'
+                                    }}
+                                />
+                                <datalist id="sections">
+                                    {sections.map(s => <option key={s} value={s} />)}
+                                </datalist>
+                            </div>
+
                             <Input
                                 label="コード"
                                 value={formData.code}
                                 onChange={e => setFormData({ ...formData, code: e.target.value })}
+                                placeholder="例: M-01"
                             />
+
                             <Input
                                 label="種別名"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 required
+                                placeholder="例: ミニHE"
                             />
+
                             <div className={styles.formActions}>
                                 <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
                                     キャンセル

@@ -9,6 +9,12 @@ export const InventoryService = {
         return response.json();
     },
 
+    getCategories: async (): Promise<import('../types/inventory').ProductCategory[]> => {
+        const response = await fetch(`${API_BASE_URL}/categories`);
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        return response.json();
+    },
+
     getById: async (id: number): Promise<Part | undefined> => {
         // We might need to implement GET /products/:id in backend if needed
         const parts = await InventoryService.getAll();

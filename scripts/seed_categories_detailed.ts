@@ -1,12 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 
-const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? 'file:./dev.db'
-});
-
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
     console.log('Seeding Detailed Category Master...');
@@ -68,8 +63,27 @@ async function main() {
     }
 
     for (const item of data) {
-        await prisma.productCategory.create({
-            data: item
+        let section = '部品・他';
+        const prefix = item.code.split('-')[0];
+
+        if (['M', 'U'].includes(prefix) || item.name.includes('新車') || item.name.includes('中古')) {
+            if (item.name.includes('レンタル')) section = 'レンタル'; // Override if name says rental
+            else if (item.name.includes('新車')) section = '新車販売';
+            else if (item.name.includes('中古')) section = '中古車販売';
+        } else if (prefix === 'R' || item.name.includes('レンタル')) {
+            section = 'レンタル';
+        } else if (prefix === 'S' || item.name.includes('修理') || item.name.includes('特自')) {
+            section = '修理';
+        } else if (prefix === 'T') {
+            section = '新車販売'; // Trade-in usually relates to sales? Or maybe '中古車販売'? Let's put in Used.
+            // Actually context says T is Trade-in (下取).
+            section = '中古車販売';
+        }
+
+        await prisma.productCategory.upsert({
+            where: { code: item.code },
+            update: { section, name: item.name },
+            create: { section, code: item.code, name: item.name }
         });
     }
 

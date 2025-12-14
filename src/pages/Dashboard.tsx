@@ -16,13 +16,7 @@ interface DashboardData {
     totalSales: number;
     totalCost: number;
     totalProfit: number;
-    categories: {
-        newCar: CategoryData;
-        usedCar: CategoryData;
-        rental: CategoryData;
-        repair: CategoryData;
-        parts: CategoryData;
-    };
+    categories: Record<string, CategoryData>;
 }
 
 const Dashboard: React.FC = () => {

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import styles from './Masters.module.css';
-import { Users, Tag, DollarSign, Settings } from 'lucide-react';
+import SupplierMaster from './masters/SupplierMaster';
 import CustomerMaster from './masters/CustomerMaster';
 import ProductTypeMaster from './masters/ProductTypeMaster';
 import ExpenseMaster from './masters/ExpenseMaster';
+import { Users, Tag, DollarSign, Settings, Truck } from 'lucide-react';
 
-type Tab = 'customer' | 'type' | 'expense';
+type Tab = 'customer' | 'type' | 'expense' | 'supplier';
 
 const Masters: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('customer');
@@ -29,6 +30,13 @@ const Masters: React.FC = () => {
                     得意先マスター
                 </button>
                 <button
+                    className={`${styles.tab} ${activeTab === 'supplier' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('supplier')}
+                >
+                    <Truck size={18} />
+                    仕入先マスター
+                </button>
+                <button
                     className={`${styles.tab} ${activeTab === 'type' ? styles.active : ''}`}
                     onClick={() => setActiveTab('type')}
                 >
@@ -46,6 +54,7 @@ const Masters: React.FC = () => {
 
             <div className={styles.content}>
                 {activeTab === 'customer' && <CustomerMaster />}
+                {activeTab === 'supplier' && <SupplierMaster />}
                 {activeTab === 'type' && <ProductTypeMaster />}
                 {activeTab === 'expense' && <ExpenseMaster />}
             </div>

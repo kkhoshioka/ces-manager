@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, X, Edit, Trash2, AlertTriangle } from 'lucide-react';
-import type { Part, NewPart } from '../types/inventory';
+import type { Part, NewPart, ProductCategory } from '../types/inventory';
 import { InventoryService } from '../utils/inventoryService';
 import { formatNumber, formatCurrency } from '../utils/formatting';
 import Button from '../components/ui/Button';
@@ -9,9 +9,13 @@ import styles from './Inventory.module.css';
 
 const Inventory: React.FC = () => {
     const [parts, setParts] = useState<Part[]>([]);
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
+
+    // Derived state for form
+    const [selectedSection, setSelectedSection] = useState<string>('');
 
     const initialFormState: NewPart = {
         code: '',
@@ -24,18 +28,22 @@ const Inventory: React.FC = () => {
 
     const [formData, setFormData] = useState<NewPart>(initialFormState);
 
-    const loadParts = async () => {
+    const loadData = async () => {
         try {
-            const data = await InventoryService.getAll();
-            setParts(data);
+            const [partsData, categoriesData] = await Promise.all([
+                InventoryService.getAll(),
+                InventoryService.getCategories()
+            ]);
+            setParts(partsData);
+            setCategories(categoriesData);
         } catch (error) {
-            console.error('Failed to load parts', error);
+            console.error('Failed to load data', error);
         }
     };
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        loadParts();
+        loadData();
     }, []);
 
     const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,7 +51,9 @@ const Inventory: React.FC = () => {
         setSearchQuery(query);
         try {
             if (query.trim() === '') {
-                await loadParts();
+                // partial reload of parts only
+                const data = await InventoryService.getAll();
+                setParts(data);
             } else {
                 const results = await InventoryService.search(query);
                 setParts(results);
@@ -53,12 +63,24 @@ const Inventory: React.FC = () => {
         }
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: name === 'stockQuantity' || name === 'standardPrice' || name === 'standardCost' ? Number(value) : value
         }));
+    };
+
+    const handleMajorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const section = e.target.value;
+        setSelectedSection(section);
+        // Reset minor category when section changes
+        setFormData(prev => ({ ...prev, categoryId: undefined }));
+    };
+
+    const handleMinorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const minorId = Number(e.target.value);
+        setFormData(prev => ({ ...prev, categoryId: minorId }));
     };
 
     const openForm = (part?: Part) => {
@@ -68,13 +90,29 @@ const Inventory: React.FC = () => {
                 code: part.code,
                 name: part.name,
                 category: part.category || '',
+                categoryId: part.categoryId,
                 stockQuantity: part.stockQuantity,
                 standardPrice: part.standardPrice,
                 standardCost: part.standardCost,
             });
+
+            // Set initial selected section based on current categoryId or productCategory
+            if (part.productCategory) {
+                setSelectedSection(part.productCategory.section);
+            } else if (part.categoryId) {
+                // Determine section from category list
+                const cat = categories.find(c => c.id === part.categoryId);
+                if (cat) {
+                    setSelectedSection(cat.section);
+                }
+            } else {
+                setSelectedSection('');
+            }
+
         } else {
             setEditingId(null);
             setFormData(initialFormState);
+            setSelectedSection('');
         }
         setIsFormOpen(true);
     };
@@ -88,7 +126,7 @@ const Inventory: React.FC = () => {
                 await InventoryService.add(formData);
             }
             setIsFormOpen(false);
-            loadParts();
+            loadData();
         } catch (error) {
             console.error('Failed to save part', error);
             alert('保存に失敗しました');
@@ -99,7 +137,7 @@ const Inventory: React.FC = () => {
         if (window.confirm('本当にこの部品を削除しますか？')) {
             try {
                 await InventoryService.delete(id);
-                loadParts();
+                loadData();
             } catch (error) {
                 console.error('Failed to delete part', error);
                 alert('削除に失敗しました');
@@ -167,7 +205,20 @@ const Inventory: React.FC = () => {
                                             </span>
                                         )}
                                     </td>
-                                    <td>{part.category || '-'}</td>
+                                    <td>
+                                        {/* Display logic: Use 'category' string or relation if available */}
+                                        {/* If we updated backend fetch, we might have part.productCategory */}
+                                        {part.productCategory ? (
+                                            <>
+                                                <span style={{ color: '#666', fontSize: '0.9em' }}>
+                                                    [{part.productCategory.section}]
+                                                </span>{' '}
+                                                {part.productCategory.name}
+                                            </>
+                                        ) : (
+                                            part.category || '-'
+                                        )}
+                                    </td>
                                     <td>
                                         <span className={`${styles.stockCount} ${part.stockQuantity <= 5 ? styles.lowStock : ''}`}>
                                             {formatNumber(part.stockQuantity)}
@@ -221,12 +272,38 @@ const Inventory: React.FC = () => {
                             </div>
 
                             <div className={styles.formGrid3}>
-                                <Input
-                                    label="カテゴリ"
-                                    name="category"
-                                    value={formData.category || ''}
-                                    onChange={handleInputChange}
-                                />
+                                <div className={styles.formGroup}>
+                                    <label className={styles.label}>部門</label>
+                                    <select
+                                        className={styles.select}
+                                        value={selectedSection}
+                                        onChange={handleMajorChange}
+                                    >
+                                        <option value="">選択してください</option>
+                                        {Array.from(new Set(categories.map(c => c.section))).sort().map(section => (
+                                            <option key={section} value={section}>{section}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label className={styles.label}>種別</label>
+                                    <select
+                                        className={styles.select}
+                                        name="categoryId"
+                                        value={formData.categoryId || ''}
+                                        onChange={handleMinorChange}
+                                        disabled={!selectedSection}
+                                    >
+                                        <option value="">選択してください</option>
+                                        {categories
+                                            .filter(c => c.section === selectedSection)
+                                            .map(cat => (
+                                                <option key={cat.id} value={cat.id}>
+                                                    {cat.code ? `${cat.code}: ` : ''}{cat.name}
+                                                </option>
+                                            ))}
+                                    </select>
+                                </div>
                                 <Input
                                     label="在庫数"
                                     name="stockQuantity"

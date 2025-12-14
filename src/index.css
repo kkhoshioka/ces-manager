@@ -1,5 +1,8 @@
 @import './styles/variables.css';
 
+@import "tailwindcss";
+
+
 /* Global Reset & Base Styles */
 html,
 body,

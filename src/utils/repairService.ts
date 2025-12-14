@@ -45,5 +45,28 @@ export const RepairService = {
             repair.machineModel?.toLowerCase().includes(lowerQuery) ||
             repair.serialNumber?.toLowerCase().includes(lowerQuery)
         );
+    },
+
+    uploadPhotos: async (id: number, formData: FormData): Promise<any[]> => {
+        const response = await fetch(`${API_BASE_URL}/projects/${id}/photos`, {
+            method: 'POST',
+            body: formData,
+        });
+        if (!response.ok) throw new Error('Failed to upload photos');
+        return response.json();
+    },
+
+    deletePhoto: async (photoId: number): Promise<void> => {
+        const response = await fetch(`${API_BASE_URL}/photos/${photoId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete photo');
+    },
+
+    delete: async (id: number): Promise<void> => {
+        const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete project');
     }
 };

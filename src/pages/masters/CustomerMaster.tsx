@@ -12,6 +12,7 @@ interface Customer {
     address: string | null;
     phone: string | null;
     email: string | null;
+    type: string | null;
 }
 
 const CustomerMaster: React.FC = () => {
@@ -25,7 +26,8 @@ const CustomerMaster: React.FC = () => {
         name: '',
         address: '',
         phone: '',
-        email: ''
+        email: '',
+        type: ''
     });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -55,7 +57,8 @@ const CustomerMaster: React.FC = () => {
         setFilteredCustomers(
             customers.filter(c =>
                 c.name.toLowerCase().includes(query) ||
-                c.code.toLowerCase().includes(query)
+                c.code.toLowerCase().includes(query) ||
+                (c.type && c.type.toLowerCase().includes(query))
             )
         );
     };
@@ -78,9 +81,12 @@ const CustomerMaster: React.FC = () => {
             if (res.ok) {
                 setIsModalOpen(false);
                 fetchCustomers();
+            } else {
+                alert('保存に失敗しました。サーバーのエラーを確認してください。');
             }
         } catch (error) {
             console.error('Failed to save customer', error);
+            alert('通信エラーが発生しました。');
         }
     };
 
@@ -105,14 +111,16 @@ const CustomerMaster: React.FC = () => {
             name: customer.name,
             address: customer.address || '',
             phone: customer.phone || '',
-            email: customer.email || ''
+            email: customer.email || '',
+            type: customer.type || ''
         });
         setIsModalOpen(true);
     };
 
     const openAdd = () => {
         setEditingId(null);
-        setFormData({ code: '', name: '', address: '', phone: '', email: '' });
+        setEditingId(null);
+        setFormData({ code: '', name: '', address: '', phone: '', email: '', type: '' });
         setIsModalOpen(true);
     };
 
@@ -123,7 +131,7 @@ const CustomerMaster: React.FC = () => {
                     <Search className={styles.searchIcon} size={18} />
                     <input
                         type="text"
-                        placeholder="顧客名やコードで検索..."
+                        placeholder="顧客名、コード、種別で検索..."
                         className={styles.searchInput}
                         value={searchQuery}
                         onChange={handleSearch}
@@ -140,6 +148,7 @@ const CustomerMaster: React.FC = () => {
                         <tr>
                             <th>コード</th>
                             <th>顧客名</th>
+                            <th>種別</th>
                             <th>電話番号</th>
                             <th>住所</th>
                             <th style={{ width: '100px' }}>アクション</th>
@@ -155,6 +164,20 @@ const CustomerMaster: React.FC = () => {
                                 <tr key={customer.id}>
                                     <td className={styles.partNumber}>{customer.code}</td>
                                     <td>{customer.name}</td>
+                                    <td>
+                                        {customer.type && (
+                                            <span style={{
+                                                fontSize: '0.75rem',
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                backgroundColor: '#f1f5f9',
+                                                color: '#475569',
+                                                border: '1px solid #e2e8f0'
+                                            }}>
+                                                {customer.type}
+                                            </span>
+                                        )}
+                                    </td>
                                     <td>{customer.phone || '-'}</td>
                                     <td>{customer.address || '-'}</td>
                                     <td>
@@ -197,6 +220,21 @@ const CustomerMaster: React.FC = () => {
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     required
                                 />
+                            </div>
+                            <div>
+                                <Input
+                                    label="得意先種別"
+                                    value={formData.type || ''}
+                                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                    list="customer-types"
+                                    placeholder="例: ユーザー, 修理業者, 機械メーカー"
+                                />
+                                <datalist id="customer-types">
+                                    <option value="ユーザー" />
+                                    <option value="修理業者" />
+                                    <option value="機械メーカー" />
+                                    <option value="レンタル会社" />
+                                </datalist>
                             </div>
                             <div className={styles.formGrid}>
                                 <Input

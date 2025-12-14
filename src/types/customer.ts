@@ -17,6 +17,13 @@ export interface CustomerMachine {
     serialNumber: string;
     purchaseDate?: string | null;
     notes?: string | null;
+    productCategoryId?: number | null;
+    category?: {
+        id: number;
+        section: string;
+        code?: string;
+        name: string;
+    };
     createdAt: string;
     updatedAt: string;
     customer?: Customer;

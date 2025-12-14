@@ -1,13 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 
-// Initialize exactly as server/index.ts does
-const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? 'file:./dev.db'
-});
-
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
     console.log('Seeding Master Data...');
@@ -33,10 +27,20 @@ async function main() {
     // 2. Product Categories
     const categories = ["部品", "修理", "レンタル", "新車", "中古車"];
     for (const name of categories) {
+        // Map simple name to a valid record
+        let section = "部品・他";
+        if (name === "新車") section = "新車販売";
+        if (name === "中古車") section = "中古車販売";
+        if (name === "レンタル") section = "レンタル";
+        if (name === "修理") section = "修理";
+
+        // Generate a dummy code if it's a top level
+        const code = "GEN-" + name;
+
         await prisma.productCategory.upsert({
-            where: { name },
-            update: {},
-            create: { name }
+            where: { code }, // Use code as unique identifier
+            update: { section, name },
+            create: { section, code, name }
         });
     }
     console.log(`Seeded ${categories.length} product categories.`);

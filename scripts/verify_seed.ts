@@ -1,25 +1,20 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 
-const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? 'file:./dev.db'
-});
-
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
     const customers = await prisma.customer.findMany();
     console.log('Customers:', customers.length);
-    customers.forEach(c => console.log(`- ${c.name} (${c.code})`));
+    customers.forEach((c: any) => console.log(`- ${c.name} (${c.code})`));
 
     const categories = await prisma.productCategory.findMany();
     console.log('Categories:', categories.length);
-    categories.forEach(c => console.log(`- ${c.name}`));
+    categories.forEach((c: any) => console.log(`- ${c.name}`));
 
     const expenses = await prisma.operatingExpense.findMany();
     console.log('Expenses:', expenses.length);
-    expenses.forEach(e => console.log(`- ${e.name}`));
+    expenses.forEach((e: any) => console.log(`- ${e.name}`));
 }
 
 main()

@@ -31,7 +31,21 @@ export const customerService = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(machine),
         });
-        if (!response.ok) throw new Error('Failed to create machine');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.error || 'Failed to create machine';
+            const errorDetails = errorData.details || '';
+            throw new Error(`${errorMessage}${errorDetails ? ': ' + errorDetails : ''}`);
+        }
+        return response.json();
+    },
+    async updateMachine(id: number, machine: Partial<NewCustomerMachine> & { customerId: number }): Promise<CustomerMachine> {
+        const response = await fetch(`${API_BASE_URL}/machines/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(machine),
+        });
+        if (!response.ok) throw new Error('Failed to update machine');
         return response.json();
     }
 };

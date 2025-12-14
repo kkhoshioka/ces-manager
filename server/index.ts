@@ -1,18 +1,36 @@
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import 'dotenv/config';
-import { generateInvoice, generateDeliveryNote } from './pdfService.ts';
+import { generateInvoice, generateDeliveryNote } from './pdfService';
+import multer from 'multer';
+import { createClient } from '@supabase/supabase-js';
+
+// Init Supabase
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 const app = express();
 
-const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? 'file:./dev.db'
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+console.log('PRISMA_CLIENT_ENGINE_TYPE:', process.env.PRISMA_CLIENT_ENGINE_TYPE);
+
+// Use standard Prisma Client initialization with log (satisfies non-empty check)
+const prisma = new PrismaClient({
+    log: ['info', 'warn', 'error']
 });
-const prisma = new PrismaClient({ adapter });
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -22,6 +40,9 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
+
+// Serve uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // --- Customers ---
 app.get('/api/customers', async (req, res) => {
@@ -72,20 +93,78 @@ app.delete('/api/customers/:id', async (req, res) => {
 });
 
 
-// --- Products (Inventory) ---
-app.get('/api/products', async (req, res) => {
+// --- Masters ---
+// Categories now use: id, section, code, name
+app.get('/api/categories', async (req, res) => {
     try {
-        const products = await prisma.product.findMany();
-        res.json(products);
+        const categories = await prisma.productCategory.findMany({
+            // orderBy: [{ section: 'asc' }, { code: 'asc' }] // Temporarily removed due to schema sync issue
+        });
+        res.json(categories);
+    } catch (error: any) {
+        console.error('Failed to fetch categories:', error);
+        res.status(500).json({
+            error: 'Failed to fetch categories',
+            details: error.message,
+            stack: error.stack
+        });
+    }
+});
+
+app.post('/api/categories', async (req, res) => {
+    try {
+        const { section, code, name } = req.body;
+        const category = await prisma.productCategory.create({
+            data: { section, code, name }
+        });
+        res.json(category);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch products' });
+        res.status(500).json({ error: 'Failed to create category' });
+    }
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { section, code, name } = req.body;
+        const category = await prisma.productCategory.update({
+            where: { id: Number(id) },
+            data: { section, code, name }
+        });
+        res.json(category);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update category' });
+    }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.productCategory.delete({
+            where: { id: Number(id) }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete category' });
     }
 });
 
 app.post('/api/products', async (req, res) => {
     try {
+        const { categoryId, ...rest } = req.body;
+        // Legacy category name sync is less critical but we keep it for now
+        let categoryName = rest.category;
+        if (categoryId) {
+            const cat = await prisma.productCategory.findUnique({ where: { id: Number(categoryId) } });
+            if (cat) categoryName = cat.name;
+        }
+
         const product = await prisma.product.create({
-            data: req.body
+            data: {
+                ...rest,
+                categoryId: categoryId ? Number(categoryId) : null,
+                category: categoryName
+            }
         });
         res.json(product);
     } catch (error) {
@@ -96,15 +175,42 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { categoryId, ...rest } = req.body;
+
+        let categoryName = rest.category;
+        if (categoryId) {
+            const cat = await prisma.productCategory.findUnique({ where: { id: Number(categoryId) } });
+            if (cat) categoryName = cat.name;
+        }
+
         const product = await prisma.product.update({
             where: { id: Number(id) },
-            data: req.body
+            data: {
+                ...rest,
+                categoryId: categoryId ? Number(categoryId) : null,
+                category: categoryName
+            }
         });
         res.json(product);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update product' });
     }
 });
+
+app.get('/api/products', async (req, res) => {
+    try {
+        const products = await prisma.product.findMany({
+            include: {
+                productCategory: true // flatten, no parent
+            }
+        });
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch products' });
+    }
+});
+
+
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
@@ -149,7 +255,10 @@ app.post('/api/projects', async (req, res) => {
         res.json(project);
     } catch (error: any) {
         console.error('Failed to create project', error);
-        import('fs').then(fs => fs.appendFileSync('server_error.log', `${new Date().toISOString()} - Create Project Error: ${error.message}\n${error.stack}\n`));
+        import('fs').then(fs => {
+            // Basic logging to file (optional in cloud, but helpful for debug)
+            // fs.appendFileSync('server_error.log', ...);
+        });
         res.status(500).json({ error: 'Failed to create project' });
     }
 });
@@ -179,7 +288,7 @@ app.put('/api/projects/:id', async (req, res) => {
         const { customerId, customerMachineId, details, ...data } = req.body;
 
         // Transaction to ensure atomicity
-        const project = await prisma.$transaction(async (tx) => {
+        const project = await prisma.$transaction(async (tx: any) => {
             // 1. Update main project fields
             const updatedProject = await tx.project.update({
                 where: { id: Number(id) },
@@ -199,6 +308,11 @@ app.put('/api/projects/:id', async (req, res) => {
                 await tx.projectDetail.createMany({
                     data: details.map((d: any) => ({
                         ...d,
+                        quantity: Number(d.quantity) || 0,
+                        unitPrice: Number(d.unitPrice) || 0,
+                        unitCost: Number(d.unitCost) || 0,
+                        amountCost: Number(d.amountCost) || 0,
+                        amountSales: Number(d.amountSales) || 0,
                         projectId: Number(id)
                     }))
                 });
@@ -211,6 +325,125 @@ app.put('/api/projects/:id', async (req, res) => {
     } catch (error) {
         console.error('Failed to update project:', error);
         res.status(500).json({ error: 'Failed to update project' });
+    }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Photos are cascaded? Schema says yes: `onDelete: Cascade`
+        // Details are cascaded? Schema says yes: `onDelete: Cascade`
+
+        // However, we should also delete the physical photo files if possible.
+        // Let's first fetch the photos to get their paths.
+        const project = await prisma.project.findUnique({
+            where: { id: Number(id) },
+            include: { photos: true }
+        });
+
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        // Delete physical files from Supabase
+        if (project.photos && project.photos.length > 0) {
+            const fileNames = project.photos.map(photo => {
+                const parts = photo.filePath.split('/');
+                return parts[parts.length - 1];
+            }).filter(Boolean);
+
+            if (fileNames.length > 0) {
+                const { error } = await supabase.storage
+                    .from('uploads')
+                    .remove(fileNames);
+
+                if (error) console.error('Supabase batch delete error:', error);
+            }
+        }
+
+        // Delete project (cascades to details and photo records)
+        await prisma.project.delete({
+            where: { id: Number(id) }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to delete project:', error);
+        res.status(500).json({ error: 'Failed to delete project' });
+    }
+});
+
+// Photos
+app.post('/api/projects/:id/photos', upload.array('photos', 10), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const files = req.files as Express.Multer.File[];
+
+        if (!files || files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
+
+        const photos = await Promise.all(files.map(async (file) => {
+            const fileExt = path.extname(file.originalname);
+            const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
+
+            // Upload to Supabase
+            const { data, error } = await supabase.storage
+                .from('uploads')
+                .upload(fileName, file.buffer, {
+                    contentType: file.mimetype
+                });
+
+            if (error) throw error;
+
+            // Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('uploads')
+                .getPublicUrl(fileName);
+
+            return prisma.projectPhoto.create({
+                data: {
+                    projectId: Number(id),
+                    fileName: file.originalname,
+                    filePath: publicUrl,
+                    description: ''
+                }
+            });
+        }));
+
+        res.json(photos);
+    } catch (error: any) {
+        console.error('Failed to upload photos:', error);
+        res.status(500).json({ error: 'Failed to upload photos', details: error.message });
+    }
+});
+
+app.delete('/api/photos/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const photo = await prisma.projectPhoto.findUnique({ where: { id: Number(id) } });
+        if (!photo) return res.status(404).json({ error: 'Photo not found' });
+
+        // Delete from DB
+        await prisma.projectPhoto.delete({ where: { id: Number(id) } });
+
+        // Delete from Supabase (extract filename from URL)
+        // URL format: .../uploads/filename.ext
+        const urlParts = photo.filePath.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+
+        if (fileName) {
+            const { error } = await supabase.storage
+                .from('uploads')
+                .remove([fileName]);
+
+            if (error) console.error('Supabase storage delete error:', error);
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to delete photo:', error);
+        res.status(500).json({ error: 'Failed to delete photo' });
     }
 });
 
@@ -261,7 +494,10 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
 app.get('/api/machines', async (req, res) => {
     try {
         const machines = await prisma.customerMachine.findMany({
-            include: { customer: true }
+            include: {
+                customer: true,
+                category: true
+            }
         });
         res.json(machines);
     } catch (error) {
@@ -271,16 +507,57 @@ app.get('/api/machines', async (req, res) => {
 
 app.post('/api/machines', async (req, res) => {
     try {
-        const { customerId, ...data } = req.body;
+        const { customerId, productCategoryId, ...data } = req.body;
         const machine = await prisma.customerMachine.create({
             data: {
+                ...data, // machineModel, serialNumber, purchaseDate, notes
+                customer: { connect: { id: Number(customerId) } },
+                ...(productCategoryId ? { category: { connect: { id: Number(productCategoryId) } } } : {})
+            },
+            include: { customer: true, category: true }
+        });
+        res.json(machine);
+    } catch (error: any) {
+        console.error("Create machine error:", error);
+        res.status(500).json({ error: 'Failed to create machine', details: error.message, meta: error.meta });
+    }
+});
+
+app.put('/api/machines/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { customerId, productCategoryId, ...data } = req.body;
+        const machine = await prisma.customerMachine.update({
+            where: { id: Number(id) },
+            data: {
                 ...data,
-                customer: { connect: { id: customerId } }
-            }
+                customer: { connect: { id: Number(customerId) } },
+                ...(productCategoryId !== undefined ? {
+                    category: productCategoryId ? { connect: { id: Number(productCategoryId) } } : { disconnect: true }
+                } : {})
+            },
+            include: { customer: true, category: true }
         });
         res.json(machine);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to create machine' });
+        res.status(500).json({ error: 'Failed to update machine' });
+    }
+});
+
+app.get('/api/machines/:id/history', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const history = await prisma.project.findMany({
+            where: { customerMachineId: Number(id) },
+            include: {
+                details: true,
+                photos: true
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(history);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch machine history' });
     }
 });
 
@@ -392,8 +669,6 @@ app.get('/api/dashboard/sales', async (req, res) => {
 
         const projects = await prisma.project.findMany({
             where: {
-                // Use completionDate or createdAt as the basis. User said "completion date (or billing date)"
-                // Let's use completionDate if available, otherwise createdAt
                 OR: [
                     { completionDate: { gte: startDate, lte: endDate } },
                     {
@@ -405,28 +680,28 @@ app.get('/api/dashboard/sales', async (req, res) => {
             include: {
                 details: {
                     include: {
-                        product: true
+                        product: {
+                            include: { productCategory: true } // Need section
+                        },
+                        category: true // Include ad-hoc category for dynamic grouping
                     }
                 }
             }
         });
 
-        // Initialize categories
+        // Initialize categories dynamically based on existing Sections in DB + fallback
         const summary = {
             totalSales: 0,
             totalCost: 0,
             totalProfit: 0,
-            categories: {
-                newCar: { sales: 0, cost: 0, profit: 0, label: '新車販売' },
-                usedCar: { sales: 0, cost: 0, profit: 0, label: '中古車販売' },
-                rental: { sales: 0, cost: 0, profit: 0, label: 'レンタル' },
-                repair: { sales: 0, cost: 0, profit: 0, label: '修理' },
-                parts: { sales: 0, cost: 0, profit: 0, label: '部品・他' }
-            }
+            categories: {} as Record<string, { sales: number; cost: number; profit: number; label: string }>
         };
 
-        projects.forEach(project => {
-            project.details.forEach(detail => {
+        // Pre-fill categories from DB? No, just build as we go, but sorting might be desired.
+        // Let's just accumulate.
+
+        projects.forEach((project: any) => {
+            project.details.forEach((detail: any) => {
                 const qty = Number(detail.quantity);
                 const price = Number(detail.unitPrice);
                 const cost = Number(detail.unitCost) || 0;
@@ -439,29 +714,27 @@ app.get('/api/dashboard/sales', async (req, res) => {
                 summary.totalCost += lineCost;
                 summary.totalProfit += lineProfit;
 
-                // Categorization Logic
-                let categoryKey: keyof typeof summary.categories = 'parts';
+                // Dynamic Logic
+                let label = '未分類';
 
                 if (['labor', 'travel', 'outsourcing'].includes(detail.lineType)) {
-                    categoryKey = 'repair';
-                } else if (detail.product) {
-                    const pCode = detail.product.code.toUpperCase();
-                    const pCat = detail.product.category || '';
-
-                    if (pCode.startsWith('M-') || pCat.includes('新車')) {
-                        categoryKey = 'newCar';
-                    } else if (pCode.startsWith('U-') || pCat.includes('中古')) {
-                        categoryKey = 'usedCar';
-                    } else if (pCode.startsWith('R-') || pCat.includes('レンタル')) {
-                        categoryKey = 'rental';
-                    } else if (pCode.startsWith('S-') || pCat.includes('修理')) {
-                        categoryKey = 'repair';
-                    }
+                    label = '修理'; // Services go to Repair by default
+                } else if (detail.category) {
+                    label = detail.category.section || '未分類';
+                } else if (detail.product && detail.product.productCategory) {
+                    label = detail.product.productCategory.section || '未分類';
+                } else {
+                    // Part without link? Or Other?
+                    label = '部品・他';
                 }
 
-                summary.categories[categoryKey].sales += lineSales;
-                summary.categories[categoryKey].cost += lineCost;
-                summary.categories[categoryKey].profit += lineProfit;
+                if (!summary.categories[label]) {
+                    summary.categories[label] = { sales: 0, cost: 0, profit: 0, label };
+                }
+
+                summary.categories[label].sales += lineSales;
+                summary.categories[label].cost += lineCost;
+                summary.categories[label].profit += lineProfit;
             });
         });
 
@@ -501,19 +774,23 @@ app.get('/api/dashboard/details', async (req, res) => {
                 customerMachine: true,
                 details: {
                     include: {
-                        product: true
+                        product: {
+                            include: { productCategory: true }
+                        },
+                        category: true, // Include ad-hoc category
+
                     }
                 }
             },
             orderBy: { createdAt: 'desc' }
         });
 
-        const result = projects.map(project => {
+        const result = projects.map((project: any) => {
             let categorySales = 0;
             let categoryCost = 0;
             let categoryProfit = 0;
 
-            project.details.forEach(detail => {
+            project.details.forEach((detail: any) => {
                 const qty = Number(detail.quantity);
                 const price = Number(detail.unitPrice);
                 const cost = Number(detail.unitCost) || 0;
@@ -522,26 +799,20 @@ app.get('/api/dashboard/details', async (req, res) => {
                 const lineCost = qty * cost;
                 const lineProfit = lineSales - lineCost;
 
-                let categoryKey = 'parts';
+                // Match Logic
+                let label = '未分類';
 
                 if (['labor', 'travel', 'outsourcing'].includes(detail.lineType)) {
-                    categoryKey = 'repair';
-                } else if (detail.product) {
-                    const pCode = detail.product.code.toUpperCase();
-                    const pCat = detail.product.category || '';
-
-                    if (pCode.startsWith('M-') || pCat.includes('新車')) {
-                        categoryKey = 'newCar';
-                    } else if (pCode.startsWith('U-') || pCat.includes('中古')) {
-                        categoryKey = 'usedCar';
-                    } else if (pCode.startsWith('R-') || pCat.includes('レンタル')) {
-                        categoryKey = 'rental';
-                    } else if (pCode.startsWith('S-') || pCat.includes('修理')) {
-                        categoryKey = 'repair';
-                    }
+                    label = '修理';
+                } else if (detail.category) {
+                    label = detail.category.section || '未分類';
+                } else if (detail.product && detail.product.productCategory) {
+                    label = detail.product.productCategory.section || '未分類';
+                } else {
+                    label = '部品・他';
                 }
 
-                if (categoryKey === category) {
+                if (label === category) {
                     categorySales += lineSales;
                     categoryCost += lineCost;
                     categoryProfit += lineProfit;
@@ -554,7 +825,8 @@ app.get('/api/dashboard/details', async (req, res) => {
                 categoryCost,
                 categoryProfit
             };
-        }).filter(p => p.categorySales > 0 || p.categoryCost > 0); // Include if there's any activity in this category
+        }).filter((p: any) => p.categorySales > 0 || p.categoryCost > 0);
+
 
         res.json(result);
 
@@ -564,6 +836,78 @@ app.get('/api/dashboard/details', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+// ==============================================
+// Supplier Endpoints
+// ==============================================
+
+// Get all suppliers
+app.get('/api/suppliers', async (req, res) => {
+    try {
+        const suppliers = await prisma.supplier.findMany({
+            orderBy: { id: 'desc' }
+        });
+        res.json(suppliers);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch suppliers' });
+    }
+});
+
+// Create supplier
+app.post('/api/suppliers', async (req, res) => {
+    try {
+        const { name, code, contactPerson, email, phone, address } = req.body;
+        const supplier = await prisma.supplier.create({
+            data: { name, code, contactPerson, email, phone, address }
+        });
+        res.json(supplier);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to create supplier' });
+    }
+});
+
+// Update supplier
+app.put('/api/suppliers/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, code, contactPerson, email, phone, address } = req.body;
+        const supplier = await prisma.supplier.update({
+            where: { id: Number(id) },
+            data: { name, code, contactPerson, email, phone, address }
+        });
+        res.json(supplier);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update supplier' });
+    }
+});
+
+// Delete supplier
+app.delete('/api/suppliers/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.supplier.delete({
+            where: { id: Number(id) }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete supplier' });
+    }
+});
+
+
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

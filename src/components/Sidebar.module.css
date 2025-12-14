@@ -1,8 +1,8 @@
 .sidebar {
     width: 260px;
     height: 100vh;
-    background-color: var(--color-surface);
-    border-right: 1px solid var(--color-border);
+    background-color: var(--color-primary);
+    border-right: 1px solid var(--color-primary-hover);
     display: flex;
     flex-direction: column;
     padding: 1.5rem;
@@ -11,6 +11,7 @@
     top: 0;
     z-index: 50;
     transition: transform var(--transition-normal);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
@@ -45,7 +46,7 @@
     display: none;
     background: none;
     border: none;
-    color: var(--color-text-muted);
+    color: var(--color-text-inverse);
     cursor: pointer;
     padding: 0.5rem;
 }
@@ -59,7 +60,7 @@
 .logoIcon {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    background: var(--color-surface);
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
@@ -70,7 +71,7 @@
 .logoText {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--color-text-main);
+    color: var(--color-text-inverse);
     letter-spacing: -0.025em;
 }
 
@@ -87,27 +88,27 @@
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     border-radius: var(--radius-md);
-    color: var(--color-text-muted);
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 500;
     transition: all var(--transition-fast);
 }
 
 .navItem:hover {
-    background-color: var(--color-background);
-    color: var(--color-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-inverse);
 }
 
 .active {
-    background-color: #eff6ff;
-    /* Light blue tint */
+    background-color: var(--color-surface);
     color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .footer {
     margin-top: auto;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--color-border);
-    color: var(--color-text-muted);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
     font-size: 0.75rem;
     text-align: center;
 }
