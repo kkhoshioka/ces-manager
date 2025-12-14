@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user);
             } else {
                 setLoading(false);
             }
@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user);
             } else {
                 setRole(null);
                 setLoading(false);
@@ -49,19 +49,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => subscription.unsubscribe();
     }, []);
 
-    const fetchProfile = async (userId: string) => {
+    const fetchProfile = async (currentUser: User) => {
         try {
             const { data, error } = await supabase
                 .from('Profile')
                 .select('role')
-                .eq('id', userId)
+                .eq('id', currentUser.id)
                 .single();
 
             if (error || !data) {
-                // If no profile exists, create default staff profile? 
-                // For now, assume staff if no profile found to be safe, or handle error.
-                console.warn('Profile fetch error or no profile:', error);
-                setRole('staff');
+                console.warn('Profile not found, creating default profile...');
+                // Auto-create profile
+                const { error: insertError } = await supabase
+                    .from('Profile')
+                    .insert([
+                        {
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            role: 'staff' // Default role
+                        }
+                    ]);
+
+                if (insertError) {
+                    console.error('Failed to create profile:', insertError);
+                    setRole('staff'); // Fallback
+                } else {
+                    setRole('staff');
+                }
             } else {
                 setRole(data.role as UserRole);
             }
