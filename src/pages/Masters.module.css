@@ -32,6 +32,16 @@
     border-bottom: 2px solid var(--color-border);
     margin-bottom: 2rem;
     overflow-x: auto;
+    /* Hide scrollbar */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
 }
 
 .tab {
