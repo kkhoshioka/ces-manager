@@ -1,8 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import Button from '../../components/ui/Button';
-import { Plus, Trash2, Edit } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface UserProfile {
     id: string;
