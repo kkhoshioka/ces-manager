@@ -41,7 +41,11 @@ const prisma = new PrismaClient({
 });
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+    origin: '*', // Allow Vercel or any frontend
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Health check
@@ -255,8 +259,8 @@ app.post('/api/projects', async (req, res) => {
         const project = await prisma.project.create({
             data: {
                 ...data,
-                customer: { connect: { id: customerId } },
-                ...(customerMachineId && { customerMachine: { connect: { id: customerMachineId } } }),
+                customer: { connect: { id: Number(customerId) } },
+                ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
                 ...(details && { details: { create: details } })
             }
         });
@@ -302,8 +306,8 @@ app.put('/api/projects/:id', async (req, res) => {
                 where: { id: Number(id) },
                 data: {
                     ...data,
-                    customer: { connect: { id: customerId } },
-                    ...(customerMachineId ? { customerMachine: { connect: { id: customerMachineId } } } : {})
+                    customer: { connect: { id: Number(customerId) } },
+                    ...(customerMachineId ? { customerMachine: { connect: { id: Number(customerMachineId) } } } : {})
                 }
             });
 

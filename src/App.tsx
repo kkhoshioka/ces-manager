@@ -10,8 +10,49 @@ import Login from './pages/Login';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import ServerAwakeOverlay from './components/ServerAwakeOverlay';
+import { useState, useEffect } from 'react';
+import { API_BASE_URL } from './config';
 
 function App() {
+  const [isServerReady, setIsServerReady] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    // Basic ping to wake up server
+    const checkServer = async () => {
+      try {
+        // Try fetch with a timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout for initial wake up
+
+        const res = await fetch(`${API_BASE_URL}/health`, {
+          signal: controller.signal,
+          method: 'HEAD' // Lightweight
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          setIsServerReady(true);
+          setIsChecking(false);
+        } else {
+          // If 503 or error, keep retrying
+          setTimeout(checkServer, 3000);
+        }
+      } catch (error) {
+        // Network error (server down/waking up)
+        console.log('Waiting for server...', error);
+        setTimeout(checkServer, 3000);
+      }
+    };
+
+    checkServer();
+  }, []);
+
+  if (isChecking && !isServerReady) {
+    return <ServerAwakeOverlay />;
+  }
+
   return (
     <BrowserRouter>
       <ErrorBoundary>

@@ -88,13 +88,13 @@ const Repairs: React.FC = () => {
         // Fetch Categories
         fetch(`${API_BASE_URL}/categories`)
             .then(res => res.json())
-            .then(data => setCategories(data))
+            .then(data => setCategories(Array.isArray(data) ? data : []))
             .catch(err => console.error('Failed to load categories', err));
 
         // Fetch Suppliers
         fetch(`${API_BASE_URL}/suppliers`)
             .then(res => res.json())
-            .then(data => setSuppliers(data))
+            .then(data => setSuppliers(Array.isArray(data) ? data : []))
             .catch(err => console.error('Failed to load suppliers', err));
     }, []);
 
