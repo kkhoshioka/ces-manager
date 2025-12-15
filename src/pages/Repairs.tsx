@@ -749,16 +749,32 @@ const Repairs: React.FC = () => {
                                     onChange={(e) => setFormType(e.target.value as any)}
                                     className="border rounded p-1 text-sm form-select"
                                     style={{
-                                        borderColor: '#cbd5e1',
-                                        color: '#334155',
+                                        backgroundColor: (formType === 'sales' ? '#e0f2fe' :
+                                            formType === 'inspection' ? '#f3e8ff' :
+                                                formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
+                                        color: (formType === 'sales' ? '#0369a1' :
+                                            formType === 'inspection' ? '#7e22ce' :
+                                                formType === 'maintenance' ? '#c2410c' : '#854d0e'),
+                                        borderColor: (formType === 'sales' ? '#bae6fd' :
+                                            formType === 'inspection' ? '#e9d5ff' :
+                                                formType === 'maintenance' ? '#fed7aa' : '#fde047'),
                                         fontWeight: 'bold',
-                                        padding: '0.25rem 2rem 0.25rem 0.5rem'
+                                        padding: '0.4rem 2rem 0.4rem 1rem',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        outline: 'none',
+                                        appearance: 'none', // Remove default arrow to style potentially, but keep it simple
+                                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                        backgroundPosition: 'right 0.5rem center',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundSize: '1.5em 1.5em',
+                                        paddingRight: '2.5rem'
                                     }}
                                 >
-                                    <option value="repair">修理案件</option>
-                                    <option value="inspection">点検案件</option>
-                                    <option value="maintenance">整備案件</option>
-                                    <option value="sales">販売案件</option>
+                                    <option value="repair" style={{ background: '#fff', color: '#333' }}>修理案件</option>
+                                    <option value="inspection" style={{ background: '#fff', color: '#333' }}>点検案件</option>
+                                    <option value="maintenance" style={{ background: '#fff', color: '#333' }}>整備案件</option>
+                                    <option value="sales" style={{ background: '#fff', color: '#333' }}>販売案件</option>
                                 </select>
                                 <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
                             </div>
