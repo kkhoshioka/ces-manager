@@ -71,11 +71,11 @@ const Repairs: React.FC = () => {
         // Load masters
         const loadMasters = async () => {
             const [custs, machs] = await Promise.all([
-                customerService.getAllCustomers(),
-                customerService.getAllMachines()
+                customerService.getAllCustomers().catch(() => []),
+                customerService.getAllMachines().catch(() => [])
             ]);
-            setCustomers(custs);
-            setAllMachines(machs);
+            setCustomers(Array.isArray(custs) ? custs : []);
+            setAllMachines(Array.isArray(machs) ? machs : []);
         };
         loadMasters();
     }, []);
@@ -216,7 +216,7 @@ const Repairs: React.FC = () => {
     const loadProjects = async () => {
         try {
             const data = await RepairService.getAll();
-            setProjects(data);
+            setProjects(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to load projects', error);
         }

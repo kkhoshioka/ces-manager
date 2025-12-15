@@ -1,6 +1,5 @@
 import type { Customer, NewCustomer, CustomerMachine, NewCustomerMachine } from '../types/customer';
-
-const API_BASE_URL = 'http://localhost:3000/api';
+import { API_BASE_URL } from '../config';
 
 export const customerService = {
     async getAllCustomers(): Promise<Customer[]> {
