@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Button from '../../components/ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 
 interface UserProfile {
     id: string;
@@ -31,7 +32,7 @@ const UserMaster: React.FC = () => {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/admin/users');
+            const response = await fetch(`${API_BASE_URL}/admin/users`);
             if (response.ok) {
                 const data = await response.json();
                 setUsers(data);
@@ -49,7 +50,7 @@ const UserMaster: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            const response = await fetch('/api/admin/users', {
+            const response = await fetch(`${API_BASE_URL}/admin/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, name, role })
@@ -75,7 +76,7 @@ const UserMaster: React.FC = () => {
         if (!window.confirm(`Are you sure you want to delete user ${email}? This action cannot be undone.`)) return;
 
         try {
-            const response = await fetch(`/api/admin/users/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/admin/users/${id}`, {
                 method: 'DELETE'
             });
 

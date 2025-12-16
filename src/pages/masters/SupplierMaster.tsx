@@ -4,6 +4,7 @@ import { Plus, Search, Edit2, Trash2, Save, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import styles from '../Inventory.module.css';
+import { API_BASE_URL } from '../../config';
 
 interface Supplier {
     id: number;
@@ -24,7 +25,7 @@ const SupplierMaster: React.FC = () => {
 
     const fetchSuppliers = useCallback(async () => {
         try {
-            const res = await fetch('/api/suppliers');
+            const res = await fetch(`${API_BASE_URL}/suppliers`);
             if (res.ok) {
                 const data = await res.json();
                 setSuppliers(data);
@@ -43,7 +44,7 @@ const SupplierMaster: React.FC = () => {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const url = currentSupplier.id ? `/api/suppliers/${currentSupplier.id}` : '/api/suppliers';
+            const url = currentSupplier.id ? `${API_BASE_URL}/suppliers/${currentSupplier.id}` : `${API_BASE_URL}/suppliers`;
             const method = currentSupplier.id ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -67,7 +68,7 @@ const SupplierMaster: React.FC = () => {
     const handleDelete = async (id: number) => {
         if (!confirm('本当に削除しますか？')) return;
         try {
-            const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE_URL}/suppliers/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 fetchSuppliers();
             } else {
