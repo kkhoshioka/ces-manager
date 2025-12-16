@@ -1,8 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import Button from '../../components/ui/Button';
-import { Plus, Trash2 } from 'lucide-react';
+import Input from '../../components/ui/Input';
+import { Plus, Trash2, X, Save } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
+import styles from '../Inventory.module.css';
 
 interface UserProfile {
     id: string;
@@ -98,101 +100,127 @@ const UserMaster: React.FC = () => {
         setError(null);
     };
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <div className={styles.emptyState}>Loading...</div>;
 
     return (
-        <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">ユーザー管理</h2>
-                <Button onClick={() => setShowModal(true)} icon={<Plus size={16} />}>
+        <div className={styles.container}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>ユーザー管理</h1>
+                    <p className={styles.subtitle}>システム利用者の管理・登録</p>
+                </div>
+                <Button onClick={() => setShowModal(true)} icon={<Plus size={18} />}>
                     新規ユーザー登録
                 </Button>
             </div>
 
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+            <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                    <thead>
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名前</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">メールアドレス</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">権限 (Role)</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録日</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            <th>名前</th>
+                            <th>メールアドレス</th>
+                            <th>権限 (Role)</th>
+                            <th>登録日</th>
+                            <th style={{ textAlign: 'right' }}>操作</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody>
                         {users.map((user) => (
                             <tr key={user.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name || '-'}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
+                                <td style={{ fontWeight: 500 }}>{user.name || '-'}</td>
+                                <td>{user.email}</td>
+                                <td>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '0.2rem 0.6rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        backgroundColor: user.role === 'admin' ? '#f3e8ff' : '#d1fae5',
+                                        color: user.role === 'admin' ? '#7e22ce' : '#047857'
+                                    }}>
                                         {user.role}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {new Date(user.createdAt).toLocaleDateString()}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button
-                                        onClick={() => handleDelete(user.id, user.email)}
-                                        className="text-red-600 hover:text-red-900 ml-4"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                <td>
+                                    <div className={styles.actions} style={{ justifyContent: 'flex-end' }}>
+                                        <button
+                                            onClick={() => handleDelete(user.id, user.email)}
+                                            className={`${styles.actionButton} ${styles.deleteButton}`}
+                                            title="削除"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
+                        {users.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className={styles.emptyState}>データがありません</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
 
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-bold mb-4">新規ユーザー登録</h3>
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modal} style={{ maxWidth: '500px' }}>
+                        <div className={styles.modalHeader}>
+                            <h2>新規ユーザー登録</h2>
+                            <button className={styles.closeButton} onClick={() => setShowModal(false)}>
+                                <X size={24} />
+                            </button>
+                        </div>
 
                         {error && (
-                            <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">
+                            <div style={{
+                                padding: '1rem',
+                                margin: '0 1.5rem',
+                                backgroundColor: '#fef2f2',
+                                color: '#dc2626',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.875rem'
+                            }}>
                                 {error}
                             </div>
                         )}
 
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">メールアドレス</label>
-                                <input
+                        <form onSubmit={handleCreate} className={styles.form}>
+                            <div className={styles.formGroup}>
+                                <Input
+                                    label="メールアドレス (必須)"
                                     type="email"
                                     required
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">パスワード</label>
-                                <input
+                            <div className={styles.formGroup}>
+                                <Input
+                                    label="パスワード (必須: 6文字以上)"
                                     type="password"
                                     required
                                     minLength={6}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">名前 (任意)</label>
-                                <input
+                            <div className={styles.formGroup}>
+                                <Input
+                                    label="名前"
                                     type="text"
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                                     value={name}
                                     onChange={e => setName(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">権限</label>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>権限</label>
                                 <select
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                    className={styles.select}
                                     value={role}
                                     onChange={e => setRole(e.target.value)}
                                 >
@@ -201,11 +229,11 @@ const UserMaster: React.FC = () => {
                                 </select>
                             </div>
 
-                            <div className="flex justify-end space-x-3 mt-6">
-                                <Button type="button" variant="ghost" onClick={() => setShowModal(false)}>
+                            <div className={styles.formActions}>
+                                <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>
                                     キャンセル
                                 </Button>
-                                <Button type="submit" disabled={isSubmitting}>
+                                <Button type="submit" disabled={isSubmitting} icon={<Save size={16} />}>
                                     {isSubmitting ? '登録中...' : '登録'}
                                 </Button>
                             </div>
