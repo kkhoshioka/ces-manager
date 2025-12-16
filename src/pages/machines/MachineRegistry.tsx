@@ -7,6 +7,7 @@ import type { CustomerMachine } from '../../types/customer';
 import MachineForm from './MachineForm';
 import Button from '../../components/ui/Button';
 import styles from './MachineRegistry.module.css';
+import { API_BASE_URL } from '../../config';
 
 const MachineRegistry: React.FC = () => {
     const [machines, setMachines] = useState<CustomerMachine[]>([]);
@@ -17,7 +18,7 @@ const MachineRegistry: React.FC = () => {
 
     const fetchMachines = useCallback(async () => {
         try {
-            const res = await axios.get<CustomerMachine[]>('/api/machines');
+            const res = await axios.get<CustomerMachine[]>(`${API_BASE_URL}/machines`);
             // Safe check to ensure data is array
             const data = Array.isArray(res.data) ? res.data : [];
             setMachines(data);

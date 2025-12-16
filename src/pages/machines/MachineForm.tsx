@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Textarea from '../../components/ui/Textarea';
 import styles from './MachineRegistry.module.css';
+import { API_BASE_URL } from '../../config';
 
 interface Props {
     isOpen: boolean;
@@ -31,8 +32,8 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
         const loadMasters = async () => {
             try {
                 const [custRes, catRes] = await Promise.all([
-                    axios.get<Customer[]>('/api/customers'),
-                    axios.get<{ id: number; section: string; name: string; code: string | null }[]>('/api/categories')
+                    axios.get<Customer[]>(`${API_BASE_URL}/customers`),
+                    axios.get<{ id: number; section: string; name: string; code: string | null }[]>(`${API_BASE_URL}/categories`)
                 ]);
 
                 setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
@@ -60,9 +61,9 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
 
         try {
             if (machine) {
-                await axios.put(`/api/machines/${machine.id}`, payload);
+                await axios.put(`${API_BASE_URL}/machines/${machine.id}`, payload);
             } else {
-                await axios.post('/api/machines', payload);
+                await axios.post(`${API_BASE_URL}/machines`, payload);
             }
             onSave();
         } catch (error) {

@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import type { CustomerMachine } from '../../types/customer';
 import type { Repair } from '../../types/repair';
 import styles from './MachineRegistry.module.css';
+import { API_BASE_URL } from '../../config';
 
 const MachineDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -20,8 +21,8 @@ const MachineDetail: React.FC = () => {
         const fetchData = async () => {
             try {
                 const [machineRes, historyRes] = await Promise.all([
-                    axios.get<CustomerMachine>(`/api/machines/${id}`),
-                    axios.get<Repair[]>(`/api/machines/${id}/history`)
+                    axios.get<CustomerMachine>(`${API_BASE_URL}/machines/${id}`),
+                    axios.get<Repair[]>(`${API_BASE_URL}/machines/${id}/history`)
                 ]);
                 setMachine(machineRes.data);
                 setHistory(historyRes.data);
