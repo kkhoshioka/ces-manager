@@ -28,8 +28,23 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
 
     useEffect(() => {
         // Fetch masters
-        axios.get<Customer[]>('/api/customers').then(res => setCustomers(res.data));
-        axios.get<{ id: number; section: string; name: string; code: string | null }[]>('/api/categories').then(res => setCategories(res.data));
+        const loadMasters = async () => {
+            try {
+                const [custRes, catRes] = await Promise.all([
+                    axios.get<Customer[]>('/api/customers'),
+                    axios.get<{ id: number; section: string; name: string; code: string | null }[]>('/api/categories')
+                ]);
+
+                setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
+                setCategories(Array.isArray(catRes.data) ? catRes.data : []);
+            } catch (error) {
+                console.error('Failed to load form dependencies', error);
+                // Fallback to empty arrays
+                setCustomers([]);
+                setCategories([]);
+            }
+        };
+        loadMasters();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
