@@ -18,10 +18,14 @@ const MachineRegistry: React.FC = () => {
     const fetchMachines = useCallback(async () => {
         try {
             const res = await axios.get<CustomerMachine[]>('/api/machines');
-            setMachines(res.data);
-            setFilteredMachines(res.data);
+            // Safe check to ensure data is array
+            const data = Array.isArray(res.data) ? res.data : [];
+            setMachines(data);
+            setFilteredMachines(data);
         } catch (error) {
             console.error('Failed to fetch machines', error);
+            setMachines([]);
+            setFilteredMachines([]);
         }
     }, []);
 
