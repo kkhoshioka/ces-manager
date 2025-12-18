@@ -103,6 +103,7 @@ const Repairs: React.FC = () => {
         lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other';
         description: string;
         supplier?: string;
+        supplierId?: number | null;
         remarks?: string;
         quantity: number;
         unitPrice: number; // Sales Price
@@ -155,6 +156,7 @@ const Repairs: React.FC = () => {
             lineType: type,
             description: '',
             supplier: '',
+            supplierId: null,
             remarks: '',
             quantity: 1,
             unitPrice: 0,

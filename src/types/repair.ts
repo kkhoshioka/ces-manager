@@ -9,6 +9,7 @@ export interface ProjectDetail {
     lineType: 'labor' | 'part' | 'outsourcing' | 'other' | 'travel';
     description: string;
     supplier?: string | null;
+    supplierId?: number | null;
     remarks?: string | null;
     quantity: number;
     unitCost: number;

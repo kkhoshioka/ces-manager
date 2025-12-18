@@ -1027,7 +1027,7 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             },
             include: {
                 details: {
-                    include: { supplierObj: true }
+                    include: { supplierObj: true } as any
                 }
             }
         });
@@ -1042,7 +1042,7 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
                 // Prefer Master Supplier Name if linked
                 const name = (detail as any).supplierObj?.name || detail.supplier;
 
-                if (name && detail.unitCost > 0) {
+                if (name && Number(detail.unitCost) > 0) {
                     if (!supplierStats[name]) {
                         supplierStats[name] = { totalCost: 0, count: 0 };
                     }
@@ -1096,7 +1096,7 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                 customer: true,
                 customerMachine: true,
                 details: {
-                    include: { supplierObj: true }
+                    include: { supplierObj: true } as any
                 }
             }
         });
@@ -1106,7 +1106,7 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
         projects.forEach(project => {
             project.details.forEach(detail => {
                 const name = (detail as any).supplierObj?.name || detail.supplier;
-                if (name === supplier && detail.unitCost > 0) {
+                if (name === supplier && Number(detail.unitCost) > 0) {
                     details.push({
                         id: detail.id,
                         date: project.createdAt, // Or completionDate? Using createdAt for consistency
