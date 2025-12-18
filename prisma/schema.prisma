@@ -104,6 +104,7 @@ model ProjectDetail {
   lineType        String   // labor, part, outsourcing, other, travel
   description     String
   supplier        String?
+  supplierId      Int?     // Link to Supplier Master
   remarks         String?
   
   quantity        Decimal  @default(1)
@@ -125,6 +126,7 @@ model ProjectDetail {
   project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   product         Product? @relation(fields: [productId], references: [id])
   category        ProductCategory? @relation(fields: [productCategoryId], references: [id])
+  supplierObj     Supplier? @relation(fields: [supplierId], references: [id])
 }
 
 // 6. Project Photos
@@ -178,6 +180,8 @@ model Supplier {
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  projectDetails ProjectDetail[]
 }
 
 

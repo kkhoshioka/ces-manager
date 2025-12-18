@@ -346,6 +346,7 @@ const Repairs: React.FC = () => {
                         lineType: d.lineType,
                         description: d.description,
                         supplier: d.supplier,
+                        supplierId: d.supplierId || (suppliers.find(s => s.name === d.supplier)?.id) || null, // Resolve ID if not set
                         remarks: d.remarks,
                         quantity: safeQty,
                         unitPrice: safePrice,

@@ -318,15 +318,27 @@ app.put('/api/projects/:id', async (req, res) => {
                 });
 
                 await tx.projectDetail.createMany({
-                    data: details.map((d: any) => ({
-                        ...d,
-                        quantity: Number(d.quantity) || 0,
-                        unitPrice: Number(d.unitPrice) || 0,
-                        unitCost: Number(d.unitCost) || 0,
-                        amountCost: Number(d.amountCost) || 0,
-                        amountSales: Number(d.amountSales) || 0,
-                        projectId: Number(id)
-                    }))
+                    data: details.map((detail: any) => {
+                        const quantity = Number(detail.quantity) || 0;
+                        const unitCost = Number(detail.unitCost) || 0;
+                        const unitPrice = Number(detail.unitPrice) || 0;
+
+                        return {
+                            lineType: detail.lineType,
+                            description: detail.description,
+                            supplier: detail.supplier,
+                            supplierId: detail.supplierId ? Number(detail.supplierId) : null, // New field
+                            remarks: detail.remarks,
+                            quantity: quantity,
+                            unitCost: unitCost,
+                            unitPrice: unitPrice,
+                            amountCost: quantity * unitCost,
+                            amountSales: quantity * unitPrice,
+                            productId: detail.productId ? Number(detail.productId) : null,
+                            productCategoryId: detail.productCategoryId ? Number(detail.productCategoryId) : null,
+                            projectId: Number(id)
+                        };
+                    })
                 });
             }
 
@@ -1014,7 +1026,9 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
                 createdAt: { gte: startDate, lte: endDate }
             },
             include: {
-                details: true
+                details: {
+                    include: { supplierObj: true }
+                }
             }
         });
 
@@ -1025,8 +1039,10 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             project.details.forEach(detail => {
                 // Filter for filtering relevant costs (ignoring internal labor if unitCost is 0, but lineType check is better)
                 // Actually user wants "Supplier" costs. So detail.supplier must be present.
-                if (detail.supplier && detail.unitCost > 0) {
-                    const name = detail.supplier;
+                // Prefer Master Supplier Name if linked
+                const name = (detail as any).supplierObj?.name || detail.supplier;
+
+                if (name && detail.unitCost > 0) {
                     if (!supplierStats[name]) {
                         supplierStats[name] = { totalCost: 0, count: 0 };
                     }
@@ -1079,7 +1095,9 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
             include: {
                 customer: true,
                 customerMachine: true,
-                details: true
+                details: {
+                    include: { supplierObj: true }
+                }
             }
         });
 
@@ -1087,7 +1105,8 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
 
         projects.forEach(project => {
             project.details.forEach(detail => {
-                if (detail.supplier === supplier && detail.unitCost > 0) {
+                const name = (detail as any).supplierObj?.name || detail.supplier;
+                if (name === supplier && detail.unitCost > 0) {
                     details.push({
                         id: detail.id,
                         date: project.createdAt, // Or completionDate? Using createdAt for consistency
