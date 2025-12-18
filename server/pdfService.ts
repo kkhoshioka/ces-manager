@@ -11,8 +11,8 @@ const __dirname = path.dirname(__filename);
 // console.log('Font Exists:', fs.existsSync(fontPath));
 
 // Define font paths properly
-const notoSansRegular = path.join(__dirname, '../node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-400-normal.woff');
-const notoSansBold = path.join(__dirname, '../node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-700-normal.woff');
+const notoSansRegular = path.join(__dirname, 'fonts/NotoSansJP-Regular.otf');
+const notoSansBold = path.join(__dirname, 'fonts/NotoSansJP-Bold.otf');
 
 const fonts = {
     Roboto: {
