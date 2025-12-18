@@ -1056,6 +1056,64 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
     }
 });
 
+// Report: Supplier Monthly Details (Drill-down)
+app.get('/api/dashboard/supplier-details', async (req, res) => {
+    try {
+        const { year, month, supplier } = req.query;
+
+        if (!year || !supplier) {
+            return res.status(400).json({ error: 'Year and Supplier are required' });
+        }
+
+        const startDate = new Date(Number(year), month ? Number(month) - 1 : 0, 1);
+        const endDate = month
+            ? new Date(Number(year), Number(month), 0, 23, 59, 59)
+            : new Date(Number(year), 11, 31, 23, 59, 59);
+
+        // Fetch project details directly or via projects
+        // We need project info (Customer, Machine) as well.
+        const projects = await prisma.project.findMany({
+            where: {
+                createdAt: { gte: startDate, lte: endDate }
+            },
+            include: {
+                customer: true,
+                customerMachine: true,
+                details: true
+            }
+        });
+
+        const details: any[] = [];
+
+        projects.forEach(project => {
+            project.details.forEach(detail => {
+                if (detail.supplier === supplier && detail.unitCost > 0) {
+                    details.push({
+                        id: detail.id,
+                        date: project.createdAt, // Or completionDate? Using createdAt for consistency
+                        customerName: project.customer?.name || '不明',
+                        machineModel: project.machineModel || project.customerMachine?.machineModel || '-',
+                        serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '-',
+                        description: detail.description,
+                        quantity: Number(detail.quantity),
+                        unitCost: Number(detail.unitCost),
+                        amount: Number(detail.quantity) * Number(detail.unitCost)
+                    });
+                }
+            });
+        });
+
+        // Sort by date desc
+        details.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        res.json(details);
+
+    } catch (error) {
+        console.error('Supplier Details Error:', error);
+        res.status(500).json({ error: 'Failed to fetch supplier details' });
+    }
+});
+
 
 
 // Serve static files from the React app

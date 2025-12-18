@@ -379,6 +379,11 @@
     border-top: 2px solid var(--color-border);
 }
 
+.detailRow:hover {
+    background-color: transparent !important;
+    cursor: default !important;
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
