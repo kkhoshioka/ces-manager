@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Repairs from './pages/Repairs';
 import Inventory from './pages/Inventory';
 import Masters from './pages/Masters';
+import SupplierMonthlyReport from './pages/dashboard/SupplierMonthlyReport';
 import MachineRegistry from './pages/machines/MachineRegistry';
 import MachineDetail from './pages/machines/MachineDetail';
 import Login from './pages/Login';
@@ -67,6 +68,7 @@ function App() {
               <Route path="masters" element={<ProtectedRoute allowedRoles={['admin']}><Masters /></ProtectedRoute>} />
               <Route path="machines" element={<ProtectedRoute allowedRoles={['admin']}><MachineRegistry /></ProtectedRoute>} />
               <Route path="machines/:id" element={<ProtectedRoute allowedRoles={['admin']}><MachineDetail /></ProtectedRoute>} />
+              <Route path="reports/supplier-costs" element={<ProtectedRoute allowedRoles={['admin']}><SupplierMonthlyReport /></ProtectedRoute>} />
             </Route>
 
             {/* Catch all redirect */}

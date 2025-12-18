@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Package, X, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Wrench, Package, X, Settings, LogOut, CreditCard } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -77,6 +77,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             >
               <Package size={20} />
               <span>機材台帳</span>
+            </NavLink>
+            <NavLink
+              to="/reports/supplier-costs"
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+              onClick={onClose}
+            >
+              <CreditCard size={20} />
+              <span>仕入先別集計</span>
             </NavLink>
           </>
         )}

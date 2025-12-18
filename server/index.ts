@@ -992,6 +992,70 @@ app.delete('/api/suppliers/:id', async (req, res) => {
     }
 });
 
+// Report: Supplier Monthly Costs
+app.get('/api/dashboard/supplier-costs', async (req, res) => {
+    try {
+        const { year, month } = req.query;
+
+        if (!year) {
+            return res.status(400).json({ error: 'Year is required' });
+        }
+
+        const startDate = new Date(Number(year), month ? Number(month) - 1 : 0, 1);
+        const endDate = month
+            ? new Date(Number(year), Number(month), 0, 23, 59, 59)
+            : new Date(Number(year), 11, 31, 23, 59, 59);
+
+        // Fetch projects created (or potentially use a purchaseDate if available, using createdAt for now)
+        // actually for costs, we usually look at when it was accrued. Project creation or completion?
+        // Let's use createdAt for simplicity as per requirement context usually implies "this month's activity"
+        const projects = await prisma.project.findMany({
+            where: {
+                createdAt: { gte: startDate, lte: endDate }
+            },
+            include: {
+                details: true
+            }
+        });
+
+        // Aggregate
+        const supplierStats: Record<string, { totalCost: number; count: number }> = {};
+
+        projects.forEach(project => {
+            project.details.forEach(detail => {
+                // Filter for filtering relevant costs (ignoring internal labor if unitCost is 0, but lineType check is better)
+                // Actually user wants "Supplier" costs. So detail.supplier must be present.
+                if (detail.supplier && detail.unitCost > 0) {
+                    const name = detail.supplier;
+                    if (!supplierStats[name]) {
+                        supplierStats[name] = { totalCost: 0, count: 0 };
+                    }
+
+                    const qty = Number(detail.quantity);
+                    const cost = Number(detail.unitCost);
+
+                    supplierStats[name].totalCost += (qty * cost);
+                    supplierStats[name].count += 1;
+                }
+            });
+        });
+
+        const result = Object.entries(supplierStats)
+            .map(([name, stats]) => ({
+                name,
+                totalCost: stats.totalCost,
+                count: stats.count
+            }))
+            .sort((a, b) => b.totalCost - a.totalCost);
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('Supplier Report Error:', error);
+        res.status(500).json({ error: 'Failed to fetch supplier report' });
+    }
+});
+
 
 
 // Serve static files from the React app
