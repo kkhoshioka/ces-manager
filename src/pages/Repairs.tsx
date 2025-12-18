@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench } from 'lucide-react';
-import type { Repair, NewRepair } from '../types/repair';
+import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera } from 'lucide-react';
+import type { Repair } from '../types/repair';
 import { RepairService } from '../utils/repairService';
 import { customerService } from '../utils/customerService';
+import { supplierService } from '../utils/supplierService';
 import { API_BASE_URL } from '../config';
 import Button from '../components/ui/Button';
-import { Camera } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
 import styles from './Repairs.module.css';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
+import type { Customer, CustomerMachine } from '../types/customer';
+import type { ProjectPhoto, RepairStatus } from '../types/repair';
+import type { Supplier } from '../types/supplier';
+import type { ProductCategory } from '../types/inventory';
 
 // Status helper
 const getStatusStyle = (status: string) => {
@@ -47,7 +51,14 @@ const Repairs: React.FC = () => {
 
     // Form State
     const [formType, setFormType] = useState<'repair' | 'sales' | 'inspection' | 'maintenance'>('repair');
-    const [formState, setFormState] = useState({
+    const [formState, setFormState] = useState<{
+        customerName: string;
+        machineModel: string;
+        serialNumber: string;
+        issueDescription: string;
+        notes: string;
+        status: RepairStatus;
+    }>({
         customerName: '',
         machineModel: '',
         serialNumber: '',
@@ -57,8 +68,9 @@ const Repairs: React.FC = () => {
     });
 
     // Selection Data
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [allMachines, setAllMachines] = useState<any[]>([]);
+    // Selection Data
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [allMachines, setAllMachines] = useState<CustomerMachine[]>([]);
 
     // Derived state for available machines based on selected customer name
     const availableMachines = useMemo(() => {
@@ -81,8 +93,8 @@ const Repairs: React.FC = () => {
     }, []);
 
     // Category State
-    const [categories, setCategories] = useState<any[]>([]);
-    const [suppliers, setSuppliers] = useState<any[]>([]);
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
     useEffect(() => {
         // Fetch Categories
@@ -99,7 +111,7 @@ const Repairs: React.FC = () => {
     }, []);
 
     // Details State
-    type DetailItem = {
+    interface DetailItem {
         lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other';
         description: string;
         supplier?: string;
@@ -108,11 +120,16 @@ const Repairs: React.FC = () => {
         quantity: number;
         unitPrice: number; // Sales Price
         unitCost: number;  // Cost Price
+        productId?: number | null;
         productCategoryId?: number | null; // Selected Category ID
-    };
+        section?: string; // Helper for UI
+        amountCost: number;
+        amountSales: number;
+        originalIndex: number;
+    }
 
     const [details, setDetails] = useState<DetailItem[]>([]);
-    const [photos, setPhotos] = useState<any[]>([]);
+    const [photos, setPhotos] = useState<ProjectPhoto[]>([]);
     const [pendingPhotos, setPendingPhotos] = useState<File[]>([]); // New state for buffering
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,8 +168,10 @@ const Repairs: React.FC = () => {
         }
     };
 
+    const nextIdRef = React.useRef(0);
     const addDetail = (type: DetailItem['lineType']) => {
-        setDetails([...details, {
+        nextIdRef.current += 1;
+        setDetails(prev => [...prev, {
             lineType: type,
             description: '',
             supplier: '',
@@ -160,7 +179,10 @@ const Repairs: React.FC = () => {
             remarks: '',
             quantity: 1,
             unitPrice: 0,
-            unitCost: 0
+            unitCost: 0,
+            amountCost: 0,
+            amountSales: 0,
+            originalIndex: nextIdRef.current
         }]);
     };
 
@@ -168,7 +190,7 @@ const Repairs: React.FC = () => {
         setDetails(details.filter((_, i) => i !== index));
     };
 
-    const handleDetailChange = (index: number, field: keyof DetailItem, value: any) => {
+    const handleDetailChange = (index: number, field: keyof DetailItem, value: number | string | null) => {
         setDetails(prevDetails => {
             const newDetails = [...prevDetails];
             const item = { ...newDetails[index] }; // Copy item to avoid mutation of prev state
@@ -176,12 +198,15 @@ const Repairs: React.FC = () => {
             if (field === 'quantity' || field === 'unitPrice' || field === 'unitCost') {
                 const strVal = String(value).replace(/,/g, '');
                 const numVal = Number(strVal);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (item as any)[field] = isNaN(numVal) ? 0 : numVal;
             } else if (field === 'productCategoryId') {
                 // Ensure 0 becomes null (safe for optional relation)
                 const numVal = Number(value);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (item as any)[field] = (numVal === 0 || isNaN(numVal)) ? null : numVal;
             } else {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (item as any)[field] = value;
             }
 
@@ -252,9 +277,10 @@ const Repairs: React.FC = () => {
         }
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormState(prev => ({ ...prev, [name]: value }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setFormState(prev => ({ ...prev, [name]: value as any }));
     };
 
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -330,7 +356,28 @@ const Repairs: React.FC = () => {
                 customerMachineId = machine.id;
             }
 
-            const projectData: any = {
+            // Supplier Auto-Registration Logic
+            const uniqueNewSuppliers = Array.from(new Set(
+                details
+                    .filter(d => d.supplier && !suppliers.some(s => s.name === d.supplier))
+                    .map(d => d.supplier as string)
+            ));
+
+            let currentSuppliers = [...suppliers];
+
+            if (uniqueNewSuppliers.length > 0) {
+                try {
+                    const newSupplierPromises = uniqueNewSuppliers.map(name => supplierService.createSupplier(name));
+                    const createdSuppliers = await Promise.all(newSupplierPromises);
+                    currentSuppliers = [...currentSuppliers, ...createdSuppliers];
+                    setSuppliers(currentSuppliers); // Update local state
+                } catch (error) {
+                    console.error('Failed to auto-register suppliers', error);
+                    // Continue saving even if supplier registration fails (names will be text-only)
+                }
+            }
+
+            const projectData = {
                 type: formType, // Include type
                 customerId: customer.id,
                 customerMachineId: customerMachineId,
@@ -344,16 +391,37 @@ const Repairs: React.FC = () => {
                     const safePrice = isNaN(Number(d.unitPrice)) ? 0 : Number(d.unitPrice);
                     const safeCost = isNaN(Number(d.unitCost)) ? 0 : Number(d.unitCost);
 
+                    // Sanitize Product Category ID
+                    // If the selected ID is not in the current list of categories, null it out
+                    let validCategoryId = d.productCategoryId;
+                    if (validCategoryId && !categories.some(c => c.id === validCategoryId)) {
+                        console.warn(`[Auto-Fix] Invalid Category ID ${validCategoryId} found. Clearing.`);
+                        validCategoryId = null;
+                    }
+
+                    // Resolve Supplier ID
+                    // If ID is present but not in list, try to match by name, or clear if name doesn't match
+                    let validSupplierId = d.supplierId;
+                    const matchedSupplier = currentSuppliers.find(s => s.name === d.supplier);
+
+                    if (matchedSupplier) {
+                        validSupplierId = matchedSupplier.id;
+                    } else if (validSupplierId && !currentSuppliers.some(s => s.id === validSupplierId)) {
+                        // ID exists but not found in list, and name didn't match a valid supplier
+                        console.warn(`[Auto-Fix] Invalid Supplier ID ${validSupplierId} found. Clearing.`);
+                        validSupplierId = null;
+                    }
+
                     return {
                         lineType: d.lineType,
                         description: d.description,
                         supplier: d.supplier,
-                        supplierId: d.supplierId || (suppliers.find(s => s.name === d.supplier)?.id) || null, // Resolve ID if not set
+                        supplierId: validSupplierId,
                         remarks: d.remarks,
                         quantity: safeQty,
                         unitPrice: safePrice,
                         unitCost: safeCost,
-                        productCategoryId: d.productCategoryId, // Pass to backend
+                        productCategoryId: validCategoryId, // Pass to backend
                         amountCost: safeQty * safeCost,
                         amountSales: safeQty * safePrice
                     };
@@ -363,9 +431,11 @@ const Repairs: React.FC = () => {
             let projectId = selectedProjectId;
 
             if (selectedProjectId) {
-                await RepairService.update(selectedProjectId, projectData);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await RepairService.update(selectedProjectId, projectData as any);
             } else {
-                const newProject = await RepairService.add(projectData as NewRepair);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const newProject = await RepairService.add(projectData as any);
                 projectId = newProject.id;
             }
 
@@ -418,7 +488,7 @@ const Repairs: React.FC = () => {
         }
     };
 
-    const handleRowClick = async (project: any) => {
+    const handleRowClick = async (project: Repair) => {
         try {
             const fullProject = await RepairService.getById(project.id);
             if (fullProject) {
@@ -436,10 +506,11 @@ const Repairs: React.FC = () => {
                     serialNumber: fullProject.serialNumber || '',
                     issueDescription: issue,
                     notes: extraNotes,
-                    status: fullProject.status || 'received'
+                    status: (fullProject.status as RepairStatus) || 'received'
                 });
 
                 if (fullProject.details) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     setDetails(fullProject.details.map((d: any) => ({
                         lineType: d.lineType,
                         description: d.description,
@@ -450,7 +521,7 @@ const Repairs: React.FC = () => {
                         unitCost: Number(d.unitCost),
                         productCategoryId: d.productCategoryId || (d.product ? d.product.categoryId : null), // Try to resolve category
                         section: d.category ? d.category.section : (d.product && d.product.productCategory ? d.product.productCategory.section : '') // Helper for UI
-                    })));
+                    } as DetailItem)));
                 } else {
                     setDetails([]);
                 }
@@ -555,7 +626,7 @@ const Repairs: React.FC = () => {
                             //    So, I WILL ADD `tempSection` to the `DetailItem` type or just `section` field?
                             //    Adding `section` field to `DetailItem` is safe. It won't be saved to DB directly (or ignored).
 
-                            const currentSection = (detail as any).section || selectedCategory?.section || '';
+                            const currentSection = detail.section || selectedCategory?.section || '';
 
                             return (
                                 <tr key={detail.originalIndex} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -566,6 +637,7 @@ const Repairs: React.FC = () => {
                                                 value={currentSection}
                                                 onChange={(e) => {
                                                     const newSec = e.target.value;
+                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                     handleDetailChange(detail.originalIndex, 'section' as any, newSec);
                                                     // Also clear category ID if section changes
                                                     handleDetailChange(detail.originalIndex, 'productCategoryId', null);
@@ -586,6 +658,7 @@ const Repairs: React.FC = () => {
                                                     handleDetailChange(detail.originalIndex, 'productCategoryId', val);
                                                     // Auto update section if category selected directly (if we allowed it)
                                                     const cat = categories.find(c => c.id === val);
+                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                     if (cat) handleDetailChange(detail.originalIndex, 'section' as any, cat.section);
                                                 }}
                                                 disabled={!currentSection}
@@ -625,13 +698,13 @@ const Repairs: React.FC = () => {
                                     </td>
                                     <td style={{ padding: '0.25rem' }}>
                                         <div className={styles.currencyWrapper}>
-                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitCost} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
                                         </div>
                                     </td>
                                     <td style={{ padding: '0.25rem', textAlign: 'right' }}>{costTotal.toLocaleString()}</td>
                                     <td style={{ padding: '0.25rem' }}>
                                         <div className={styles.currencyWrapper}>
-                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitPrice} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
                                         </div>
                                     </td>
                                     <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}</td>
@@ -726,18 +799,18 @@ const Repairs: React.FC = () => {
                                             fontSize: '0.75rem',
                                             padding: '2px 8px',
                                             borderRadius: '12px',
-                                            backgroundColor: (project as any).type === 'sales' ? '#e0f2fe' :
-                                                (project as any).type === 'inspection' ? '#f3e8ff' :
-                                                    (project as any).type === 'maintenance' ? '#ffedd5' : '#fef9c3',
-                                            color: (project as any).type === 'sales' ? '#0369a1' :
-                                                (project as any).type === 'inspection' ? '#7e22ce' :
-                                                    (project as any).type === 'maintenance' ? '#c2410c' : '#854d0e',
+                                            backgroundColor: project.type === 'sales' ? '#e0f2fe' :
+                                                project.type === 'inspection' ? '#f3e8ff' :
+                                                    project.type === 'maintenance' ? '#ffedd5' : '#fef9c3',
+                                            color: project.type === 'sales' ? '#0369a1' :
+                                                project.type === 'inspection' ? '#7e22ce' :
+                                                    project.type === 'maintenance' ? '#c2410c' : '#854d0e',
                                             fontWeight: 600,
                                             whiteSpace: 'nowrap'
                                         }}>
-                                            {(project as any).type === 'sales' ? '販売' :
-                                                (project as any).type === 'inspection' ? '点検' :
-                                                    (project as any).type === 'maintenance' ? '整備' : '修理'}
+                                            {project.type === 'sales' ? '販売' :
+                                                project.type === 'inspection' ? '点検' :
+                                                    project.type === 'maintenance' ? '整備' : '修理'}
                                         </span>
                                     </td>
                                     <td><StatusBadge status={project.status || 'received'} /></td>
@@ -775,6 +848,7 @@ const Repairs: React.FC = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <select
                                     value={formType}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     onChange={(e) => setFormType(e.target.value as any)}
                                     className="border rounded p-1 text-sm form-select"
                                     style={{
@@ -870,7 +944,7 @@ const Repairs: React.FC = () => {
                                         <select
                                             name="status"
                                             value={formState.status}
-                                            onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value }))}
+                                            onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
                                             className="w-full border rounded-md p-2 text-sm font-bold"
                                             style={{
                                                 backgroundColor: getStatusStyle(formState.status).bg,

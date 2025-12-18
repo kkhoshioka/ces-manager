@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -63,7 +64,7 @@ app.get('/api/customers', async (req, res) => {
             include: { customerMachines: true }
         });
         res.json(customers);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to fetch customers' });
     }
 });
@@ -74,7 +75,7 @@ app.post('/api/customers', async (req, res) => {
             data: req.body
         });
         res.json(customer);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to create customer' });
     }
 });
@@ -87,7 +88,7 @@ app.put('/api/customers/:id', async (req, res) => {
             data: req.body
         });
         res.json(customer);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to update customer' });
     }
 });
@@ -99,8 +100,72 @@ app.delete('/api/customers/:id', async (req, res) => {
             where: { id: Number(id) }
         });
         res.json({ success: true });
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to delete customer' });
+    }
+});
+
+
+// --- Machines ---
+app.get('/api/machines', async (req, res) => {
+    try {
+        const machines = await prisma.customerMachine.findMany({
+            include: { customer: true, category: true }
+        });
+        res.json(machines);
+    } catch (error) {
+        console.error('Failed to fetch machines:', error);
+        res.status(500).json({ error: 'Failed to fetch machines' });
+    }
+});
+
+app.post('/api/machines', async (req, res) => {
+    try {
+        const { productCategoryId, ...data } = req.body;
+        const machine = await prisma.customerMachine.create({
+            data: {
+                ...data,
+                productCategoryId: productCategoryId ? Number(productCategoryId) : null
+            }
+        });
+        res.json(machine);
+    } catch (error) {
+        console.error('Failed to create machine:', error);
+        res.status(500).json({
+            error: 'Failed to create machine',
+            details: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+
+app.put('/api/machines/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { productCategoryId, ...data } = req.body;
+        const machine = await prisma.customerMachine.update({
+            where: { id: Number(id) },
+            data: {
+                ...data,
+                productCategoryId: productCategoryId ? Number(productCategoryId) : null
+            }
+        });
+        res.json(machine);
+    } catch (error) {
+        console.error('Failed to update machine:', error);
+        res.status(500).json({ error: 'Failed to update machine' });
+    }
+});
+
+app.delete('/api/machines/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.customerMachine.delete({
+            where: { id: Number(id) }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to delete machine:', error);
+        res.status(500).json({ error: 'Failed to delete machine' });
     }
 });
 
@@ -113,12 +178,11 @@ app.get('/api/categories', async (req, res) => {
             // orderBy: [{ section: 'asc' }, { code: 'asc' }] // Temporarily removed due to schema sync issue
         });
         res.json(categories);
-    } catch (error: any) {
+    } catch (error) {
         console.error('Failed to fetch categories:', error);
         res.status(500).json({
             error: 'Failed to fetch categories',
-            details: error.message,
-            stack: error.stack
+            details: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 });
@@ -130,7 +194,7 @@ app.post('/api/categories', async (req, res) => {
             data: { section, code, name }
         });
         res.json(category);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to create category' });
     }
 });
@@ -144,7 +208,7 @@ app.put('/api/categories/:id', async (req, res) => {
             data: { section, code, name }
         });
         res.json(category);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to update category' });
     }
 });
@@ -156,8 +220,8 @@ app.delete('/api/categories/:id', async (req, res) => {
             where: { id: Number(id) }
         });
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete category' });
+    } catch {
+        res.status(500).json({ error: 'Failed to delete product category' });
     }
 });
 
@@ -179,8 +243,8 @@ app.post('/api/products', async (req, res) => {
             }
         });
         res.json(product);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create product' });
+    } catch {
+        res.status(500).json({ error: 'Failed to create part' });
     }
 });
 
@@ -204,8 +268,8 @@ app.put('/api/products/:id', async (req, res) => {
             }
         });
         res.json(product);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update product' });
+    } catch {
+        res.status(500).json({ error: 'Failed to update part' });
     }
 });
 
@@ -217,8 +281,8 @@ app.get('/api/products', async (req, res) => {
             }
         });
         res.json(products);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch products' });
+    } catch {
+        res.status(500).json({ error: 'Failed to fetch parts' });
     }
 });
 
@@ -231,8 +295,8 @@ app.delete('/api/products/:id', async (req, res) => {
             where: { id: Number(id) }
         });
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete product' });
+    } catch {
+        res.status(500).json({ error: 'Failed to delete part' });
     }
 });
 
@@ -248,7 +312,7 @@ app.get('/api/projects', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
         res.json(projects);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to fetch projects' });
     }
 });
@@ -265,12 +329,8 @@ app.post('/api/projects', async (req, res) => {
             }
         });
         res.json(project);
-    } catch (error: any) {
+    } catch (error) {
         console.error('Failed to create project', error);
-        import('fs').then(fs => {
-            // Basic logging to file (optional in cloud, but helpful for debug)
-            // fs.appendFileSync('server_error.log', ...);
-        });
         res.status(500).json({ error: 'Failed to create project' });
     }
 });
@@ -289,57 +349,95 @@ app.get('/api/projects/:id', async (req, res) => {
         });
         if (!project) return res.status(404).json({ error: 'Project not found' });
         res.json(project);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch project' });
+    } catch {
+        res.status(500).json({ error: 'Failed to fetch inventory' });
     }
 });
 
 app.put('/api/projects/:id', async (req, res) => {
+    console.log(`[DEBUG] Update Project Start: ID=${req.params.id}`);
     try {
         const { id } = req.params;
         const { customerId, customerMachineId, details, ...data } = req.body;
 
+        // Validation: Check for Foreign Keys availability
+        if (details && Array.isArray(details)) {
+            const categoryIds = details
+                .map((d: any) => d.productCategoryId)
+                .filter((id: any) => id != null)
+                .map((id: any) => Number(id))
+                .filter((id: number) => !isNaN(id));
+
+            if (categoryIds.length > 0) {
+                const validCategories = await prisma.productCategory.findMany({
+                    where: { id: { in: categoryIds } },
+                    select: { id: true }
+                });
+                const validIds = new Set(validCategories.map(c => c.id));
+                const invalidIds = categoryIds.filter(id => !validIds.has(id));
+
+                if (invalidIds.length > 0) {
+                    return res.status(400).json({
+                        error: 'Validation Failed',
+                        details: `Invalid Product Category IDs: ${invalidIds.join(', ')}`
+                    });
+                }
+            }
+        }
+
         // Transaction to ensure atomicity
-        const project = await prisma.$transaction(async (tx: any) => {
+        const project = await prisma.$transaction(async (tx) => {
             // 1. Update main project fields
+            // Ensure numeric IDs are valid
+            const cid = Number(customerId);
+            const cmid = customerMachineId ? Number(customerMachineId) : null;
+
+            if (isNaN(cid)) throw new Error("Invalid Customer ID");
+            if (customerMachineId && isNaN(cmid!)) throw new Error("Invalid Customer Machine ID");
+
             const updatedProject = await tx.project.update({
                 where: { id: Number(id) },
                 data: {
                     ...data,
-                    customer: { connect: { id: Number(customerId) } },
-                    ...(customerMachineId ? { customerMachine: { connect: { id: Number(customerMachineId) } } } : {})
+                    customer: { connect: { id: cid } },
+                    ...(cmid ? { customerMachine: { connect: { id: cmid } } } : { customerMachine: { disconnect: true } })
                 }
             });
+            console.log('[DEBUG] Main project fields updated');
 
             // 2. Update details (Delete all existing and recreate)
             if (details) {
+                console.log(`[DEBUG] Updating details: count=${details.length}`);
                 await tx.projectDetail.deleteMany({
                     where: { projectId: Number(id) }
                 });
+                console.log('[DEBUG] Old details deleted');
 
-                await tx.projectDetail.createMany({
-                    data: details.map((detail: any) => {
-                        const quantity = Number(detail.quantity) || 0;
-                        const unitCost = Number(detail.unitCost) || 0;
-                        const unitPrice = Number(detail.unitPrice) || 0;
-
-                        return {
-                            lineType: detail.lineType,
-                            description: detail.description,
-                            supplier: detail.supplier,
-                            supplierId: detail.supplierId ? Number(detail.supplierId) : null, // New field
-                            remarks: detail.remarks,
-                            quantity: quantity,
-                            unitCost: unitCost,
-                            unitPrice: unitPrice,
-                            amountCost: quantity * unitCost,
-                            amountSales: quantity * unitPrice,
-                            productId: detail.productId ? Number(detail.productId) : null,
-                            productCategoryId: detail.productCategoryId ? Number(detail.productCategoryId) : null,
-                            projectId: Number(id)
-                        };
-                    })
+                const newDetailsData = details.map((detail: any) => {
+                    const safeDetail = {
+                        lineType: detail.lineType || 'part',
+                        description: detail.description || '',
+                        supplier: detail.supplier || '',
+                        supplierId: detail.supplierId ? Number(detail.supplierId) : null,
+                        remarks: detail.remarks || '',
+                        quantity: Number(detail.quantity) || 0,
+                        unitCost: Number(detail.unitCost) || 0,
+                        unitPrice: Number(detail.unitPrice) || 0,
+                        amountCost: (Number(detail.quantity) || 0) * (Number(detail.unitCost) || 0),
+                        amountSales: (Number(detail.quantity) || 0) * (Number(detail.unitPrice) || 0),
+                        productId: detail.productId ? Number(detail.productId) : null,
+                        productCategoryId: detail.productCategoryId ? Number(detail.productCategoryId) : null,
+                        projectId: Number(id)
+                    };
+                    return safeDetail;
                 });
+
+                console.log('[DEBUG] Details mapped. Creating...');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await tx.projectDetail.createMany({
+                    data: newDetailsData as any
+                });
+                console.log('[DEBUG] Details created');
             }
 
             return updatedProject;
@@ -347,8 +445,11 @@ app.put('/api/projects/:id', async (req, res) => {
 
         res.json(project);
     } catch (error) {
-        console.error('Failed to update project:', error);
-        res.status(500).json({ error: 'Failed to update project' });
+        console.error('[DEBUG] ERROR:', error);
+        res.status(500).json({
+            error: 'Failed to update project',
+            details: error instanceof Error ? error.message : String(error)
+        });
     }
 });
 
@@ -411,7 +512,7 @@ app.post('/api/projects/:id/photos', upload.array('photos', 10), async (req, res
             const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
 
             // Upload to Supabase
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
                 .from('uploads')
                 .upload(fileName, file.buffer, {
                     contentType: file.mimetype
@@ -435,9 +536,9 @@ app.post('/api/projects/:id/photos', upload.array('photos', 10), async (req, res
         }));
 
         res.json(photos);
-    } catch (error: any) {
+    } catch (error) {
         console.error('Failed to upload photos:', error);
-        res.status(500).json({ error: 'Failed to upload photos', details: error.message });
+        res.status(500).json({ error: 'Failed to upload photos', details: error instanceof Error ? error.message : 'Unknown error' });
     }
 });
 
@@ -489,24 +590,40 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
 
         if (!project) return res.status(404).json({ error: 'Project not found' });
 
-        let pdfDoc;
-        let filename;
+        // Helper to convert Decimal to number for PDF generation
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const toNum = (d: any) => ({
+            ...d,
+            quantity: Number(d.quantity),
+            unitPrice: Number(d.unitPrice),
+            unitCost: Number(d.unitCost)
+        });
+
+        const projectForPdf = {
+            ...project,
+            details: project.details.map(toNum),
+            machineModel: project.customerMachine?.machineModel || '',
+            serialNumber: project.customerMachine?.serialNumber || '',
+            notes: project.notes || undefined
+        };
 
         if (type === 'invoice') {
-            pdfDoc = generateInvoice(project);
-            filename = `Invoice_${project.id}.pdf`;
+            const pdfDoc = generateInvoice(projectForPdf);
+            const filename = `Invoice_${project.id}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+            pdfDoc.pipe(res);
+            pdfDoc.end();
         } else if (type === 'delivery') {
-            pdfDoc = generateDeliveryNote(project);
-            filename = `Delivery_${project.id}.pdf`;
+            const pdfDoc = generateDeliveryNote(projectForPdf);
+            const filename = `Delivery_${project.id}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+            pdfDoc.pipe(res);
+            pdfDoc.end();
         } else {
             return res.status(400).json({ error: 'Invalid PDF type' });
         }
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-        pdfDoc.pipe(res);
-        pdfDoc.end();
 
     } catch (error) {
         console.error('PDF Generation Error:', error);
@@ -524,7 +641,7 @@ app.get('/api/machines', async (req, res) => {
             }
         });
         res.json(machines);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to fetch machines' });
     }
 });
@@ -541,9 +658,8 @@ app.post('/api/machines', async (req, res) => {
             include: { customer: true, category: true }
         });
         res.json(machine);
-    } catch (error: any) {
-        console.error("Create machine error:", error);
-        res.status(500).json({ error: 'Failed to create machine', details: error.message, meta: error.meta });
+    } catch {
+        res.status(500).json({ error: 'Failed to create machine' });
     }
 });
 
@@ -563,7 +679,7 @@ app.put('/api/machines/:id', async (req, res) => {
             include: { customer: true, category: true }
         });
         res.json(machine);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to update machine' });
     }
 });
@@ -580,8 +696,8 @@ app.get('/api/machines/:id/history', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
         res.json(history);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch machine history' });
+    } catch {
+        res.status(500).json({ error: 'Failed to fetch machine categories' });
     }
 });
 
@@ -590,7 +706,7 @@ app.get('/api/product-categories', async (req, res) => {
     try {
         const categories = await prisma.productCategory.findMany();
         res.json(categories);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to fetch product categories' });
     }
 });
@@ -601,7 +717,7 @@ app.post('/api/product-categories', async (req, res) => {
             data: req.body
         });
         res.json(category);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to create product category' });
     }
 });
@@ -614,7 +730,7 @@ app.put('/api/product-categories/:id', async (req, res) => {
             data: req.body
         });
         res.json(category);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to update product category' });
     }
 });
@@ -626,7 +742,7 @@ app.delete('/api/product-categories/:id', async (req, res) => {
             where: { id: Number(id) }
         });
         res.json({ success: true });
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to delete product category' });
     }
 });
@@ -682,9 +798,9 @@ app.post('/api/admin/users', async (req, res) => {
         });
 
         res.json(profile);
-    } catch (error: any) {
+    } catch (error) {
         console.error('Create user error:', error);
-        res.status(500).json({ error: 'Failed to create user', details: error.message });
+        res.status(500).json({ error: 'Failed to create user', details: error instanceof Error ? error.message : 'Unknown error' });
     }
 });
 
@@ -719,7 +835,7 @@ app.get('/api/operating-expenses', async (req, res) => {
     try {
         const expenses = await prisma.operatingExpense.findMany();
         res.json(expenses);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to fetch operating expenses' });
     }
 });
@@ -730,7 +846,7 @@ app.post('/api/operating-expenses', async (req, res) => {
             data: req.body
         });
         res.json(expense);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to create operating expense' });
     }
 });
@@ -743,7 +859,7 @@ app.put('/api/operating-expenses/:id', async (req, res) => {
             data: req.body
         });
         res.json(expense);
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to update operating expense' });
     }
 });
@@ -755,7 +871,7 @@ app.delete('/api/operating-expenses/:id', async (req, res) => {
             where: { id: Number(id) }
         });
         res.json({ success: true });
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Failed to delete operating expense' });
     }
 });
@@ -807,7 +923,9 @@ app.get('/api/dashboard/sales', async (req, res) => {
         // Pre-fill categories from DB? No, just build as we go, but sorting might be desired.
         // Let's just accumulate.
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         projects.forEach((project: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             project.details.forEach((detail: any) => {
                 const qty = Number(detail.quantity);
                 const price = Number(detail.unitPrice);
@@ -892,11 +1010,13 @@ app.get('/api/dashboard/details', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result = projects.map((project: any) => {
             let categorySales = 0;
             let categoryCost = 0;
             let categoryProfit = 0;
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             project.details.forEach((detail: any) => {
                 const qty = Number(detail.quantity);
                 const price = Number(detail.unitPrice);
@@ -932,6 +1052,7 @@ app.get('/api/dashboard/details', async (req, res) => {
                 categoryCost,
                 categoryProfit
             };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }).filter((p: any) => p.categorySales > 0 || p.categoryCost > 0);
 
 
@@ -1027,6 +1148,7 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             },
             include: {
                 details: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     include: { supplierObj: true } as any
                 }
             }
@@ -1040,6 +1162,7 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
                 // Filter for filtering relevant costs (ignoring internal labor if unitCost is 0, but lineType check is better)
                 // Actually user wants "Supplier" costs. So detail.supplier must be present.
                 // Prefer Master Supplier Name if linked
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const name = (detail as any).supplierObj?.name || detail.supplier;
 
                 if (name && Number(detail.unitCost) > 0) {
@@ -1096,15 +1219,18 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                 customer: true,
                 customerMachine: true,
                 details: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     include: { supplierObj: true } as any
                 }
             }
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const details: any[] = [];
 
         projects.forEach(project => {
             project.details.forEach(detail => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const name = (detail as any).supplierObj?.name || detail.supplier;
                 if (name === supplier && Number(detail.unitCost) > 0) {
                     details.push({

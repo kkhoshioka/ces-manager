@@ -1,4 +1,4 @@
-import type { Repair, NewRepair } from '../types/repair';
+import type { Repair, NewRepair, ProjectPhoto } from '../types/repair';
 import { API_BASE_URL } from '../config';
 
 export const RepairService = {
@@ -21,7 +21,10 @@ export const RepairService = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(repair),
         });
-        if (!response.ok) throw new Error('Failed to add repair');
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.details || error.error || 'Failed to add repair');
+        }
         return response.json();
     },
 
@@ -31,7 +34,10 @@ export const RepairService = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates),
         });
-        if (!response.ok) throw new Error('Failed to update repair');
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.details || error.error || 'Failed to update repair');
+        }
         return response.json();
     },
 
@@ -47,7 +53,7 @@ export const RepairService = {
         );
     },
 
-    uploadPhotos: async (id: number, formData: FormData): Promise<any[]> => {
+    uploadPhotos: async (id: number, formData: FormData): Promise<ProjectPhoto[]> => {
         const response = await fetch(`${API_BASE_URL}/projects/${id}/photos`, {
             method: 'POST',
             body: formData,
