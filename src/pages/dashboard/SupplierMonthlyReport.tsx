@@ -71,8 +71,8 @@ const SupplierMonthlyReport = () => {
                         <div style={{ padding: '0 1rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
                             {year}年 {month}月
                         </div>
-                        <Button variant="ghost" onClick={handleNextMonth} icon={<ChevronRight size={18} />} iconPosition="right">
-                            翌月
+                        <Button variant="ghost" onClick={handleNextMonth}>
+                            翌月 <ChevronRight size={18} style={{ marginLeft: '4px', verticalAlign: 'middle' }} />
                         </Button>
                     </div>
                 </div>
