@@ -112,21 +112,30 @@ const Repairs: React.FC = () => {
 
     const [details, setDetails] = useState<DetailItem[]>([]);
     const [photos, setPhotos] = useState<any[]>([]);
+    const [pendingPhotos, setPendingPhotos] = useState<File[]>([]); // New state for buffering
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || !e.target.files.length || !selectedProjectId) return;
+        if (!e.target.files || !e.target.files.length) return;
 
-        const formData = new FormData();
-        Array.from(e.target.files).forEach(file => {
-            formData.append('photos', file);
-        });
+        const newFiles = Array.from(e.target.files);
 
-        try {
-            const uploaded = await RepairService.uploadPhotos(selectedProjectId, formData);
-            setPhotos(prev => [...prev, ...uploaded]);
-        } catch (error) {
-            console.error('Failed to upload photos', error);
-            alert(`写真のアップロードに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        if (selectedProjectId) {
+            // Existing logic: Upload immediately
+            const formData = new FormData();
+            newFiles.forEach(file => {
+                formData.append('photos', file);
+            });
+
+            try {
+                const uploaded = await RepairService.uploadPhotos(selectedProjectId, formData);
+                setPhotos(prev => [...prev, ...uploaded]);
+            } catch (error) {
+                console.error('Failed to upload photos', error);
+                alert(`写真のアップロードに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        } else {
+            // New logic: Buffer locally
+            setPendingPhotos(prev => [...prev, ...newFiles]);
         }
     };
 
@@ -348,10 +357,25 @@ const Repairs: React.FC = () => {
                 })
             };
 
+            let projectId = selectedProjectId;
+
             if (selectedProjectId) {
                 await RepairService.update(selectedProjectId, projectData);
             } else {
-                await RepairService.add(projectData as NewRepair);
+                const newProject = await RepairService.add(projectData as NewRepair);
+                projectId = newProject.id;
+            }
+
+            // Upload pending photos if any
+            if (pendingPhotos.length > 0 && projectId) {
+                const formData = new FormData();
+                pendingPhotos.forEach(file => formData.append('photos', file));
+                try {
+                    await RepairService.uploadPhotos(projectId, formData);
+                } catch (photoErr) {
+                    console.error('Failed to upload pending photos', photoErr);
+                    alert('案件は保存されましたが、写真のアップロードに失敗しました。詳細画面から再度アップロードしてください。');
+                }
             }
 
             resetForm();
@@ -372,6 +396,8 @@ const Repairs: React.FC = () => {
             status: 'received'
         });
         setDetails([]);
+        setPendingPhotos([]); // Clear pending
+        setPhotos([]); // Clear photos
         setSelectedProjectId(null);
         setIsFormOpen(false);
         setFormType('repair'); // Default reset
@@ -884,49 +910,43 @@ const Repairs: React.FC = () => {
                             <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#f8fafc' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>写真管理</h3>
-                                    {selectedProjectId && (
-                                        <div>
-                                            <input
-                                                type="file"
-                                                id="photo-upload"
-                                                multiple
-                                                accept="image/*"
-                                                style={{ display: 'none' }}
-                                                onChange={handlePhotoUpload}
-                                            />
-                                            <label htmlFor="photo-upload">
-                                                <span style={{
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    padding: '0.5rem 1rem',
-                                                    backgroundColor: 'white',
-                                                    border: '1px solid #cbd5e1',
-                                                    borderRadius: '0.375rem',
-                                                    fontSize: '0.875rem',
-                                                    color: '#334155',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s',
-                                                    fontWeight: 500
-                                                }}>
-                                                    <Camera size={16} /> 写真を追加
-                                                </span>
-                                            </label>
-                                        </div>
-                                    )}
+                                    <div>
+                                        <input
+                                            type="file"
+                                            id="photo-upload"
+                                            multiple
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            onChange={handlePhotoUpload}
+                                        />
+                                        <label htmlFor="photo-upload">
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                padding: '0.5rem 1rem',
+                                                backgroundColor: 'white',
+                                                border: '1px solid #cbd5e1',
+                                                borderRadius: '0.375rem',
+                                                fontSize: '0.875rem',
+                                                color: '#334155',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                fontWeight: 500
+                                            }}>
+                                                <Camera size={16} /> 写真を追加
+                                            </span>
+                                        </label>
+                                    </div>
                                 </div>
 
-                                {!selectedProjectId ? (
-                                    <div style={{ textAlign: 'center', color: '#64748b', padding: '2rem', border: '2px dashed #e2e8f0', borderRadius: '0.5rem', backgroundColor: '#f1f5f9' }}>
-                                        <p>案件を保存した後に写真を登録できます。</p>
-                                        <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>まずは「保存する」ボタンを押して案件を作成してください。</p>
-                                    </div>
-                                ) : photos.length === 0 ? (
+                                {photos.length === 0 && pendingPhotos.length === 0 ? (
                                     <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem', border: '2px dashed #e2e8f0', borderRadius: '0.5rem' }}>
                                         登録された写真はありません
                                     </div>
                                 ) : (
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                                        {/* Existing Server Photos */}
                                         {photos.map(photo => (
                                             <div key={photo.id} style={{ position: 'relative', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0', aspectRatio: '4/3' }}>
                                                 <img
@@ -940,6 +960,41 @@ const Repairs: React.FC = () => {
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handlePhotoDelete(photo.id);
+                                                    }}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '0.25rem',
+                                                        right: '0.25rem',
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        padding: '0.25rem',
+                                                        cursor: 'pointer',
+                                                        color: '#ef4444',
+                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                                    }}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+
+                                        {/* Pending Local Photos */}
+                                        {pendingPhotos.map((file, index) => (
+                                            <div key={`pending-${index}`} style={{ position: 'relative', borderRadius: '0.5rem', overflow: 'hidden', border: '2px dashed #3b82f6', aspectRatio: '4/3' }}>
+                                                <img
+                                                    src={URL.createObjectURL(file)}
+                                                    alt="pending"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                                                />
+                                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                                                    <span style={{ background: 'rgba(0,0,0,0.5)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>未保存</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setPendingPhotos(prev => prev.filter((_, i) => i !== index));
                                                     }}
                                                     style={{
                                                         position: 'absolute',
