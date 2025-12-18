@@ -10,14 +10,16 @@ const __dirname = path.dirname(__filename);
 // console.log('Font Path:', fontPath);
 // console.log('Font Exists:', fs.existsSync(fontPath));
 
-const fontPath = path.join(__dirname, '../fonts/arial.ttf');
+// Define font paths properly
+const notoSansRegular = path.join(__dirname, '../node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-400-normal.woff');
+const notoSansBold = path.join(__dirname, '../node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-700-normal.woff');
 
 const fonts = {
     Roboto: {
-        normal: fontPath,
-        bold: fontPath,
-        italics: fontPath,
-        bolditalics: fontPath
+        normal: notoSansRegular,
+        bold: notoSansBold,
+        italics: notoSansRegular, // Fallback
+        bolditalics: notoSansBold // Fallback
     }
 };
 
