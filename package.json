@@ -9,7 +9,8 @@
     "start": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@fontsource/noto-sans-jp": "^5.2.8",
