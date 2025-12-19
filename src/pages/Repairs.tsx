@@ -962,10 +962,10 @@ const Repairs: React.FC = () => {
                                 </div>
                                 <div className={styles.summaryStats}>
                                     <div style={{ textAlign: 'right', fontSize: '0.9rem', color: '#64748b' }}>
-                                        <div>工賃: {totals.categoryTotals.labor.sales.toLocaleString()}</div>
+                                        <div>自社工賃: {totals.categoryTotals.labor.sales.toLocaleString()}</div>
+                                        <div>自社出張: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
                                         <div>部品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
                                         <div>外注: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
-                                        <div>出張: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
                                     </div>
                                     <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: '2rem' }}>
                                         <div>原価計: {totals.totalCost.toLocaleString()}円</div>
@@ -1143,10 +1143,10 @@ const Repairs: React.FC = () => {
 
                             {/* Details Sections */}
                             <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
-                                {formType !== 'sales' && renderDetailTable('工賃', 'labor', false)}
+                                {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', false)}
+                                {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', false)}
                                 {renderDetailTable('部品・商品', 'part', true)}
                                 {renderDetailTable('外注費', 'outsourcing', true)}
-                                {formType !== 'sales' && renderDetailTable('出張費', 'travel', false)}
                                 {renderDetailTable('その他', 'other', false)}
                             </div>
 
