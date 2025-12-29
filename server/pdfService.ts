@@ -1,14 +1,9 @@
 import PdfPrinter from 'pdfmake';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// const fontPath = path.join(__dirname, '../fonts/NotoSansJP-Regular.ttf');
-// console.log('Font Path:', fontPath);
-// console.log('Font Exists:', fs.existsSync(fontPath));
 
 // Define font paths properly
 const notoSansRegular = path.join(__dirname, 'fonts/NotoSansJP-Regular.otf');
@@ -25,6 +20,25 @@ const fonts = {
 
 const printer = new PdfPrinter(fonts);
 
+interface ProjectDetail {
+    description: string;
+    quantity: number | string;
+    unitPrice: number | string;
+}
+
+interface Customer {
+    name: string;
+}
+
+interface Project {
+    id: number | string;
+    customer: Customer;
+    machineModel: string;
+    serialNumber: string;
+    details: ProjectDetail[];
+    notes?: string;
+}
+
 const formatCurrency = (amount: number | string) => {
     return `¥${Number(amount).toLocaleString()}`;
 };
@@ -34,11 +48,12 @@ const formatDate = (date: Date | string | null) => {
     return new Date(date).toLocaleDateString('ja-JP');
 };
 
-export const generateInvoice = (project: any) => {
-    const subtotal = project.details.reduce((sum: number, d: any) => sum + (Number(d.quantity) * Number(d.unitPrice)), 0);
+export const generateInvoice = (project: Project) => {
+    const subtotal = project.details.reduce((sum: number, d: ProjectDetail) => sum + (Number(d.quantity) * Number(d.unitPrice)), 0);
     const tax = Math.floor(subtotal * 0.1);
     const total = subtotal + tax;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docDefinition: any = {
         content: [
             { text: '御請求書', style: 'header', alignment: 'center', margin: [0, 0, 0, 20] },
@@ -86,7 +101,7 @@ export const generateInvoice = (project: any) => {
                             { text: '単価', style: 'tableHeader', alignment: 'center' },
                             { text: '金額', style: 'tableHeader', alignment: 'center' }
                         ],
-                        ...project.details.map((d: any) => [
+                        ...project.details.map((d: ProjectDetail) => [
                             d.description,
                             { text: d.quantity, alignment: 'right' },
                             { text: formatCurrency(d.unitPrice), alignment: 'right' },
@@ -139,7 +154,8 @@ export const generateInvoice = (project: any) => {
     return printer.createPdfKitDocument(docDefinition);
 };
 
-export const generateDeliveryNote = (project: any) => {
+export const generateDeliveryNote = (project: Project) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docDefinition: any = {
         content: [
             { text: '納品書', style: 'header', alignment: 'center', margin: [0, 0, 0, 20] },
@@ -178,7 +194,7 @@ export const generateDeliveryNote = (project: any) => {
                             { text: '品名 / 内容', style: 'tableHeader' },
                             { text: '数量', style: 'tableHeader', alignment: 'center' }
                         ],
-                        ...project.details.map((d: any) => [
+                        ...project.details.map((d: ProjectDetail) => [
                             d.description,
                             { text: d.quantity, alignment: 'right' }
                         ])

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import styles from '../Dashboard.module.css';
@@ -35,7 +35,7 @@ const SupplierMonthlyReport = () => {
     const [detailData, setDetailData] = useState<SupplierDetail[]>([]);
     const [detailLoading, setDetailLoading] = useState(false);
 
-    const fetchReport = async () => {
+    const fetchReport = React.useCallback(async () => {
         setLoading(true);
         setSelectedSupplier(null); // Reset selection on month change
         setDetailData([]);
@@ -49,11 +49,11 @@ const SupplierMonthlyReport = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [year, month]);
 
     useEffect(() => {
         fetchReport();
-    }, [year, month]);
+    }, [fetchReport]);
 
     const handleRowClick = async (supplierName: string) => {
         if (selectedSupplier === supplierName) {

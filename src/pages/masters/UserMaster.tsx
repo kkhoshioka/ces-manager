@@ -67,8 +67,9 @@ const UserMaster: React.FC = () => {
             fetchUsers();
             setShowModal(false);
             resetForm();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            setError(message);
         } finally {
             setIsSubmitting(false);
         }

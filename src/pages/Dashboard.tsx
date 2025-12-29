@@ -48,8 +48,19 @@ const Dashboard: React.FC = () => {
         fetchData();
     }, [fetchData]);
 
+    interface DashboardDetailItem {
+        id: number | string;
+        completionDate?: string;
+        createdAt: string;
+        customer?: { name: string };
+        machineModel?: string;
+        serialNumber?: string;
+        categorySales: number;
+        categoryProfit: number;
+    }
+
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [detailData, setDetailData] = useState<any[]>([]);
+    const [detailData, setDetailData] = useState<DashboardDetailItem[]>([]);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
 
@@ -70,6 +81,7 @@ const Dashboard: React.FC = () => {
             setIsDetailLoading(false);
         }
     };
+
 
     return (
         <div className={styles.container}>
@@ -225,7 +237,7 @@ const Dashboard: React.FC = () => {
                                     {detailData.length === 0 ? (
                                         <tr><td colSpan={5} className={styles.empty}>該当データなし</td></tr>
                                     ) : (
-                                        detailData.map((item: any) => (
+                                        detailData.map((item: DashboardDetailItem) => (
                                             <tr key={item.id}>
                                                 <td>{new Date(item.completionDate || item.createdAt).toLocaleDateString()}</td>
                                                 <td>{item.customer?.name}</td>

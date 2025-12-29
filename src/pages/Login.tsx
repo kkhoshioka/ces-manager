@@ -28,9 +28,10 @@ const Login: React.FC = () => {
             }
 
             navigate('/');
-        } catch (err: any) {
+        } catch (err) {
             console.error('Login error:', err);
-            setError(err.message || 'ログインに失敗しました');
+            const message = err instanceof Error ? err.message : 'ログインに失敗しました';
+            setError(message);
         } finally {
             setLoading(false);
         }
