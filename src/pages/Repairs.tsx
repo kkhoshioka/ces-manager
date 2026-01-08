@@ -615,7 +615,7 @@ const Repairs: React.FC = () => {
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '30%' : '50%' }}>内容</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '35%' : '55%' }}>内容</th>
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>
                                 {type === 'labor' ? '時間' : (type === 'travel' ? '時間/距離' : '数量')}
@@ -628,7 +628,7 @@ const Repairs: React.FC = () => {
                             )}
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求単価</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求額</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>備考</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>備考</th>
                             <th style={{ width: '40px' }}></th>
                         </tr>
                     </thead>
@@ -928,8 +928,9 @@ const Repairs: React.FC = () => {
                                             value={formType}
                                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                             onChange={(e) => setFormType(e.target.value as any)}
-                                            className="w-full border rounded-md p-2 text-sm form-select"
+                                            className="border rounded-md p-2 text-sm form-select"
                                             style={{
+                                                width: '200px',
                                                 backgroundColor: (formType === 'sales' ? '#e0f2fe' :
                                                     formType === 'inspection' ? '#f3e8ff' :
                                                         formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
@@ -1011,8 +1012,9 @@ const Repairs: React.FC = () => {
                                             name="status"
                                             value={formState.status}
                                             onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
-                                            className="w-full border rounded-md p-2 text-sm font-bold"
+                                            className="border rounded-md p-2 text-sm font-bold"
                                             style={{
+                                                width: '200px',
                                                 backgroundColor: getStatusStyle(formState.status).bg,
                                                 color: getStatusStyle(formState.status).color,
                                                 borderColor: '#d1d5db'
@@ -1031,11 +1033,11 @@ const Repairs: React.FC = () => {
                                         <div>部品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
                                         <div>外注: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
                                     </div>
-                                    <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: '2rem' }}>
-                                        <div>原価計: {totals.totalCost.toLocaleString()}円</div>
-                                        <div style={{ fontSize: '1.25rem', color: '#0f172a' }}>請求計: {totals.totalSales.toLocaleString()}円</div>
-                                        <div style={{ color: '#10b981' }}>粗利額: {totals.grossProfit.toLocaleString()}円</div>
-                                        <div>粗利率: {Math.round(totals.profitRate)}%</div>
+                                    <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: 'auto' }}>
+                                        <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>原価計: {totals.totalCost.toLocaleString()}円</div>
+                                        <div style={{ fontSize: '2rem', color: '#0f172a', lineHeight: '1.2' }}>請求計: {totals.totalSales.toLocaleString()}円</div>
+                                        <div style={{ fontSize: '1.2rem', color: '#10b981', marginTop: '0.5rem' }}>粗利額: {totals.grossProfit.toLocaleString()}円</div>
+                                        <div style={{ fontSize: '1.1rem' }}>粗利率: {Math.round(totals.profitRate)}%</div>
                                     </div>
                                 </div>
                             </div>
