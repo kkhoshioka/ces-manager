@@ -54,6 +54,7 @@ model CustomerMachine {
   serialNumber String
   purchaseDate DateTime?
   notes        String?
+  hourMeter    String?  // Current hour meter reading
   
   productCategoryId Int?
   category     ProductCategory? @relation(fields: [productCategoryId], references: [id])
@@ -78,6 +79,7 @@ model Project {
   // Snapshot fields
   machineModel      String?
   serialNumber      String?
+  hourMeter         String? // Snapshot of hour meter at time of project
   
   orderDate         DateTime?
   completionDate    DateTime?
@@ -165,6 +167,14 @@ model OperatingExpense {
   standardCost  Decimal  @default(0)
   standardPrice Decimal  @default(0)
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model SystemSetting {
+  id            Int      @id @default(autoincrement())
+  key           String   @unique // e.g., 'defaultLaborRate'
+  value         String   // Store as string to be flexible (parse as Decimal/Int in app)
+  description   String?
   updatedAt     DateTime @updatedAt
 }
 

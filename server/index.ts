@@ -12,6 +12,7 @@ const __dirname = dirname(__filename);
 
 import 'dotenv/config';
 import { generateInvoice, generateDeliveryNote } from './pdfService';
+import systemSettingsRouter from './routes/systemSettings';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 
@@ -55,7 +56,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve uploads
+
+// Serve uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// System Settings
+app.use('/api/system-settings', systemSettingsRouter);
 
 // --- Customers ---
 app.get('/api/customers', async (req, res) => {
@@ -319,10 +325,11 @@ app.get('/api/projects', async (req, res) => {
 
 app.post('/api/projects', async (req, res) => {
     try {
-        const { customerId, customerMachineId, details, ...data } = req.body;
+        const { customerId, customerMachineId, details, hourMeter, ...data } = req.body;
         const project = await prisma.project.create({
             data: {
                 ...data,
+                hourMeter,
                 customer: { connect: { id: Number(customerId) } },
                 ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
                 ...(details && { details: { create: details } })

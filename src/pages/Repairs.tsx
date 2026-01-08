@@ -53,6 +53,7 @@ const Repairs: React.FC = () => {
         customerName: string;
         machineModel: string;
         serialNumber: string;
+        hourMeter: string;
         issueDescription: string;
         notes: string;
         status: RepairStatus;
@@ -60,10 +61,31 @@ const Repairs: React.FC = () => {
         customerName: '',
         machineModel: '',
         serialNumber: '',
+        hourMeter: '',
         issueDescription: '',
         notes: '',
         status: 'received'
     });
+
+    // System Settings
+    const [systemSettings, setSystemSettings] = useState<{
+        defaultLaborRate: number;
+        defaultTravelTimeRate: number;
+        defaultTravelDistanceRate: number;
+    }>({ defaultLaborRate: 8000, defaultTravelTimeRate: 3000, defaultTravelDistanceRate: 50 });
+
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/system-settings`)
+            .then(res => res.json())
+            .then(data => {
+                setSystemSettings({
+                    defaultLaborRate: Number(data.defaultLaborRate) || 8000,
+                    defaultTravelTimeRate: Number(data.defaultTravelTimeRate) || 3000,
+                    defaultTravelDistanceRate: Number(data.defaultTravelDistanceRate) || 50
+                });
+            })
+            .catch(console.error);
+    }, []);
 
     // Selection Data
     // Selection Data
@@ -169,19 +191,52 @@ const Repairs: React.FC = () => {
     const nextIdRef = React.useRef(0);
     const addDetail = (type: DetailItem['lineType']) => {
         nextIdRef.current += 1;
-        setDetails(prev => [...prev, {
-            lineType: type,
-            description: '',
-            supplier: '',
-            supplierId: null,
-            remarks: '',
-            quantity: 1,
-            unitPrice: 0,
-            unitCost: 0,
-            amountCost: 0,
-            amountSales: 0,
-            originalIndex: nextIdRef.current
-        }]);
+
+        if (type === 'travel') {
+            // Add Time and Distance rows
+            const timeRow: DetailItem = {
+                lineType: 'travel',
+                description: '移動時間',
+                supplier: '',
+                supplierId: null,
+                remarks: '',
+                quantity: 1,
+                unitPrice: systemSettings.defaultTravelTimeRate,
+                unitCost: 0,
+                amountCost: 0,
+                amountSales: systemSettings.defaultTravelTimeRate,
+                originalIndex: nextIdRef.current
+            };
+            nextIdRef.current += 1;
+            const distanceRow: DetailItem = {
+                lineType: 'travel',
+                description: '移動距離',
+                supplier: '',
+                supplierId: null,
+                remarks: '',
+                quantity: 10,
+                unitPrice: systemSettings.defaultTravelDistanceRate,
+                unitCost: 0,
+                amountCost: 0,
+                amountSales: systemSettings.defaultTravelDistanceRate * 10,
+                originalIndex: nextIdRef.current
+            };
+            setDetails(prev => [...prev, timeRow, distanceRow]);
+        } else {
+            setDetails(prev => [...prev, {
+                lineType: type,
+                description: '',
+                supplier: '',
+                supplierId: null,
+                remarks: '',
+                quantity: 1,
+                unitPrice: type === 'labor' ? systemSettings.defaultLaborRate : 0,
+                unitCost: 0,
+                amountCost: 0,
+                amountSales: type === 'labor' ? systemSettings.defaultLaborRate : 0,
+                originalIndex: nextIdRef.current
+            }]);
+        }
     };
 
     const removeDetail = (index: number) => {
@@ -381,6 +436,7 @@ const Repairs: React.FC = () => {
                 customerMachineId: customerMachineId,
                 machineModel: formState.machineModel,
                 serialNumber: formState.serialNumber,
+                hourMeter: formState.hourMeter,
                 notes: ((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') ? formState.issueDescription : '') + (formState.notes ? `\n\n備考: ${formState.notes}` : ''),
                 status: formState.status,
                 totalAmount: totals.totalSales,
@@ -462,6 +518,7 @@ const Repairs: React.FC = () => {
             customerName: '',
             machineModel: '',
             serialNumber: '',
+            hourMeter: '',
             issueDescription: '',
             notes: '',
             status: 'received'
@@ -502,6 +559,7 @@ const Repairs: React.FC = () => {
                     customerName: fullProject.customer?.name || '',
                     machineModel: fullProject.machineModel || '',
                     serialNumber: fullProject.serialNumber || '',
+                    hourMeter: fullProject.hourMeter || '',
                     issueDescription: issue,
                     notes: extraNotes,
                     status: (fullProject.status as RepairStatus) || 'received'
@@ -559,7 +617,9 @@ const Repairs: React.FC = () => {
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '30%' : '50%' }}>内容</th>
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>{type === 'labor' ? '時間' : '数量'}</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>
+                                {type === 'labor' ? '時間' : (type === 'travel' ? '時間/距離' : '数量')}
+                            </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>原価単価</th>
@@ -844,7 +904,14 @@ const Repairs: React.FC = () => {
             {isFormOpen && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modal} style={{ maxWidth: '1200px', width: '95%' }}>
-                        <div className={styles.modalHeader}>
+                        <div className={styles.modalHeader} style={{
+                            backgroundColor: (formType === 'sales' ? '#e0f2fe' :
+                                formType === 'inspection' ? '#f3e8ff' :
+                                    formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
+                            color: (formType === 'sales' ? '#0369a1' :
+                                formType === 'inspection' ? '#7e22ce' :
+                                    formType === 'maintenance' ? '#c2410c' : '#854d0e')
+                        }}>
                             <h2>
                                 {selectedProjectId ? '案件詳細・編集' : (formType === 'sales' ? '新規販売登録' : '新規修理受付')}
                             </h2>
@@ -914,7 +981,8 @@ const Repairs: React.FC = () => {
                                                                 setFormState(prev => ({
                                                                     ...prev,
                                                                     machineModel: machine.machineModel,
-                                                                    serialNumber: machine.serialNumber
+                                                                    serialNumber: machine.serialNumber,
+                                                                    hourMeter: machine.hourMeter || ''
                                                                 }));
                                                             }
                                                         }}
@@ -932,6 +1000,7 @@ const Repairs: React.FC = () => {
 
                                             <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
                                             <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} required={formType !== 'sales'} />
+                                            <Input label="アワーメーター" name="hourMeter" value={formState.hourMeter} onChange={handleInputChange} placeholder="ex. 1234.5 hr" />
                                         </>
                                     )}
 

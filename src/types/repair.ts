@@ -37,6 +37,7 @@ export interface Repair {
     // Snapshot fields
     machineModel?: string | null;
     serialNumber?: string | null;
+    hourMeter?: string | null;
 
     orderDate?: string | null;
     completionDate?: string | null;
@@ -58,6 +59,7 @@ export type NewRepair = {
     customerMachineId?: number;
     machineModel?: string;
     serialNumber?: string;
+    hourMeter?: string;
     issueDescription?: string; // Mapped to notes or description in details? Let's use notes for now or create a detail.
     notes?: string;
     type?: 'repair' | 'sales';

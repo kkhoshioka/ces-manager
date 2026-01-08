@@ -15,6 +15,7 @@ export interface CustomerMachine {
     customerId: number;
     machineModel: string;
     serialNumber: string;
+    hourMeter?: string | null;
     purchaseDate?: string | null;
     notes?: string | null;
     productCategoryId?: number | null;

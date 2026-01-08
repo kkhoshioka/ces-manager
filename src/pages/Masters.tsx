@@ -5,9 +5,10 @@ import CustomerMaster from './masters/CustomerMaster';
 import ProductTypeMaster from './masters/ProductTypeMaster';
 import ExpenseMaster from './masters/ExpenseMaster';
 import UserMaster from './masters/UserMaster';
+import SystemSettingsMaster from './masters/SystemSettingsMaster';
 import { Users, Tag, DollarSign, Settings, Truck, UserCog } from 'lucide-react';
 
-type Tab = 'customer' | 'type' | 'expense' | 'supplier' | 'user';
+type Tab = 'customer' | 'type' | 'expense' | 'supplier' | 'user' | 'system';
 
 const Masters: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('customer');
@@ -58,6 +59,13 @@ const Masters: React.FC = () => {
                     <UserCog size={18} />
                     ユーザー管理
                 </button>
+                <button
+                    className={`${styles.tab} ${activeTab === 'system' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('system')}
+                >
+                    <Settings size={18} />
+                    システム設定
+                </button>
             </div>
 
             <div className={styles.content}>
@@ -66,6 +74,7 @@ const Masters: React.FC = () => {
                 {activeTab === 'type' && <ProductTypeMaster />}
                 {activeTab === 'expense' && <ExpenseMaster />}
                 {activeTab === 'user' && <UserMaster />}
+                {activeTab === 'system' && <SystemSettingsMaster />}
             </div>
         </div>
     );
