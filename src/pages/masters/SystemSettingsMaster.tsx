@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 
 interface SystemSettings {
     defaultLaborRate: string;
@@ -23,7 +24,7 @@ const SystemSettingsMaster: React.FC = () => {
     const fetchSettings = async () => {
         try {
             // Adjust API_BASE_URL as needed, assuming relative proxy or global const
-            const res = await fetch('http://localhost:3000/api/system-settings');
+            const res = await fetch(`${API_BASE_URL}/system-settings`);
             if (res.ok) {
                 const data = await res.json();
                 setSettings(prev => ({ ...prev, ...data }));
@@ -40,7 +41,7 @@ const SystemSettingsMaster: React.FC = () => {
 
     const handleSave = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/system-settings', {
+            const res = await fetch(`${API_BASE_URL}/system-settings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
