@@ -962,10 +962,31 @@ const Repairs: React.FC = () => {
                                                 cursor: 'pointer'
                                             }}
                                         >
-                                            <option value="repair">修理案件</option>
-                                            <option value="inspection">点検案件</option>
-                                            <option value="maintenance">整備案件</option>
-                                            <option value="sales">販売案件</option>
+                                            <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
+                                            <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>点検案件</option>
+                                            <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
+                                            <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Status Selection (Moved) */}
+                                    <div className="mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+                                        <select
+                                            name="status"
+                                            value={formState.status}
+                                            onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
+                                            className="border rounded-md p-2 text-sm font-bold"
+                                            style={{
+                                                width: '200px',
+                                                backgroundColor: getStatusStyle(formState.status).bg,
+                                                color: getStatusStyle(formState.status).color,
+                                                borderColor: '#d1d5db'
+                                            }}
+                                        >
+                                            <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
+                                            <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
+                                            <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                         </select>
                                     </div>
 
@@ -1023,33 +1044,13 @@ const Repairs: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Status Selection */}
-                                    <div className="mb-2">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-                                        <select
-                                            name="status"
-                                            value={formState.status}
-                                            onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
-                                            className="border rounded-md p-2 text-sm font-bold"
-                                            style={{
-                                                width: '200px',
-                                                backgroundColor: getStatusStyle(formState.status).bg,
-                                                color: getStatusStyle(formState.status).color,
-                                                borderColor: '#d1d5db'
-                                            }}
-                                        >
-                                            <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
-                                            <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
-                                            <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
-                                        </select>
-                                    </div>
                                 </div>
                                 <div className={styles.summaryStats}>
-                                    <div style={{ textAlign: 'right', fontSize: '0.9rem', color: '#64748b' }}>
+                                    <div style={{ textAlign: 'right', fontSize: '1.05rem', color: '#64748b' }}>
                                         <div>自社工賃: {totals.categoryTotals.labor.sales.toLocaleString()}</div>
-                                        <div>自社出張: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
-                                        <div>部品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
-                                        <div>外注: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
+                                        <div>自社出張費: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
+                                        <div>部品・商品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
+                                        <div>外注費: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
                                     </div>
                                     <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: 'auto' }}>
                                         <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>原価計: {totals.totalCost.toLocaleString()}円</div>
