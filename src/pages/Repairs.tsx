@@ -539,8 +539,7 @@ const Repairs: React.FC = () => {
 
         const subtotalCost = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitCost), 0);
         const subtotalSales = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitPrice), 0);
-        const subtotalProfit = subtotalSales - subtotalCost;
-        const subtotalRate = subtotalSales > 0 ? (subtotalProfit / subtotalSales) * 100 : 0;
+
 
         // Unique Sections for Dropdown
         const sections = Array.from(new Set(categories.map(c => c.section)));
@@ -558,7 +557,7 @@ const Repairs: React.FC = () => {
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '20%' : '25%' }}>内容</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '30%' : '50%' }}>内容</th>
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>{type === 'labor' ? '時間' : '数量'}</th>
                             {(type !== 'labor' && type !== 'travel') && (
@@ -569,9 +568,7 @@ const Repairs: React.FC = () => {
                             )}
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求単価</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求額</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '60px' }}>粗利額</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '50px' }}>粗利率</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>備考</th>
                             <th style={{ width: '40px' }}></th>
                         </tr>
                     </thead>
@@ -579,8 +576,8 @@ const Repairs: React.FC = () => {
                         {sectionDetails.map((detail) => {
                             const costTotal = detail.quantity * detail.unitCost;
                             const salesTotal = detail.quantity * detail.unitPrice;
-                            const profit = salesTotal - costTotal;
-                            const rate = salesTotal > 0 ? (profit / salesTotal) * 100 : 0;
+                            // Profit calculations removed from display
+
 
                             // Find current category object if selected
                             const selectedCategory = categories.find(c => c.id === detail.productCategoryId);
@@ -714,8 +711,6 @@ const Repairs: React.FC = () => {
                                         </div>
                                     </td>
                                     <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}</td>
-                                    <td style={{ padding: '0.25rem', textAlign: 'right' }}>{profit.toLocaleString()}</td>
-                                    <td style={{ padding: '0.25rem', textAlign: 'right' }}>{Math.round(rate)}%</td>
                                     <td style={{ padding: '0.25rem' }}>
                                         <input type="text" className={styles.tableInput} value={detail.remarks} onChange={(e) => handleDetailChange(detail.originalIndex, 'remarks', e.target.value)} />
                                     </td>
@@ -738,8 +733,6 @@ const Repairs: React.FC = () => {
                             )}
                             <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
                             <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}</td>
-                            <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalProfit.toLocaleString()}</td>
-                            <td style={{ padding: '0.4rem', textAlign: 'right' }}>{Math.round(subtotalRate)}%</td>
                             <td colSpan={2}></td>
                         </tr>
                     </tbody>
@@ -855,47 +848,41 @@ const Repairs: React.FC = () => {
                             <h2>
                                 {selectedProjectId ? '案件詳細・編集' : (formType === 'sales' ? '新規販売登録' : '新規修理受付')}
                             </h2>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <select
-                                    value={formType}
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                    onChange={(e) => setFormType(e.target.value as any)}
-                                    className="border rounded p-1 text-sm form-select"
-                                    style={{
-                                        backgroundColor: (formType === 'sales' ? '#e0f2fe' :
-                                            formType === 'inspection' ? '#f3e8ff' :
-                                                formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
-                                        color: (formType === 'sales' ? '#0369a1' :
-                                            formType === 'inspection' ? '#7e22ce' :
-                                                formType === 'maintenance' ? '#c2410c' : '#854d0e'),
-                                        borderColor: (formType === 'sales' ? '#bae6fd' :
-                                            formType === 'inspection' ? '#e9d5ff' :
-                                                formType === 'maintenance' ? '#fed7aa' : '#fde047'),
-                                        fontWeight: 'bold',
-                                        padding: '0.4rem 2rem 0.4rem 1rem',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        outline: 'none',
-                                        appearance: 'none', // Remove default arrow to style potentially, but keep it simple
-                                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                                        backgroundPosition: 'right 0.5rem center',
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundSize: '1.5em 1.5em',
-                                        paddingRight: '2.5rem'
-                                    }}
-                                >
-                                    <option value="repair" style={{ background: '#fff', color: '#333' }}>修理案件</option>
-                                    <option value="inspection" style={{ background: '#fff', color: '#333' }}>点検案件</option>
-                                    <option value="maintenance" style={{ background: '#fff', color: '#333' }}>整備案件</option>
-                                    <option value="sales" style={{ background: '#fff', color: '#333' }}>販売案件</option>
-                                </select>
-                                <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
-                            </div>
+                            <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className={styles.form}>
                             {/* Summary Header */}
                             <div className={styles.summaryHeader}>
                                 <div className={styles.formGrid}>
+                                    {/* Linked Type Selector */}
+                                    <div className="mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
+                                        <select
+                                            value={formType}
+                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                            onChange={(e) => setFormType(e.target.value as any)}
+                                            className="w-full border rounded-md p-2 text-sm form-select"
+                                            style={{
+                                                backgroundColor: (formType === 'sales' ? '#e0f2fe' :
+                                                    formType === 'inspection' ? '#f3e8ff' :
+                                                        formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
+                                                color: (formType === 'sales' ? '#0369a1' :
+                                                    formType === 'inspection' ? '#7e22ce' :
+                                                        formType === 'maintenance' ? '#c2410c' : '#854d0e'),
+                                                borderColor: (formType === 'sales' ? '#bae6fd' :
+                                                    formType === 'inspection' ? '#e9d5ff' :
+                                                        formType === 'maintenance' ? '#fed7aa' : '#fde047'),
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <option value="repair">修理案件</option>
+                                            <option value="inspection">点検案件</option>
+                                            <option value="maintenance">整備案件</option>
+                                            <option value="sales">販売案件</option>
+                                        </select>
+                                    </div>
+
                                     <div>
                                         <Input
                                             label="顧客名"
@@ -978,8 +965,8 @@ const Repairs: React.FC = () => {
                                     <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: '2rem' }}>
                                         <div>原価計: {totals.totalCost.toLocaleString()}円</div>
                                         <div style={{ fontSize: '1.25rem', color: '#0f172a' }}>請求計: {totals.totalSales.toLocaleString()}円</div>
-                                        <div style={{ color: '#10b981' }}>粗利: {totals.grossProfit.toLocaleString()}円</div>
-                                        <div>率: {Math.round(totals.profitRate)}%</div>
+                                        <div style={{ color: '#10b981' }}>粗利額: {totals.grossProfit.toLocaleString()}円</div>
+                                        <div>粗利率: {Math.round(totals.profitRate)}%</div>
                                     </div>
                                 </div>
                             </div>
@@ -1170,31 +1157,34 @@ const Repairs: React.FC = () => {
                         </form>
                     </div>
                 </div>
-            )}
+            )
+            }
             {/* Delete Confirmation Modal */}
-            {deleteConfirmation.isOpen && (
-                <div className={styles.modalOverlay} style={{ zIndex: 1100 }}>
-                    <div className={styles.modal} style={{ maxWidth: '400px', padding: '0' }}>
-                        <div className={styles.modalHeader} style={{ background: '#fee2e2', borderBottom: '1px solid #fecaca' }}>
-                            <h2 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Trash2 size={20} /> 削除の確認
-                            </h2>
-                            <button className={styles.closeButton} onClick={() => setDeleteConfirmation({ isOpen: false, targetId: null })}><X size={20} /></button>
-                        </div>
-                        <div style={{ padding: '1.5rem' }}>
-                            <p style={{ marginBottom: '1rem', color: '#1f2937' }}>
-                                本当にこの案件を削除しますか？<br />
-                                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>※削除すると復元することはできません。</span>
-                            </p>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                                <Button variant="secondary" onClick={() => setDeleteConfirmation({ isOpen: false, targetId: null })}>キャンセル</Button>
-                                <Button onClick={confirmDelete} style={{ backgroundColor: '#ef4444', border: 'none', color: 'white' }}>削除する</Button>
+            {
+                deleteConfirmation.isOpen && (
+                    <div className={styles.modalOverlay} style={{ zIndex: 1100 }}>
+                        <div className={styles.modal} style={{ maxWidth: '400px', padding: '0' }}>
+                            <div className={styles.modalHeader} style={{ background: '#fee2e2', borderBottom: '1px solid #fecaca' }}>
+                                <h2 style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Trash2 size={20} /> 削除の確認
+                                </h2>
+                                <button className={styles.closeButton} onClick={() => setDeleteConfirmation({ isOpen: false, targetId: null })}><X size={20} /></button>
+                            </div>
+                            <div style={{ padding: '1.5rem' }}>
+                                <p style={{ marginBottom: '1rem', color: '#1f2937' }}>
+                                    本当にこの案件を削除しますか？<br />
+                                    <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>※削除すると復元することはできません。</span>
+                                </p>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                                    <Button variant="secondary" onClick={() => setDeleteConfirmation({ isOpen: false, targetId: null })}>キャンセル</Button>
+                                    <Button onClick={confirmDelete} style={{ backgroundColor: '#ef4444', border: 'none', color: 'white' }}>削除する</Button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
