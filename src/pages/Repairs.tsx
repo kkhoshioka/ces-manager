@@ -617,7 +617,7 @@ const Repairs: React.FC = () => {
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '35%' : '55%' }}>内容</th>
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>
                                 {type === 'labor' ? '時間' : (type === 'travel' ? '時間/距離' : '数量')}
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
@@ -753,13 +753,30 @@ const Repairs: React.FC = () => {
                                         </td>
                                     )}
                                     <td style={{ padding: '0.25rem' }}>
-                                        <input type="number" className={styles.tableInput} style={{ textAlign: 'center' }} value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', e.target.value)} min="0" step="0.1" />
+                                        <div className={styles.currencyWrapper} style={{ justifyContent: 'center' }}>
+                                            <input
+                                                type="number"
+                                                className={styles.tableInput}
+                                                style={{ textAlign: 'center', width: '60px' }} // Adjusted width for unit
+                                                value={detail.quantity}
+                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', e.target.value)}
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                            {/* Unit Logic */}
+                                            <span className={styles.currencyUnit}>
+                                                {type === 'labor' ? 'H' :
+                                                    (type === 'travel' && detail.description.includes('距離') ? 'km' :
+                                                        (type === 'travel' ? 'H' : ''))}
+                                            </span>
+                                        </div>
                                     </td>
                                     {(type !== 'labor' && type !== 'travel') && (
                                         <>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
                                                     <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitCost} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                                    <span className={styles.currencyUnit}>円</span>
                                                 </div>
                                             </td>
                                             <td style={{ padding: '0.25rem', textAlign: 'right' }}>{costTotal.toLocaleString()}</td>
@@ -768,6 +785,7 @@ const Repairs: React.FC = () => {
                                     <td style={{ padding: '0.25rem' }}>
                                         <div className={styles.currencyWrapper}>
                                             <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitPrice} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                            <span className={styles.currencyUnit}>円</span>
                                         </div>
                                     </td>
                                     <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}</td>
