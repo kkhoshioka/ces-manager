@@ -18,11 +18,9 @@ import type { ProductCategory } from '../types/inventory';
 // Status helper
 const getStatusStyle = (status: string) => {
     switch (status) {
-        case 'received': return { bg: '#e2e8f0', color: '#1e293b', label: '受付済' };
-        case 'diagnosing': return { bg: '#fef3c7', color: '#92400e', label: '診断中' };
+        case 'received': return { bg: '#e2e8f0', color: '#1e293b', label: '仮登録' };
         case 'in_progress': return { bg: '#dbeafe', color: '#1e40af', label: '作業中' };
         case 'completed': return { bg: '#dcfce7', color: '#166534', label: '完了' };
-        case 'delivered': return { bg: '#f3f4f6', color: '#4b5563', label: '引渡済' };
         default: return { bg: '#f3f4f6', color: '#4b5563', label: status };
     }
 };
@@ -562,9 +560,13 @@ const Repairs: React.FC = () => {
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '20%' : '25%' }}>内容</th>
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>数量</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>原価単価</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>原価計</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>{type === 'labor' ? '時間' : '数量'}</th>
+                            {(type !== 'labor' && type !== 'travel') && (
+                                <>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>原価単価</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>原価計</th>
+                                </>
+                            )}
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求単価</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求額</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '60px' }}>粗利額</th>
@@ -696,12 +698,16 @@ const Repairs: React.FC = () => {
                                     <td style={{ padding: '0.25rem' }}>
                                         <input type="number" className={styles.tableInput} style={{ textAlign: 'center' }} value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', e.target.value)} min="0" step="0.1" />
                                     </td>
-                                    <td style={{ padding: '0.25rem' }}>
-                                        <div className={styles.currencyWrapper}>
-                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitCost} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '0.25rem', textAlign: 'right' }}>{costTotal.toLocaleString()}</td>
+                                    {(type !== 'labor' && type !== 'travel') && (
+                                        <>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <div className={styles.currencyWrapper}>
+                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitCost} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '0.25rem', textAlign: 'right' }}>{costTotal.toLocaleString()}</td>
+                                        </>
+                                    )}
                                     <td style={{ padding: '0.25rem' }}>
                                         <div className={styles.currencyWrapper}>
                                             <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitPrice} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
@@ -724,8 +730,12 @@ const Repairs: React.FC = () => {
                         {/* Subtotal Row */}
                         <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
                             <td colSpan={type === 'part' ? (showSupplier ? 5 : 4) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
-                            <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
-                            <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}</td>
+                            {(type !== 'labor' && type !== 'travel') && (
+                                <>
+                                    <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
+                                    <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}</td>
+                                </>
+                            )}
                             <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
                             <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}</td>
                             <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalProfit.toLocaleString()}</td>
@@ -952,11 +962,9 @@ const Repairs: React.FC = () => {
                                                 borderColor: '#d1d5db'
                                             }}
                                         >
-                                            <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>受付済</option>
-                                            <option value="diagnosing" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>診断中</option>
+                                            <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
                                             <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
                                             <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
-                                            <option value="delivered" style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>引渡済</option>
                                         </select>
                                     </div>
                                 </div>
