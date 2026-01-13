@@ -332,10 +332,10 @@ app.get('/api/projects', async (req, res) => {
             where,
             include: {
                 customer: true,
-                customerMachine: true,
-                details: true
+                // customerMachine: true, // Removed for performance
+                // details: true          // Removed for performance
             },
-            take: limit ? Number(limit) : undefined, // If undefined, fetch all (or maybe default to something if safety needed, but service handles default)
+            take: limit ? Number(limit) : undefined,
             orderBy: { createdAt: 'desc' }
         });
         res.json(projects);

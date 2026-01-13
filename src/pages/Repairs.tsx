@@ -555,9 +555,13 @@ const Repairs: React.FC = () => {
     };
 
     const handleRowClick = async (project: Repair) => {
-        await loadFormData(); // Load masters before opening
+        // Parallelize loading for performance
+        const [fullProject] = await Promise.all([
+            RepairService.getById(project.id),
+            loadFormData()
+        ]);
+
         try {
-            const fullProject = await RepairService.getById(project.id);
             if (fullProject) {
                 setSelectedProjectId(fullProject.id);
                 setFormType((fullProject.type as 'repair' | 'sales') || 'repair');
@@ -863,7 +867,7 @@ const Repairs: React.FC = () => {
                                             <input
                                                 type="number"
                                                 className={styles.tableInput}
-                                                style={{ textAlign: 'center', width: '60px' }} // Adjusted width for unit
+                                                style={{ textAlign: 'center', width: '80px' }} // Widen for 3 digits + margin
                                                 value={detail.quantity}
                                                 onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', e.target.value)}
                                                 min="0"
@@ -884,7 +888,7 @@ const Repairs: React.FC = () => {
                                         <>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
-                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitCost} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitCost} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
                                                     <span className={styles.currencyUnit}>円</span>
                                                 </div>
                                             </td>
@@ -893,7 +897,7 @@ const Repairs: React.FC = () => {
                                     )}
                                     <td style={{ padding: '0.25rem' }}>
                                         <div className={styles.currencyWrapper}>
-                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.unitPrice} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
                                             <span className={styles.currencyUnit}>円</span>
                                         </div>
                                     </td>
