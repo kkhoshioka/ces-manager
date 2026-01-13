@@ -136,6 +136,7 @@ const Repairs: React.FC = () => {
     // Details State
     interface DetailItem {
         lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other';
+        travelType?: 'time' | 'distance'; // New field for Travel rows
         description: string;
         supplier?: string;
         supplierId?: number | null;
@@ -473,7 +474,9 @@ const Repairs: React.FC = () => {
 
                     return {
                         lineType: d.lineType,
-                        description: d.description,
+                        description: d.lineType === 'travel' && d.travelType
+                            ? `【${d.travelType === 'time' ? '移動時間' : '移動距離'}】${d.description}`
+                            : d.description,
                         supplier: d.supplier,
                         supplierId: validSupplierId,
                         remarks: d.remarks,
@@ -622,7 +625,9 @@ const Repairs: React.FC = () => {
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '35%' : '55%' }}>内容</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '35%' : '55%' }}>
+                                {type === 'travel' ? '移動場所・区間' : '内容'}
+                            </th>
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>
                                 {type === 'labor' ? '時間' : (type === 'travel' ? '時間/距離' : '数量')}
@@ -741,17 +746,33 @@ const Repairs: React.FC = () => {
                                     )}
 
                                     <td style={{ padding: '0.25rem' }}>
-                                        <input
-                                            type="text"
-                                            className={styles.tableInput}
-                                            value={detail.description}
-                                            onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
-                                            placeholder={
-                                                type === 'labor' ? '作業内容（点検、清掃、部品交換など）' :
-                                                    type === 'travel' ? '移動場所・区間など' :
-                                                        '詳細内容'
-                                            }
-                                        />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {/* Fixed Label for Travel */}
+                                            {type === 'travel' && detail.travelType && (
+                                                <span style={{
+                                                    whiteSpace: 'nowrap',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 'bold',
+                                                    color: '#64748b',
+                                                    background: '#f1f5f9',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px'
+                                                }}>
+                                                    {detail.travelType === 'time' ? '移動時間' : '移動距離'}
+                                                </span>
+                                            )}
+                                            <input
+                                                type="text"
+                                                className={styles.tableInput}
+                                                value={detail.description}
+                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
+                                                placeholder={
+                                                    type === 'labor' ? '作業内容（点検、清掃、部品交換など）' :
+                                                        type === 'travel' ? '移動場所・区間など' :
+                                                            '詳細内容'
+                                                }
+                                            />
+                                        </div>
                                     </td>
                                     {showSupplier && (
                                         <td style={{ padding: '0.25rem' }}>
@@ -780,13 +801,13 @@ const Repairs: React.FC = () => {
                                                 min="0"
                                                 step="0.1"
                                                 placeholder={
-                                                    type === 'travel' && detail.description.includes('距離') ? '10' : '1.0'
+                                                    type === 'travel' && detail.travelType === 'distance' ? '10' : '1.0'
                                                 }
                                             />
                                             {/* Unit Logic */}
                                             <span className={styles.currencyUnit}>
                                                 {type === 'labor' ? 'H' :
-                                                    (type === 'travel' && detail.description.includes('距離') ? 'km' :
+                                                    (type === 'travel' && detail.travelType === 'distance' ? 'km' :
                                                         (type === 'travel' ? 'H' : ''))}
                                             </span>
                                         </div>
