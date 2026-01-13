@@ -201,7 +201,7 @@ const Repairs: React.FC = () => {
             const timeRow: DetailItem = {
                 lineType: 'travel',
                 travelType: 'time',
-                description: '移動時間',
+                description: '',
                 supplier: '',
                 supplierId: null,
                 remarks: '',
@@ -216,7 +216,7 @@ const Repairs: React.FC = () => {
             const distanceRow: DetailItem = {
                 lineType: 'travel',
                 travelType: 'distance',
-                description: '移動距離',
+                description: '',
                 supplier: '',
                 supplierId: null,
                 remarks: '',
