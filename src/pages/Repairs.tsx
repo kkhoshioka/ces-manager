@@ -89,8 +89,15 @@ const Repairs: React.FC = () => {
 
     // Selection Data
     // Selection Data
+    // State for Master Data (Lazy Loading)
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [allMachines, setAllMachines] = useState<CustomerMachine[]>([]);
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+
+    // Loading Flags
+    const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
+    const [isFormLoading, setIsFormLoading] = useState(false);
 
     // Derived state for available machines based on selected customer name
     const availableMachines = useMemo(() => {
@@ -99,36 +106,32 @@ const Repairs: React.FC = () => {
         return allMachines.filter(m => m.customerId === customer.id);
     }, [formState.customerName, customers, allMachines]);
 
-    useEffect(() => {
-        // Load masters
-        const loadMasters = async () => {
-            const [custs, machs] = await Promise.all([
+    // Lazy load masters function
+    const loadFormData = async () => {
+        if (isMasterDataLoaded) return;
+
+        setIsFormLoading(true);
+        try {
+            const [custs, machs, cats, supps] = await Promise.all([
                 customerService.getAllCustomers().catch(() => []),
-                customerService.getAllMachines().catch(() => [])
+                customerService.getAllMachines().catch(() => []),
+                fetch(`${API_BASE_URL}/categories`).then(r => r.json()).catch(() => []),
+                fetch(`${API_BASE_URL}/suppliers`).then(r => r.json()).catch(() => [])
             ]);
+
             setCustomers(Array.isArray(custs) ? custs : []);
             setAllMachines(Array.isArray(machs) ? machs : []);
-        };
-        loadMasters();
-    }, []);
+            setCategories(Array.isArray(cats) ? cats : []);
+            setSuppliers(Array.isArray(supps) ? supps : []);
 
-    // Category State
-    const [categories, setCategories] = useState<ProductCategory[]>([]);
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-
-    useEffect(() => {
-        // Fetch Categories
-        fetch(`${API_BASE_URL}/categories`)
-            .then(res => res.json())
-            .then(data => setCategories(Array.isArray(data) ? data : []))
-            .catch(err => console.error('Failed to load categories', err));
-
-        // Fetch Suppliers
-        fetch(`${API_BASE_URL}/suppliers`)
-            .then(res => res.json())
-            .then(data => setSuppliers(Array.isArray(data) ? data : []))
-            .catch(err => console.error('Failed to load suppliers', err));
-    }, []);
+            setIsMasterDataLoaded(true);
+        } catch (error) {
+            console.error('Failed to load master data', error);
+            alert('マスタデータの読み込みに失敗しました。');
+        } finally {
+            setIsFormLoading(false);
+        }
+    };
 
     // Details State
     interface DetailItem {
@@ -533,7 +536,8 @@ const Repairs: React.FC = () => {
         setFormType('repair'); // Default reset
     };
 
-    const openNewForm = (type: 'repair' | 'sales') => {
+    const openNewForm = async (type: 'repair' | 'sales') => {
+        await loadFormData(); // Load masters before opening
         resetForm();
         setFormType(type);
         setIsFormOpen(true);
@@ -546,6 +550,7 @@ const Repairs: React.FC = () => {
     };
 
     const handleRowClick = async (project: Repair) => {
+        await loadFormData(); // Load masters before opening
         try {
             const fullProject = await RepairService.getById(project.id);
             if (fullProject) {
@@ -923,7 +928,16 @@ const Repairs: React.FC = () => {
             {/* Modal */}
             {isFormOpen && (
                 <div className={styles.modalOverlay}>
-                    <div className={styles.modal} style={{ maxWidth: '1200px', width: '95%' }}>
+                    <div className={styles.modal} style={{ maxWidth: '1200px', width: '95%', position: 'relative' }}>
+                        {isFormLoading && (
+                            <div style={{
+                                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                zIndex: 10, borderRadius: '8px'
+                            }}>
+                                <span style={{ fontWeight: 'bold' }}>データを準備中...</span>
+                            </div>
+                        )}
                         <div className={styles.modalHeader} style={{
                             backgroundColor: (formType === 'sales' ? '#e0f2fe' :
                                 formType === 'inspection' ? '#f3e8ff' :
