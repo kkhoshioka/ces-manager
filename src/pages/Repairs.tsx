@@ -137,6 +137,7 @@ const Repairs: React.FC = () => {
     interface DetailItem {
         lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other';
         travelType?: 'time' | 'distance'; // New field for Travel rows
+        productCode?: string; // New field for Product Code
         description: string;
         supplier?: string;
         supplierId?: number | null;
@@ -231,6 +232,7 @@ const Repairs: React.FC = () => {
         } else {
             setDetails(prev => [...prev, {
                 lineType: type,
+                productCode: '',
                 description: '',
                 supplier: '',
                 supplierId: null,
@@ -478,7 +480,9 @@ const Repairs: React.FC = () => {
                         lineType: d.lineType,
                         description: d.lineType === 'travel' && d.travelType
                             ? `【${d.travelType === 'time' ? '移動時間' : '移動距離'}】${d.description}`
-                            : d.description,
+                            : (d.lineType === 'part' && d.productCode
+                                ? `【${d.productCode}】${d.description}`
+                                : d.description),
                         supplier: d.supplier,
                         supplierId: validSupplierId,
                         remarks: d.remarks,
@@ -586,6 +590,7 @@ const Repairs: React.FC = () => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     setDetails(fullProject.details.map((d: any) => {
                         let tType: 'time' | 'distance' | undefined = undefined;
+                        let pCode = '';
                         let desc = d.description;
 
                         if (d.lineType === 'travel') {
@@ -605,11 +610,19 @@ const Repairs: React.FC = () => {
                                 // Default fallback if data is weird or user manually entered something
                                 tType = 'time';
                             }
+                        } else if (d.lineType === 'part') {
+                            // Parse Product Code: 【Code】Name
+                            const codeMatch = desc.match(/^【(.*?)】(.*)/);
+                            if (codeMatch) {
+                                pCode = codeMatch[1];
+                                desc = codeMatch[2];
+                            }
                         }
 
                         return {
                             lineType: d.lineType,
                             travelType: tType,
+                            productCode: pCode,
                             description: desc,
                             supplier: d.supplier || '',
                             supplierId: d.supplierId || null,
@@ -659,6 +672,7 @@ const Repairs: React.FC = () => {
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
 
+                            {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
                             {/* Travel Type has split columns */}
                             {type === 'travel' ? (
                                 <>
@@ -666,7 +680,9 @@ const Repairs: React.FC = () => {
                                     <th style={{ padding: '0.5rem', textAlign: 'center', width: '20%' }}>項目</th>
                                 </>
                             ) : (
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '35%' : '55%' }}>内容</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '25%' : '55%' }}>
+                                    {type === 'part' ? '内容・品名' : '内容'}
+                                </th>
                             )}
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
@@ -786,6 +802,18 @@ const Repairs: React.FC = () => {
                                         </td>
                                     )}
 
+                                    {type === 'part' && (
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <input
+                                                type="text"
+                                                className={styles.tableInput}
+                                                value={detail.productCode || ''}
+                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'productCode' as any, e.target.value)}
+                                                placeholder="品番"
+                                            />
+                                        </td>
+                                    )}
+
                                     {/* Description / Location Column */}
                                     {type === 'travel' ? (
                                         <>
@@ -892,7 +920,7 @@ const Repairs: React.FC = () => {
                                                     <span className={styles.currencyUnit}>円</span>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '0.25rem', textAlign: 'right' }}>{costTotal.toLocaleString()}</td>
+                                            <td style={{ padding: '0.25rem', textAlign: 'right' }}>{costTotal.toLocaleString()}円</td>
                                         </>
                                     )}
                                     <td style={{ padding: '0.25rem' }}>
@@ -901,7 +929,7 @@ const Repairs: React.FC = () => {
                                             <span className={styles.currencyUnit}>円</span>
                                         </div>
                                     </td>
-                                    <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}</td>
+                                    <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}円</td>
                                     <td style={{ padding: '0.25rem' }}>
                                         <input type="text" className={styles.tableInput} value={detail.remarks} onChange={(e) => handleDetailChange(detail.originalIndex, 'remarks', e.target.value)} />
                                     </td>
@@ -919,11 +947,11 @@ const Repairs: React.FC = () => {
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
-                                    <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}</td>
+                                    <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
                                 </>
                             )}
                             <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
-                            <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}</td>
+                            <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                             <td colSpan={2}></td>
                         </tr>
                     </tbody>
@@ -1162,7 +1190,18 @@ const Repairs: React.FC = () => {
 
                                             <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
                                             <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} required={formType !== 'sales'} />
-                                            <Input label="アワーメーター" name="hourMeter" value={formState.hourMeter} onChange={handleInputChange} placeholder="ex. 1234.5 hr" />
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <div style={{ width: '150px' }}>
+                                                    <Input
+                                                        label="アワーメーター"
+                                                        name="hourMeter"
+                                                        value={formState.hourMeter}
+                                                        onChange={handleInputChange}
+                                                        placeholder="1234.5"
+                                                    />
+                                                </div>
+                                                <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
+                                            </div>
                                         </>
                                     )}
 
