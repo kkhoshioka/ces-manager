@@ -200,6 +200,7 @@ const Repairs: React.FC = () => {
             // Add Time and Distance rows
             const timeRow: DetailItem = {
                 lineType: 'travel',
+                travelType: 'time',
                 description: '移動時間',
                 supplier: '',
                 supplierId: null,
@@ -214,6 +215,7 @@ const Repairs: React.FC = () => {
             nextIdRef.current += 1;
             const distanceRow: DetailItem = {
                 lineType: 'travel',
+                travelType: 'distance',
                 description: '移動距離',
                 supplier: '',
                 supplierId: null,
@@ -577,17 +579,44 @@ const Repairs: React.FC = () => {
 
                 if (fullProject.details) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    setDetails(fullProject.details.map((d: any) => ({
-                        lineType: d.lineType,
-                        description: d.description,
-                        supplier: d.supplier || '',
-                        remarks: d.remarks || '',
-                        quantity: Number(d.quantity),
-                        unitPrice: Number(d.unitPrice),
-                        unitCost: Number(d.unitCost),
-                        productCategoryId: d.productCategoryId || (d.product ? d.product.categoryId : null), // Try to resolve category
-                        section: d.category ? d.category.section : (d.product && d.product.productCategory ? d.product.productCategory.section : '') // Helper for UI
-                    } as DetailItem)));
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    setDetails(fullProject.details.map((d: any) => {
+                        let tType: 'time' | 'distance' | undefined = undefined;
+                        let desc = d.description;
+
+                        if (d.lineType === 'travel') {
+                            if (desc.startsWith('【移動時間】')) {
+                                tType = 'time';
+                                desc = desc.replace('【移動時間】', '');
+                            } else if (desc.startsWith('【移動距離】')) {
+                                tType = 'distance';
+                                desc = desc.replace('【移動距離】', '');
+                            } else if (desc === '移動時間' || desc === '移動時間(H)') {
+                                tType = 'time';
+                                desc = ''; // Clear legacy fixed text
+                            } else if (desc === '移動距離' || desc === '移動距離(km)') {
+                                tType = 'distance';
+                                desc = ''; // Clear legacy fixed text
+                            } else {
+                                // Default fallback if data is weird or user manually entered something
+                                tType = 'time';
+                            }
+                        }
+
+                        return {
+                            lineType: d.lineType,
+                            travelType: tType,
+                            description: desc,
+                            supplier: d.supplier || '',
+                            supplierId: d.supplierId || null,
+                            remarks: d.remarks || '',
+                            quantity: Number(d.quantity),
+                            unitPrice: Number(d.unitPrice),
+                            unitCost: Number(d.unitCost),
+                            productCategoryId: d.productCategoryId || (d.product ? d.product.categoryId : null), // Try to resolve category
+                            section: d.category ? d.category.section : (d.product && d.product.productCategory ? d.product.productCategory.section : '') // Helper for UI
+                        } as DetailItem;
+                    }));
                 } else {
                     setDetails([]);
                 }
