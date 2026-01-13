@@ -741,7 +741,17 @@ const Repairs: React.FC = () => {
                                     )}
 
                                     <td style={{ padding: '0.25rem' }}>
-                                        <input type="text" className={styles.tableInput} value={detail.description} onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)} />
+                                        <input
+                                            type="text"
+                                            className={styles.tableInput}
+                                            value={detail.description}
+                                            onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
+                                            placeholder={
+                                                type === 'labor' ? '作業内容（点検、清掃、部品交換など）' :
+                                                    type === 'travel' ? '移動場所・区間など' :
+                                                        '詳細内容'
+                                            }
+                                        />
                                     </td>
                                     {showSupplier && (
                                         <td style={{ padding: '0.25rem' }}>
@@ -769,6 +779,9 @@ const Repairs: React.FC = () => {
                                                 onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', e.target.value)}
                                                 min="0"
                                                 step="0.1"
+                                                placeholder={
+                                                    type === 'travel' && detail.description.includes('距離') ? '10' : '1.0'
+                                                }
                                             />
                                             {/* Unit Logic */}
                                             <span className={styles.currencyUnit}>
