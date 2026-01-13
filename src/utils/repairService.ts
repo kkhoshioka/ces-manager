@@ -2,8 +2,12 @@ import type { Repair, NewRepair, ProjectPhoto } from '../types/repair';
 import { API_BASE_URL } from '../config';
 
 export const RepairService = {
-    getAll: async (): Promise<Repair[]> => {
-        const response = await fetch(`${API_BASE_URL}/projects`);
+    getAll: async (options?: { limit?: number, search?: string }): Promise<Repair[]> => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.append('limit', String(options.limit));
+        if (options?.search) params.append('search', options.search);
+
+        const response = await fetch(`${API_BASE_URL}/projects?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch repairs');
         return response.json();
     },
@@ -42,15 +46,7 @@ export const RepairService = {
     },
 
     search: async (query: string): Promise<Repair[]> => {
-        const allRepairs = await RepairService.getAll();
-        if (!query) return allRepairs;
-
-        const lowerQuery = query.toLowerCase();
-        return allRepairs.filter(repair =>
-            repair.customer?.name.toLowerCase().includes(lowerQuery) ||
-            repair.machineModel?.toLowerCase().includes(lowerQuery) ||
-            repair.serialNumber?.toLowerCase().includes(lowerQuery)
-        );
+        return RepairService.getAll({ search: query });
     },
 
     uploadPhotos: async (id: number, formData: FormData): Promise<ProjectPhoto[]> => {

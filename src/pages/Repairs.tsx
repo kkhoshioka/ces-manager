@@ -304,7 +304,8 @@ const Repairs: React.FC = () => {
 
     const loadProjects = async () => {
         try {
-            const data = await RepairService.getAll();
+            // Default to loading top 50 for performance
+            const data = await RepairService.getAll({ limit: 50 });
             setProjects(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to load projects', error);
@@ -322,6 +323,7 @@ const Repairs: React.FC = () => {
             if (query.trim() === '') {
                 await loadProjects();
             } else {
+                // Now uses backend search via Service
                 const results = await RepairService.search(query);
                 setProjects(results);
             }

@@ -309,12 +309,33 @@ app.delete('/api/products/:id', async (req, res) => {
 // --- Projects (Repairs) ---
 app.get('/api/projects', async (req, res) => {
     try {
+        const { limit, search } = req.query;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const where: any = {};
+
+        if (search) {
+            const searchStr = String(search);
+            // Search across Customer Name, Machine Model, Serial Number
+            where.OR = [
+                { customer: { name: { contains: searchStr } } }, // SQLite contains is case-insensitive usually, or lowercase match
+                { machineModel: { contains: searchStr } },
+                { serialNumber: { contains: searchStr } }
+            ];
+            // If search is numeric, maybe search ID?
+            if (!isNaN(Number(searchStr))) {
+                where.OR.push({ id: Number(searchStr) });
+            }
+        }
+
         const projects = await prisma.project.findMany({
+            where,
             include: {
                 customer: true,
                 customerMachine: true,
                 details: true
             },
+            take: limit ? Number(limit) : undefined, // If undefined, fetch all (or maybe default to something if safety needed, but service handles default)
             orderBy: { createdAt: 'desc' }
         });
         res.json(projects);
