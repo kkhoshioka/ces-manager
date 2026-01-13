@@ -625,12 +625,20 @@ const Repairs: React.FC = () => {
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
                             {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '35%' : '55%' }}>
-                                {type === 'travel' ? '移動場所・区間' : '内容'}
-                            </th>
+
+                            {/* Travel Type has split columns */}
+                            {type === 'travel' ? (
+                                <>
+                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '35%' }}>移動場所・区間</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'center', width: '20%' }}>項目</th>
+                                </>
+                            ) : (
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '35%' : '55%' }}>内容</th>
+                            )}
+
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>
-                                {type === 'labor' ? '時間' : (type === 'travel' ? '時間/距離' : '数量')}
+                                {type === 'labor' ? '時間' : (type === 'travel' ? '数量' : '数量')}
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
@@ -745,35 +753,66 @@ const Repairs: React.FC = () => {
                                         </td>
                                     )}
 
-                                    <td style={{ padding: '0.25rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            {/* Fixed Label for Travel */}
-                                            {type === 'travel' && detail.travelType && (
+                                    {/* Description / Location Column */}
+                                    {type === 'travel' ? (
+                                        <>
+                                            {/* Location Input Column */}
+                                            <td style={{ padding: '0.25rem' }}>
+                                                {detail.travelType === 'time' && (
+                                                    <input
+                                                        type="text"
+                                                        className={styles.tableInput}
+                                                        value={detail.description}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            // Custom update to sync Next Row (Distance)
+                                                            setDetails(prev => {
+                                                                const newDetails = [...prev];
+                                                                // Update current (Time)
+                                                                newDetails[detail.originalIndex] = { ...newDetails[detail.originalIndex], description: val };
+
+                                                                // Try to update next (Distance) if it exists and matches
+                                                                const nextIdx = detail.originalIndex + 1;
+                                                                if (nextIdx < newDetails.length) {
+                                                                    const nextItem = newDetails[nextIdx];
+                                                                    if (nextItem.lineType === 'travel' && nextItem.travelType === 'distance') {
+                                                                        newDetails[nextIdx] = { ...newDetails[nextIdx], description: val };
+                                                                    }
+                                                                }
+                                                                return newDetails;
+                                                            });
+                                                        }}
+                                                        placeholder="移動場所・区間など"
+                                                    />
+                                                )}
+                                                {detail.travelType === 'distance' && (
+                                                    <div style={{ height: '34px' }}></div> // Spacer for empty cell
+                                                )}
+                                            </td>
+                                            {/* Fixed Item Label Column */}
+                                            <td style={{ padding: '0.25rem', textAlign: 'center' }}>
                                                 <span style={{
                                                     whiteSpace: 'nowrap',
-                                                    fontSize: '0.85rem',
+                                                    fontSize: '0.9rem',
                                                     fontWeight: 'bold',
-                                                    color: '#64748b',
-                                                    background: '#f1f5f9',
-                                                    padding: '2px 6px',
-                                                    borderRadius: '4px'
+                                                    color: '#475569',
                                                 }}>
                                                     {detail.travelType === 'time' ? '移動時間' : '移動距離'}
                                                 </span>
-                                            )}
+                                            </td>
+                                        </>
+                                    ) : (
+                                        /* Standard Content Column for other types */
+                                        <td style={{ padding: '0.25rem' }}>
                                             <input
                                                 type="text"
                                                 className={styles.tableInput}
                                                 value={detail.description}
                                                 onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
-                                                placeholder={
-                                                    type === 'labor' ? '作業内容（点検、清掃、部品交換など）' :
-                                                        type === 'travel' ? '移動場所・区間など' :
-                                                            '詳細内容'
-                                                }
+                                                placeholder={type === 'labor' ? '作業内容（点検、清掃、部品交換など）' : '詳細内容'}
                                             />
-                                        </div>
-                                    </td>
+                                        </td>
+                                    )}
                                     {showSupplier && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <input
