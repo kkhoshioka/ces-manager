@@ -1003,7 +1003,7 @@ const Repairs: React.FC = () => {
                             <th>受付/販売日</th>
                             <th>顧客名</th>
                             <th>機種 / シリアル (件名)</th>
-                            <th>備考</th>
+                            <th>内容</th>
                             <th>アクション</th>
                         </tr>
                     </thead>
@@ -1044,7 +1044,7 @@ const Repairs: React.FC = () => {
                                             <span className={styles.serial}>{project.serialNumber || '-'}</span>
                                         </div>
                                     </td>
-                                    <td className={styles.issue}>{project.notes}</td>
+                                    <td className={styles.issue}>{(project.notes || '').split('\n\n備考: ')[0]}</td>
                                     <td>
                                         <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
                                             <Button variant="ghost" size="sm" onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/invoice`, '_blank')} title="請求書PDF"><FileText size={16} /></Button>
