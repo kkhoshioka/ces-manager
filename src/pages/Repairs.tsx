@@ -701,12 +701,12 @@ const Repairs: React.FC = () => {
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '130px', whiteSpace: 'nowrap' }}>原価単価</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '130px', whiteSpace: 'nowrap' }}>原価計</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '140px', whiteSpace: 'nowrap' }}>原価単価</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '140px', whiteSpace: 'nowrap' }}>原価計</th>
                                 </>
                             )}
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '130px', whiteSpace: 'nowrap' }}>請求単価</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '130px', whiteSpace: 'nowrap' }}>請求額</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '140px', whiteSpace: 'nowrap' }}>請求単価</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '140px', whiteSpace: 'nowrap' }}>請求額</th>
                             <th style={{ width: '40px' }}></th>
                         </tr>
                     </thead>
