@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import styles from './SupplierMonthlyReport.module.css'; // Reusing similar styles
+import styles from '../Dashboard.module.css'; // Reusing similar styles
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 

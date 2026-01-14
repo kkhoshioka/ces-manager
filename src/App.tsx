@@ -70,6 +70,7 @@ function App() {
               <Route path="masters" element={<ProtectedRoute allowedRoles={['admin']}><Masters /></ProtectedRoute>} />
               <Route path="machines" element={<ProtectedRoute allowedRoles={['admin']}><MachineRegistry /></ProtectedRoute>} />
               <Route path="machines/:id" element={<ProtectedRoute allowedRoles={['admin']}><MachineDetail /></ProtectedRoute>} />
+              <Route path="sales-management" element={<ProtectedRoute allowedRoles={['admin']}><SalesManagement /></ProtectedRoute>} />
               <Route path="reports/supplier-costs" element={<ProtectedRoute allowedRoles={['admin']}><SupplierMonthlyReport /></ProtectedRoute>} />
             </Route>
 
