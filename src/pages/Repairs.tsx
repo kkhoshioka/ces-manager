@@ -451,7 +451,7 @@ const Repairs: React.FC = () => {
                 machineModel: formState.machineModel,
                 serialNumber: formState.serialNumber,
                 hourMeter: formState.hourMeter,
-                orderDate: formState.orderDate ? new Date(formState.orderDate) : null,
+                orderDate: formState.orderDate ? new Date(formState.orderDate) : new Date(), // Auto-fill today if empty
                 completionDate: formState.completionDate ? new Date(formState.completionDate) : null,
                 notes: ((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') ? formState.issueDescription : '') + (formState.notes ? `\n\n備考: ${formState.notes}` : ''),
                 status: formState.status,
@@ -1069,7 +1069,7 @@ const Repairs: React.FC = () => {
             {/* Modal */}
             {isFormOpen && (
                 <div className={styles.modalOverlay}>
-                    <div className={styles.modal} style={{ maxWidth: '1200px', width: '95%', position: 'relative' }}>
+                    <div className={styles.modal} style={{ maxWidth: '1400px', width: '95%', position: 'relative' }}>
                         {isFormLoading && (
                             <div style={{
                                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -1105,7 +1105,7 @@ const Repairs: React.FC = () => {
                                             onChange={(e) => setFormType(e.target.value as any)}
                                             className="border rounded-md p-2 text-sm form-select"
                                             style={{
-                                                width: '200px',
+                                                width: '160px',
                                                 backgroundColor: (formType === 'sales' ? '#e0f2fe' :
                                                     formType === 'inspection' ? '#f3e8ff' :
                                                         formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
@@ -1126,7 +1126,7 @@ const Repairs: React.FC = () => {
                                         </select>
                                     </div>
 
-                                    <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
                                             <select
@@ -1146,24 +1146,26 @@ const Repairs: React.FC = () => {
                                                 <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <Input
-                                                type="date"
-                                                label="受付日"
-                                                name="orderDate"
-                                                value={formState.orderDate}
-                                                onChange={handleInputChange}
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <Input
-                                                type="date"
-                                                label="完了日"
-                                                name="completionDate"
-                                                value={formState.completionDate}
-                                                onChange={handleInputChange}
-                                            />
+                                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
+                                            <div>
+                                                <Input
+                                                    type="date"
+                                                    label="受付日"
+                                                    name="orderDate"
+                                                    value={formState.orderDate}
+                                                    onChange={handleInputChange}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <Input
+                                                    type="date"
+                                                    label="完了日"
+                                                    name="completionDate"
+                                                    value={formState.completionDate}
+                                                    onChange={handleInputChange}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
