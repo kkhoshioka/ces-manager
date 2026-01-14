@@ -139,6 +139,9 @@ model ProjectDetail {
   product         Product? @relation(fields: [productId], references: [id])
   category        ProductCategory? @relation(fields: [productCategoryId], references: [id])
   supplierObj     Supplier? @relation(fields: [supplierId], references: [id])
+
+  isInvoiceReceived Boolean  @default(false)
+  isPaid            Boolean  @default(false)
 }
 
 // 6. Project Photos
@@ -213,26 +216,9 @@ model Supplier {
   updatedAt     DateTime @updatedAt
 
   projectDetails ProjectDetail[]
-  monthlyPayments SupplierMonthlyPayment[]
 }
 
-model SupplierMonthlyPayment {
-  id                Int      @id @default(autoincrement())
-  supplierId        Int
-  year              Int
-  month             Int
-  isInvoiceReceived Boolean  @default(false)
-  isPaid            Boolean  @default(false)
-  paidAt            DateTime?
-  notes             String?
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  supplier          Supplier @relation(fields: [supplierId], references: [id])
-
-  @@unique([supplierId, year, month])
-}
+// 9. User Profiles (Auth)
 
 
 // 9. User Profiles (Auth)

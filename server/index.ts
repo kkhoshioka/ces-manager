@@ -1170,38 +1170,16 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             }
         });
 
-        // 2. Fetch Monthly Statuses
-        // If specific month is selected, fetch for that month
-        // If year only, we might need to handle differently, but requirement implies "monthly check".
-        // Let's assume this view is primarily monthly or we return the status for the aggregated period if single month
-        const monthlyStatuses = await prisma.supplierMonthlyPayment.findMany({
-            where: {
-                year: Number(year),
-                month: Number(month) || undefined // If month not specified, fetch all for year? simpler to focus on monthly view
-            }
-        });
-
-        // Map statuses by supplierId
-        const statusMap = new Map();
-        monthlyStatuses.forEach(s => {
-            statusMap.set(s.supplierId, s);
-        });
-
-        // 3. Aggregate
-        const supplierStats: Record<string, { totalCost: number; count: number; supplierId: number | null }> = {};
+        // Aggregate
+        const supplierStats: Record<string, { totalCost: number; count: number }> = {};
 
         projects.forEach(project => {
             project.details.forEach(detail => {
                 const name = detail.supplierObj?.name || detail.supplier;
-                const sid = detail.supplierObj?.id || null;
 
                 if (name && Number(detail.unitCost) > 0) {
                     if (!supplierStats[name]) {
-                        supplierStats[name] = { totalCost: 0, count: 0, supplierId: sid };
-                    }
-                    // Capture ID if available (priority to linked ID)
-                    if (sid && !supplierStats[name].supplierId) {
-                        supplierStats[name].supplierId = sid;
+                        supplierStats[name] = { totalCost: 0, count: 0 };
                     }
 
                     const qty = Number(detail.quantity);
@@ -1214,20 +1192,11 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
         });
 
         const result = Object.entries(supplierStats)
-            .map(([name, stats]) => {
-                const status = stats.supplierId ? statusMap.get(stats.supplierId) : null;
-                return {
-                    name,
-                    supplierId: stats.supplierId,
-                    totalCost: stats.totalCost,
-                    count: stats.count,
-                    // Status fields
-                    isInvoiceReceived: status?.isInvoiceReceived || false,
-                    isPaid: status?.isPaid || false,
-                    paidAt: status?.paidAt || null,
-                    notes: status?.notes || ''
-                };
-            })
+            .map(([name, stats]) => ({
+                name,
+                totalCost: stats.totalCost,
+                count: stats.count
+            }))
             .sort((a, b) => b.totalCost - a.totalCost);
 
         res.json(result);
@@ -1238,47 +1207,24 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
     }
 });
 
-// Update Monthly Supplier Status
-app.post('/api/dashboard/supplier-status', async (req, res) => {
+// Update Project Detail Status (Invoice/Payment)
+app.put('/api/project-details/:id/status', async (req, res) => {
     try {
-        const { supplierId, year, month, isInvoiceReceived, isPaid, notes } = req.body;
+        const { id } = req.params;
+        const { isInvoiceReceived, isPaid } = req.body;
 
-        if (!supplierId || !year || !month) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        const paidAt = isPaid ? new Date() : null;
-
-        const status = await prisma.supplierMonthlyPayment.upsert({
-            where: {
-                supplierId_year_month: {
-                    supplierId: Number(supplierId),
-                    year: Number(year),
-                    month: Number(month)
-                }
-            },
-            update: {
+        const detail = await prisma.projectDetail.update({
+            where: { id: Number(id) },
+            data: {
                 isInvoiceReceived,
-                isPaid,
-                paidAt: isPaid ? new Date() : null,
-                notes
-            },
-            create: {
-                supplierId: Number(supplierId),
-                year: Number(year),
-                month: Number(month),
-                isInvoiceReceived: isInvoiceReceived || false,
-                isPaid: isPaid || false,
-                paidAt: isPaid ? new Date() : null,
-                notes
+                isPaid
             }
         });
 
-        res.json(status);
-
+        res.json(detail);
     } catch (error) {
-        console.error('Update Monthly Status Error:', error);
-        res.status(500).json({ error: 'Failed to update status' });
+        console.error('Update Detail Status Error:', error);
+        res.status(500).json({ error: 'Failed to update detail status' });
     }
 });
 
@@ -1329,7 +1275,9 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                         description: detail.description,
                         quantity: Number(detail.quantity),
                         unitCost: Number(detail.unitCost),
-                        amount: Number(detail.quantity) * Number(detail.unitCost)
+                        amount: Number(detail.quantity) * Number(detail.unitCost),
+                        isInvoiceReceived: detail.isInvoiceReceived,
+                        isPaid: detail.isPaid
                     });
                 }
             });

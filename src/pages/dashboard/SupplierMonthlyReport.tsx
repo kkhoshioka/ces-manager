@@ -10,10 +10,6 @@ interface SupplierCost {
     name: string;
     totalCost: number;
     count: number;
-    supplierId?: number;
-    isInvoiceReceived?: boolean;
-    isPaid?: boolean;
-    notes?: string;
 }
 
 interface SupplierDetail {
@@ -26,6 +22,8 @@ interface SupplierDetail {
     quantity: number;
     unitCost: number;
     amount: number;
+    isInvoiceReceived: boolean;
+    isPaid: boolean;
 }
 
 const SupplierMonthlyReport = () => {
@@ -59,27 +57,24 @@ const SupplierMonthlyReport = () => {
         fetchReport();
     }, [fetchReport]);
 
-    const handleStatusChange = async (supplierId: number | undefined, field: 'isInvoiceReceived' | 'isPaid', value: boolean) => {
-        if (!supplierId) return;
-
+    const handleDetailStatusChange = async (detailId: number, field: 'isInvoiceReceived' | 'isPaid', value: boolean) => {
         // Optimistic update
-        setData(prev => prev.map(item =>
-            item.supplierId === supplierId ? { ...item, [field]: value } : item
+        setDetailData(prev => prev.map(item =>
+            item.id === detailId ? { ...item, [field]: value } : item
         ));
 
         try {
-            const currentItem = data.find(item => item.supplierId === supplierId);
+            // Get current internal state to build payload if necessary, but here we just send the one changing field + other
+            const currentItem = detailData.find(item => item.id === detailId);
+            if (!currentItem) return;
+
             const payload = {
-                supplierId,
-                year,
-                month,
-                isInvoiceReceived: field === 'isInvoiceReceived' ? value : currentItem?.isInvoiceReceived,
-                isPaid: field === 'isPaid' ? value : currentItem?.isPaid,
-                notes: currentItem?.notes
+                isInvoiceReceived: field === 'isInvoiceReceived' ? value : currentItem.isInvoiceReceived,
+                isPaid: field === 'isPaid' ? value : currentItem.isPaid
             };
 
-            const response = await fetch(`${API_BASE_URL}/dashboard/supplier-status`, {
-                method: 'POST',
+            const response = await fetch(`${API_BASE_URL}/project-details/${detailId}/status`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
@@ -89,7 +84,14 @@ const SupplierMonthlyReport = () => {
         } catch (error) {
             console.error(error);
             alert('ステータスの更新に失敗しました');
-            fetchReport(); // Revert on error
+            // Re-fetch detail data on error to revert
+            if (selectedSupplier) {
+                const response = await fetch(`${API_BASE_URL}/dashboard/supplier-details?year=${year}&month=${month}&supplier=${encodeURIComponent(selectedSupplier)}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    setDetailData(result);
+                }
+            }
         }
     };
 
@@ -191,8 +193,6 @@ const SupplierMonthlyReport = () => {
                         <thead>
                             <tr>
                                 <th>仕入先名</th>
-                                <th style={{ textAlign: 'center' }}>請求書</th>
-                                <th style={{ textAlign: 'center' }}>支払</th>
                                 <th className={styles.right}>取引回数</th>
                                 <th className={styles.right}>仕入金額 (原価)</th>
                                 <th className={styles.right}>構成比</th>
@@ -202,13 +202,13 @@ const SupplierMonthlyReport = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                                         読み込み中...
                                     </td>
                                 </tr>
                             ) : data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                                         データがありません
                                     </td>
                                 </tr>
@@ -221,29 +221,6 @@ const SupplierMonthlyReport = () => {
                                             style={{ cursor: 'pointer', backgroundColor: selectedSupplier === item.name ? '#eff6ff' : undefined }}
                                         >
                                             <td style={{ fontWeight: 500 }}>{item.name}</td>
-
-                                            {/* Invoice Checkbox */}
-                                            <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!item.isInvoiceReceived}
-                                                    onChange={(e) => handleStatusChange(item.supplierId, 'isInvoiceReceived', e.target.checked)}
-                                                    disabled={!item.supplierId}
-                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                                />
-                                            </td>
-
-                                            {/* Payment Checkbox */}
-                                            <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!item.isPaid}
-                                                    onChange={(e) => handleStatusChange(item.supplierId, 'isPaid', e.target.checked)}
-                                                    disabled={!item.supplierId}
-                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                                />
-                                            </td>
-
                                             <td className={styles.right}>{item.count} 回</td>
                                             <td className={styles.right} style={{ fontWeight: 'bold' }}>
                                                 {formatCurrency(item.totalCost)}
@@ -259,7 +236,7 @@ const SupplierMonthlyReport = () => {
                                         </tr>
                                         {selectedSupplier === item.name && (
                                             <tr className={styles.detailRow}>
-                                                <td colSpan={7} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
+                                                <td colSpan={5} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
                                                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc' }}>
                                                         <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#475569' }}>
                                                             {item.name} の取引明細
@@ -272,6 +249,8 @@ const SupplierMonthlyReport = () => {
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>顧客名</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>機種 / S/N</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>品名</th>
+                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>請求書</th>
+                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>支払</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'right' }}>数量</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'right' }}>単価</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額</th>
@@ -279,9 +258,9 @@ const SupplierMonthlyReport = () => {
                                                                 </thead>
                                                                 <tbody>
                                                                     {detailLoading ? (
-                                                                        <tr><td colSpan={7} style={{ padding: '1rem', textAlign: 'center' }}>読み込み中...</td></tr>
+                                                                        <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>読み込み中...</td></tr>
                                                                     ) : detailData.length === 0 ? (
-                                                                        <tr><td colSpan={7} style={{ padding: '1rem', textAlign: 'center' }}>明細データなし</td></tr>
+                                                                        <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>明細データなし</td></tr>
                                                                     ) : (
                                                                         detailData.map((d) => (
                                                                             <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -289,6 +268,22 @@ const SupplierMonthlyReport = () => {
                                                                                 <td style={{ padding: '0.5rem' }}>{d.customerName}</td>
                                                                                 <td style={{ padding: '0.5rem' }}>{d.machineModel}<br /><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.serialNumber}</span></td>
                                                                                 <td style={{ padding: '0.5rem' }}>{d.description}</td>
+                                                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={!!d.isInvoiceReceived}
+                                                                                        onChange={(e) => handleDetailStatusChange(d.id, 'isInvoiceReceived', e.target.checked)}
+                                                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                    />
+                                                                                </td>
+                                                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={!!d.isPaid}
+                                                                                        onChange={(e) => handleDetailStatusChange(d.id, 'isPaid', e.target.checked)}
+                                                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                    />
+                                                                                </td>
                                                                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{d.quantity}</td>
                                                                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(d.unitCost)}</td>
                                                                                 <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(d.amount)}</td>
