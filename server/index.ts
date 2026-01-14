@@ -127,12 +127,14 @@ app.get('/api/machines', async (req, res) => {
 
 app.post('/api/machines', async (req, res) => {
     try {
-        const { productCategoryId, ...data } = req.body;
+        const { customerId, productCategoryId, ...data } = req.body;
         const machine = await prisma.customerMachine.create({
             data: {
                 ...data,
+                customerId: Number(customerId),
                 productCategoryId: productCategoryId ? Number(productCategoryId) : null
-            }
+            },
+            include: { customer: true, category: true }
         });
         res.json(machine);
     } catch (error) {
@@ -144,16 +146,33 @@ app.post('/api/machines', async (req, res) => {
     }
 });
 
+app.get('/api/machines/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const machine = await prisma.customerMachine.findUnique({
+            where: { id: Number(id) },
+            include: { customer: true, category: true }
+        });
+        if (!machine) return res.status(404).json({ error: 'Machine not found' });
+        res.json(machine);
+    } catch (error) {
+        console.error('Failed to fetch machine:', error);
+        res.status(500).json({ error: 'Failed to fetch machine' });
+    }
+});
+
 app.put('/api/machines/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { productCategoryId, ...data } = req.body;
+        const { customerId, productCategoryId, ...data } = req.body;
         const machine = await prisma.customerMachine.update({
             where: { id: Number(id) },
             data: {
                 ...data,
+                customerId: Number(customerId),
                 productCategoryId: productCategoryId ? Number(productCategoryId) : null
-            }
+            },
+            include: { customer: true, category: true }
         });
         res.json(machine);
     } catch (error) {
@@ -356,6 +375,15 @@ app.post('/api/projects', async (req, res) => {
                 ...(details && { details: { create: details } })
             }
         });
+
+        // Auto-update Link Machine Hour Meter
+        if (customerMachineId && hourMeter) {
+            await prisma.customerMachine.update({
+                where: { id: Number(customerMachineId) },
+                data: { hourMeter: String(hourMeter) }
+            }).catch(e => console.error('Failed to auto-update machine hour meter', e));
+        }
+
         res.json(project);
     } catch (error) {
         console.error('Failed to create project', error);
@@ -432,6 +460,15 @@ app.put('/api/projects/:id', async (req, res) => {
                 }
             });
             console.log('[DEBUG] Main project fields updated');
+
+            // Auto-update Link Machine Hour Meter
+            if (cmid && data.hourMeter) {
+                await tx.customerMachine.update({
+                    where: { id: cmid },
+                    data: { hourMeter: String(data.hourMeter) }
+                });
+                console.log('[DEBUG] Machine hour meter updated');
+            }
 
             // 2. Update details (Delete all existing and recreate)
             if (details) {
@@ -659,58 +696,9 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
     }
 });
 
-// --- Customer Machines ---
-app.get('/api/machines', async (req, res) => {
-    try {
-        const machines = await prisma.customerMachine.findMany({
-            include: {
-                customer: true,
-                category: true
-            }
-        });
-        res.json(machines);
-    } catch {
-        res.status(500).json({ error: 'Failed to fetch machines' });
-    }
-});
+// --- Customer Machines (History) ---
+// Note: Basic CRUD is handled above in the main Machines block.
 
-app.post('/api/machines', async (req, res) => {
-    try {
-        const { customerId, productCategoryId, ...data } = req.body;
-        const machine = await prisma.customerMachine.create({
-            data: {
-                ...data, // machineModel, serialNumber, purchaseDate, notes
-                customer: { connect: { id: Number(customerId) } },
-                ...(productCategoryId ? { category: { connect: { id: Number(productCategoryId) } } } : {})
-            },
-            include: { customer: true, category: true }
-        });
-        res.json(machine);
-    } catch {
-        res.status(500).json({ error: 'Failed to create machine' });
-    }
-});
-
-app.put('/api/machines/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { customerId, productCategoryId, ...data } = req.body;
-        const machine = await prisma.customerMachine.update({
-            where: { id: Number(id) },
-            data: {
-                ...data,
-                customer: { connect: { id: Number(customerId) } },
-                ...(productCategoryId !== undefined ? {
-                    category: productCategoryId ? { connect: { id: Number(productCategoryId) } } : { disconnect: true }
-                } : {})
-            },
-            include: { customer: true, category: true }
-        });
-        res.json(machine);
-    } catch {
-        res.status(500).json({ error: 'Failed to update machine' });
-    }
-});
 
 app.get('/api/machines/:id/history', async (req, res) => {
     try {

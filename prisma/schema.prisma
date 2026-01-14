@@ -59,7 +59,10 @@ model CustomerMachine {
   customerId   Int
   machineModel String
   serialNumber String
-  purchaseDate DateTime?
+  manufacturingDate String? // 製造年月 (YYYY-MM)
+  deliveryDate      DateTime? // 納入日
+  lastInspectionDate DateTime? // 前回年次点検日
+  nextInspectionDate DateTime? // 年次点検期限 (Calculated)
   notes        String?
   hourMeter    String?  // Current hour meter reading
   
@@ -198,7 +201,12 @@ model Supplier {
   // New fields
   fax                       String?
   invoiceRegistrationNumber String?
-  bankAccountInfo           String? // 請求先口座情報
+  // Split Bank Info
+  bankName      String? // 銀行名
+  branchName    String? // 支店名
+  accountType   String? // 口座種別 (普通/当座)
+  accountNumber String? // 口座番号
+  accountHolder String? // 名義
   paymentTerms              String? // 支払条件
   
   createdAt     DateTime @default(now())

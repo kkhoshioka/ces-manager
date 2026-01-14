@@ -22,7 +22,10 @@ export interface CustomerMachine {
     machineModel: string;
     serialNumber: string;
     hourMeter?: string | null;
-    purchaseDate?: string | null;
+    manufacturingDate?: string | null; // YYYY-MM
+    deliveryDate?: string | null;
+    lastInspectionDate?: string | null;
+    nextInspectionDate?: string | null;
     notes?: string | null;
     productCategoryId?: number | null;
     category?: {

@@ -89,12 +89,38 @@ const MachineDetail: React.FC = () => {
                         <span className={styles.detailLabel}>シリアルNo</span>
                         <span className={styles.detailValueMono}>{machine.serialNumber}</span>
                     </div>
+
                     <div className={styles.detailItem}>
-                        <span className={styles.detailLabel}>購入日</span>
+                        <span className={styles.detailLabel}>製造年月</span>
+                        <span className={styles.detailValue}>{machine.manufacturingDate || '-'}</span>
+                    </div>
+
+                    <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>納入日</span>
                         <span className={styles.detailValue}>
-                            {machine.purchaseDate ? format(new Date(machine.purchaseDate), 'yyyy/MM/dd') : '-'}
+                            {machine.deliveryDate ? format(new Date(machine.deliveryDate), 'yyyy/MM/dd') : '-'}
                         </span>
                     </div>
+
+                    <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>アワーメーター</span>
+                        <span className={styles.detailValue}>{machine.hourMeter || '-'}</span>
+                    </div>
+
+                    <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>前回年次点検</span>
+                        <span className={styles.detailValue}>
+                            {machine.lastInspectionDate ? format(new Date(machine.lastInspectionDate), 'yyyy/MM/dd') : '-'}
+                        </span>
+                    </div>
+
+                    <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>年次点検期限</span>
+                        <span className={styles.detailValue} style={machine.nextInspectionDate ? { fontWeight: 'bold' } : {}}>
+                            {machine.nextInspectionDate ? format(new Date(machine.nextInspectionDate), 'yyyy/MM/dd') : '-'}
+                        </span>
+                    </div>
+
                     <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
                         <span className={styles.detailLabel}>備考</span>
                         <span className={styles.detailValue} style={{ whiteSpace: 'pre-wrap' }}>

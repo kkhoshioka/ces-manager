@@ -16,7 +16,12 @@ interface Supplier {
     address: string;
     fax?: string;
     invoiceRegistrationNumber?: string;
-    bankAccountInfo?: string;
+
+    bankName?: string;
+    branchName?: string;
+    accountType?: string;
+    accountNumber?: string;
+    accountHolder?: string;
     paymentTerms?: string;
     createdAt: string;
 }
@@ -208,13 +213,45 @@ const SupplierMaster: React.FC = () => {
                                     placeholder="例: 月末締め翌月末払い"
                                 />
                             </div>
+
+                            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0.5rem 0 0.25rem', color: '#4b5563' }}>口座情報</h3>
                             <div className={styles.formGrid}>
                                 <Input
-                                    label="請求先口座情報"
-                                    value={currentSupplier.bankAccountInfo || ''}
-                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, bankAccountInfo: e.target.value })}
-                                    placeholder="銀行名 支店名 口座種別 口座番号 名義"
+                                    label="銀行名"
+                                    value={currentSupplier.bankName || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, bankName: e.target.value })}
+                                    placeholder="例: 〇〇銀行"
                                 />
+                                <Input
+                                    label="支店名"
+                                    value={currentSupplier.branchName || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, branchName: e.target.value })}
+                                    placeholder="例: 〇〇支店"
+                                />
+                            </div>
+                            <div className={styles.formGrid}>
+                                <Input
+                                    label="口座種別"
+                                    value={currentSupplier.accountType || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, accountType: e.target.value })}
+                                    placeholder="例: 普通、当座"
+                                />
+                                <Input
+                                    label="口座番号"
+                                    value={currentSupplier.accountNumber || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, accountNumber: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="口座名義"
+                                    value={currentSupplier.accountHolder || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, accountHolder: e.target.value })}
+                                    placeholder="例: カ）シーイーエス"
+                                />
+                            </div>
+
+                            <div style={{ marginTop: '0.5rem' }}>
                                 <Input
                                     label="住所"
                                     value={currentSupplier.address || ''}
@@ -228,9 +265,9 @@ const SupplierMaster: React.FC = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div >
             )}
-        </div>
+        </div >
     );
 };
 

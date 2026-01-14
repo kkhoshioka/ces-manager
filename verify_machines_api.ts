@@ -47,7 +47,7 @@ async function verifyMachinesApi() {
                 productCategoryId: category.id,
                 machineModel: 'PC200-11',
                 serialNumber: serialNo,
-                purchaseDate: new Date().toISOString(),
+                deliveryDate: new Date().toISOString(),
                 notes: 'Initial Verification Machine'
             })
         });
@@ -63,16 +63,25 @@ async function verifyMachinesApi() {
             body: JSON.stringify({
                 // keep other fields
                 customerId: customer.id,
-                // update notes
-                notes: 'Updated Verification Note'
+                // update notes and NEW fields
+                notes: 'Updated Verification Note',
+                hourMeter: '1234.5',
+                manufacturingDate: '2023-01',
+                deliveryDate: new Date().toISOString(),
+                lastInspectionDate: new Date().toISOString()
             })
         });
         if (!updateRes.ok) throw new Error(`Failed to update machine: ${await updateRes.text()}`);
         const updatedMachine = await updateRes.json();
-        if (updatedMachine.notes === 'Updated Verification Note') {
-            console.log(' -> Machine Updated Successfully. Notes:', updatedMachine.notes);
+
+        console.log(' -> Machine Updated. Notes:', updatedMachine.notes);
+        console.log(' -> Hour Meter:', updatedMachine.hourMeter);
+        console.log(' -> Manufacturing Date:', updatedMachine.manufacturingDate);
+
+        if (updatedMachine.notes === 'Updated Verification Note' && updatedMachine.hourMeter === '1234.5') {
+            console.log(' -> SUCCESS: Machine fields updated correctly.');
         } else {
-            console.error(' -> Top Update Failed. Notes:', updatedMachine.notes);
+            console.error(' -> FAILURE: Machine fields NOT updated correctly.');
         }
 
         // 5. Create a Linked Project (to test history)

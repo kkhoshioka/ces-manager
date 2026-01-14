@@ -19,10 +19,24 @@ const MachineRegistry: React.FC = () => {
     const fetchMachines = useCallback(async () => {
         try {
             const res = await axios.get<CustomerMachine[]>(`${API_BASE_URL}/machines`);
-            // Safe check to ensure data is array
             const data = Array.isArray(res.data) ? res.data : [];
-            setMachines(data);
-            setFilteredMachines(data);
+
+            // Sort: Machines with inspection within 1 month come first
+            const now = new Date();
+            const oneMonthLater = new Date();
+            oneMonthLater.setMonth(now.getMonth() + 1);
+
+            const sortedData = [...data].sort((a, b) => {
+                const getPriority = (m: CustomerMachine) => {
+                    if (!m.nextInspectionDate) return 0;
+                    const nextDate = new Date(m.nextInspectionDate);
+                    return nextDate <= oneMonthLater ? 2 : 1;
+                };
+                return getPriority(b) - getPriority(a);
+            });
+
+            setMachines(sortedData);
+            setFilteredMachines(sortedData);
         } catch (error) {
             console.error('Failed to fetch machines', error);
             setMachines([]);
@@ -99,7 +113,8 @@ const MachineRegistry: React.FC = () => {
                             <th>顧客名</th>
                             <th>機種名 (モデル)</th>
                             <th>シリアルNo</th>
-                            <th>購入日</th>
+                            <th>アワーメーター</th>
+                            <th>年次点検期限</th>
                             <th style={{ width: '80px' }}>操作</th>
                         </tr>
                     </thead>
@@ -109,27 +124,43 @@ const MachineRegistry: React.FC = () => {
                                 <td colSpan={6} className={styles.emptyState}>データがありません</td>
                             </tr>
                         ) : (
-                            filteredMachines.map((machine) => (
-                                <tr key={machine.id}>
-                                    <td>{machine.customer?.name}</td>
-                                    <td>
-                                        <Link to={`/machines/${machine.id}`} className={styles.modelName}>
-                                            {machine.machineModel}
-                                        </Link>
-                                    </td>
-                                    <td style={{ fontFamily: 'monospace' }}>{machine.serialNumber}</td>
-                                    <td>
-                                        {machine.purchaseDate ? format(new Date(machine.purchaseDate), 'yyyy/MM/dd') : '-'}
-                                    </td>
-                                    <td>
-                                        <div className={styles.actions}>
-                                            <button className={styles.actionButton} onClick={() => handleEdit(machine)} title="編集">
-                                                <Edit size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+
+                            filteredMachines.map((machine) => {
+                                let isAlert = false;
+                                if (machine.nextInspectionDate) {
+                                    const nextDate = new Date(machine.nextInspectionDate);
+                                    const now = new Date();
+                                    const oneMonthLater = new Date();
+                                    oneMonthLater.setMonth(now.getMonth() + 1);
+                                    if (nextDate <= oneMonthLater) {
+                                        isAlert = true;
+                                    }
+                                }
+
+                                return (
+                                    <tr key={machine.id} style={isAlert ? { backgroundColor: '#fff1f2' } : {}}>
+                                        <td>{machine.customer?.name}</td>
+                                        <td>
+                                            <Link to={`/machines/${machine.id}`} className={styles.modelName}>
+                                                {machine.machineModel}
+                                            </Link>
+                                        </td>
+                                        <td style={{ fontFamily: 'monospace' }}>{machine.serialNumber}</td>
+                                        <td>{machine.hourMeter || '-'}</td>
+                                        <td style={isAlert ? { color: '#e11d48', fontWeight: 'bold' } : {}}>
+                                            {machine.nextInspectionDate ? format(new Date(machine.nextInspectionDate), 'yyyy/MM/dd') : '-'}
+                                            {isAlert && <span style={{ marginLeft: '8px', fontSize: '0.75rem', backgroundColor: '#e11d48', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>期限近</span>}
+                                        </td>
+                                        <td>
+                                            <div className={styles.actions}>
+                                                <button className={styles.actionButton} onClick={() => handleEdit(machine)} title="編集">
+                                                    <Edit size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>

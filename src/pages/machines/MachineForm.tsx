@@ -22,7 +22,11 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
     const [customerId, setCustomerId] = useState<string>(machine?.customerId.toString() || '');
     const [machineModel, setMachineModel] = useState(machine?.machineModel || '');
     const [serialNumber, setSerialNumber] = useState(machine?.serialNumber || '');
-    const [purchaseDate, setPurchaseDate] = useState(machine?.purchaseDate ? machine.purchaseDate.toString().split('T')[0] : '');
+    const [manufacturingDate, setManufacturingDate] = useState(machine?.manufacturingDate || '');
+    const [deliveryDate, setDeliveryDate] = useState(machine?.deliveryDate ? machine.deliveryDate.toString().split('T')[0] : '');
+    const [lastInspectionDate, setLastInspectionDate] = useState(machine?.lastInspectionDate ? machine.lastInspectionDate.toString().split('T')[0] : '');
+    const [nextInspectionDate, setNextInspectionDate] = useState(machine?.nextInspectionDate ? machine.nextInspectionDate.toString().split('T')[0] : '');
+    const [hourMeter, setHourMeter] = useState(machine?.hourMeter || '');
     const [notes, setNotes] = useState(machine?.notes || '');
     const [productCategoryId, setProductCategoryId] = useState<string>(machine?.productCategoryId?.toString() || '');
     const [categories, setCategories] = useState<{ id: number; section: string; name: string; code: string | null }[]>([]);
@@ -48,13 +52,26 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
         loadMasters();
     }, []);
 
+    // Auto-calculate next inspection date
+    useEffect(() => {
+        if (lastInspectionDate) {
+            const date = new Date(lastInspectionDate);
+            date.setFullYear(date.getFullYear() + 1);
+            setNextInspectionDate(date.toISOString().split('T')[0]);
+        }
+    }, [lastInspectionDate]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const payload = {
             customerId: Number(customerId),
             machineModel,
             serialNumber,
-            purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
+            manufacturingDate: manufacturingDate || null,
+            deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+            lastInspectionDate: lastInspectionDate ? new Date(lastInspectionDate) : null,
+            nextInspectionDate: nextInspectionDate ? new Date(nextInspectionDate) : null,
+            hourMeter: hourMeter || null,
             notes,
             productCategoryId: productCategoryId ? Number(productCategoryId) : null
         };
@@ -146,12 +163,46 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
                     </div>
 
                     <div className={styles.formGroup}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <Input
+                                label="製造年月"
+                                type="month"
+                                value={manufacturingDate}
+                                onChange={e => setManufacturingDate(e.target.value)}
+                            />
+                            <Input
+                                label="納入日"
+                                type="date"
+                                value={deliveryDate}
+                                onChange={e => setDeliveryDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
                         <Input
-                            type="date"
-                            label="購入日"
-                            value={purchaseDate}
-                            onChange={e => setPurchaseDate(e.target.value)}
+                            label="現在のアワーメーター"
+                            value={hourMeter}
+                            onChange={e => setHourMeter(e.target.value)}
+                            placeholder="例: 1234.5 Hr"
                         />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <Input
+                                label="前回年次点検日"
+                                type="date"
+                                value={lastInspectionDate}
+                                onChange={e => setLastInspectionDate(e.target.value)}
+                            />
+                            <Input
+                                label="年次点検期限 (前回+1年)"
+                                type="date"
+                                value={nextInspectionDate}
+                                onChange={e => setNextInspectionDate(e.target.value)}
+                            />
+                        </div>
                     </div>
 
                     <div className={styles.formGroup}>
