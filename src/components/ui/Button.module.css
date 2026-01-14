@@ -66,6 +66,17 @@
     color: var(--color-text-main);
 }
 
+.outline {
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+}
+
+.outline:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+}
+
 /* Sizes */
 .sm {
     height: 32px;

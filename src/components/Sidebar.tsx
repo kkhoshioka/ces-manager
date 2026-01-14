@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Package, X, Settings, LogOut, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Wrench, Package, X, Settings, LogOut, CreditCard, Banknote } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -78,6 +78,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <span>仕入先別集計</span>
             </NavLink>
 
+            <NavLink
+              to="/sales-management"
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+              onClick={onClose}
+            >
+              <Banknote size={20} />
+              <span>売上・入金管理</span>
+            </NavLink>
+
+            <div className={styles.divider}></div>
             <NavLink
               to="/masters"
               className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}

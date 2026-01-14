@@ -96,6 +96,11 @@ model Project {
   status            String    @default("received") // received, diagnosing, in_progress, completed, delivered
   totalAmount       Decimal   @default(0)
   notes             String?
+  // Status check fields
+  isInvoiceIssued   Boolean   @default(false)
+  isPaymentReceived Boolean   @default(false)
+  paymentDate       DateTime?
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

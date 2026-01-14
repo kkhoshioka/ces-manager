@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Repairs from './pages/Repairs';
 import Inventory from './pages/Inventory';
 import Masters from './pages/Masters';
+import SalesManagement from './pages/dashboard/SalesManagement';
 import SupplierMonthlyReport from './pages/dashboard/SupplierMonthlyReport';
 import MachineRegistry from './pages/machines/MachineRegistry';
 import MachineDetail from './pages/machines/MachineDetail';
@@ -14,6 +15,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ServerAwakeOverlay from './components/ServerAwakeOverlay';
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from './config';
+
 
 function App() {
   const [isServerReady, setIsServerReady] = useState(false);

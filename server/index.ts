@@ -1296,6 +1296,135 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
 
 
 
+// ==============================================
+// Sales & Deposit Management (Sales Management Dashboard)
+// ==============================================
+
+// Get Sales Management Report (Aggregated by Customer)
+app.get('/api/dashboard/sales-management', async (req, res) => {
+    try {
+        const { year, month } = req.query;
+
+        if (!year) {
+            return res.status(400).json({ error: 'Year is required' });
+        }
+
+        const startYear = Number(year);
+        const startMonth = month ? Number(month) : 1;
+
+        const startDate = new Date(startYear, startMonth - 1, 1);
+        const endDate = month
+            ? new Date(startYear, startMonth, 0, 23, 59, 59)
+            : new Date(startYear, 11, 31, 23, 59, 59);
+
+        // Fetch Projects in period
+        // For Sales Management, we care about "completed" projects usually? 
+        // Or all active projects? 
+        // If it's for Billing, usually it's based on completionDate or orderDate.
+        // Let's use completionDate for consistency with Sales Dashboard if possible, 
+        // OR createdAt if completionDate is null?
+        // Requirement implies managing billing for "cases". 
+        // Let's broaden to include projects created OR completed in this month to be safe,
+        // or just stick to completionDate if that defines "Sales".
+        // HOWEVER, "Invoice" might be issued before completion.
+        // Let's use a wide net: Created OR Completed in this period.
+        const projects = await prisma.project.findMany({
+            where: {
+                OR: [
+                    { completionDate: { gte: startDate, lte: endDate } },
+                    { createdAt: { gte: startDate, lte: endDate } }
+                ]
+            },
+            include: {
+                customer: true,
+                customerMachine: true
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Group by Customer
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const customerStats: Record<string, any> = {};
+
+        projects.forEach(project => {
+            const custId = project.customerId;
+            const custName = project.customer?.name || '不明'; // Fallback
+
+            if (!customerStats[custId]) {
+                customerStats[custId] = {
+                    customerId: custId,
+                    customerName: custName,
+                    projects: [],
+                    totalAmount: 0,
+                    unbilledAmount: 0,
+                    unpaidAmount: 0,
+                    count: 0
+                };
+            }
+
+            // Formatting for FE
+            const p = {
+                id: project.id,
+                date: project.completionDate || project.createdAt,
+                type: project.type,
+                title: `${project.machineModel || project.customerMachine?.machineModel || ''} ${project.type === 'repair' ? '修理' : '販売'}`, // Simple title
+                serialNumber: project.serialNumber || project.customerMachine?.serialNumber,
+                amount: Number(project.totalAmount),
+                status: project.status,
+                isInvoiceIssued: project.isInvoiceIssued,
+                isPaymentReceived: project.isPaymentReceived,
+                paymentDate: project.paymentDate
+            };
+
+            customerStats[custId].projects.push(p);
+            customerStats[custId].count++;
+            customerStats[custId].totalAmount += p.amount;
+
+            if (!p.isInvoiceIssued) customerStats[custId].unbilledAmount += p.amount;
+            if (p.isInvoiceIssued && !p.isPaymentReceived) customerStats[custId].unpaidAmount += p.amount;
+        });
+
+        const result = Object.values(customerStats).sort((a, b) => b.totalAmount - a.totalAmount);
+        res.json(result);
+
+    } catch (error) {
+        console.error('Sales Management Report Error:', error);
+        res.status(500).json({ error: 'Failed to fetch sales management report' });
+    }
+});
+
+// Update Project Status (Invoice/Payment)
+app.put('/api/projects/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isInvoiceIssued, isPaymentReceived, paymentDate } = req.body;
+
+        const updateData: any = {};
+        if (isInvoiceIssued !== undefined) updateData.isInvoiceIssued = isInvoiceIssued;
+        if (isPaymentReceived !== undefined) {
+            updateData.isPaymentReceived = isPaymentReceived;
+            // Auto-set payment date if paid and date not provided?
+            if (isPaymentReceived && !paymentDate) {
+                updateData.paymentDate = new Date();
+            } else if (isPaymentReceived === false) {
+                updateData.paymentDate = null;
+            }
+        }
+        if (paymentDate !== undefined) updateData.paymentDate = paymentDate;
+
+        const project = await prisma.project.update({
+            where: { id: Number(id) },
+            data: updateData
+        });
+
+        res.json(project);
+    } catch (error) {
+        console.error('Update Project Status Error:', error);
+        res.status(500).json({ error: 'Failed to update project status' });
+    }
+});
+
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../dist')));
 
