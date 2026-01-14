@@ -21,6 +21,13 @@ model Customer {
   phone     String?
   email     String?
   type      String?  // 'ユーザー', '修理業者', '機械メーカー', etc.
+  
+  // New fields
+  fax                       String?
+  invoiceRegistrationNumber String? // T+13digits
+  invoiceMailingAddress     String?
+  paymentTerms              String? // 支払条件
+  contactPerson             String? // 担当者名
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -187,6 +194,12 @@ model Supplier {
   email         String?
   phone         String?
   address       String?
+  
+  // New fields
+  fax                       String?
+  invoiceRegistrationNumber String?
+  bankAccountInfo           String? // 請求先口座情報
+  paymentTerms              String? // 支払条件
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

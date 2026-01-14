@@ -14,6 +14,10 @@ interface Supplier {
     email: string;
     phone: string;
     address: string;
+    fax?: string;
+    invoiceRegistrationNumber?: string;
+    bankAccountInfo?: string;
+    paymentTerms?: string;
     createdAt: string;
 }
 
@@ -175,15 +179,41 @@ const SupplierMaster: React.FC = () => {
                                 />
                                 <Input
                                     label="電話番号"
-                                    value={currentSupplier.phone || ''}
                                     onChange={(e) => setCurrentSupplier({ ...currentSupplier, phone: e.target.value })}
                                 />
                             </div>
                             <div className={styles.formGrid}>
                                 <Input
+                                    label="FAX番号"
+                                    value={currentSupplier.fax || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, fax: e.target.value })}
+                                />
+                                <Input
                                     label="メールアドレス"
                                     value={currentSupplier.email || ''}
                                     onChange={(e) => setCurrentSupplier({ ...currentSupplier, email: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.formGrid}>
+                                <Input
+                                    label="インボイス登録番号"
+                                    value={currentSupplier.invoiceRegistrationNumber || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, invoiceRegistrationNumber: e.target.value })}
+                                    placeholder="T+13桁の番号"
+                                />
+                                <Input
+                                    label="支払条件"
+                                    value={currentSupplier.paymentTerms || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, paymentTerms: e.target.value })}
+                                    placeholder="例: 月末締め翌月末払い"
+                                />
+                            </div>
+                            <div className={styles.formGrid}>
+                                <Input
+                                    label="請求先口座情報"
+                                    value={currentSupplier.bankAccountInfo || ''}
+                                    onChange={(e) => setCurrentSupplier({ ...currentSupplier, bankAccountInfo: e.target.value })}
+                                    placeholder="銀行名 支店名 口座種別 口座番号 名義"
                                 />
                                 <Input
                                     label="住所"

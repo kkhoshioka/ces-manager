@@ -5,6 +5,12 @@ export interface Customer {
     address?: string | null;
     phone?: string | null;
     email?: string | null;
+    type?: string | null;
+    fax?: string | null;
+    invoiceRegistrationNumber?: string | null;
+    invoiceMailingAddress?: string | null;
+    paymentTerms?: string | null;
+    contactPerson?: string | null;
     createdAt: string;
     updatedAt: string;
     customerMachines?: CustomerMachine[];

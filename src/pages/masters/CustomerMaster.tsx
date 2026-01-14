@@ -13,6 +13,11 @@ interface Customer {
     phone: string | null;
     email: string | null;
     type: string | null;
+    fax?: string | null;
+    invoiceRegistrationNumber?: string | null;
+    invoiceMailingAddress?: string | null;
+    paymentTerms?: string | null;
+    contactPerson?: string | null;
 }
 
 const CustomerMaster: React.FC = () => {
@@ -27,7 +32,12 @@ const CustomerMaster: React.FC = () => {
         address: '',
         phone: '',
         email: '',
-        type: ''
+        type: '',
+        fax: '',
+        invoiceRegistrationNumber: '',
+        invoiceMailingAddress: '',
+        paymentTerms: '',
+        contactPerson: ''
     });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -112,7 +122,12 @@ const CustomerMaster: React.FC = () => {
             address: customer.address || '',
             phone: customer.phone || '',
             email: customer.email || '',
-            type: customer.type || ''
+            type: customer.type || '',
+            fax: customer.fax || '',
+            invoiceRegistrationNumber: customer.invoiceRegistrationNumber || '',
+            invoiceMailingAddress: customer.invoiceMailingAddress || '',
+            paymentTerms: customer.paymentTerms || '',
+            contactPerson: customer.contactPerson || ''
         });
         setIsModalOpen(true);
     };
@@ -120,7 +135,7 @@ const CustomerMaster: React.FC = () => {
     const openAdd = () => {
         setEditingId(null);
         setEditingId(null);
-        setFormData({ code: '', name: '', address: '', phone: '', email: '', type: '' });
+        setFormData({ code: '', name: '', address: '', phone: '', email: '', type: '', fax: '', invoiceRegistrationNumber: '', invoiceMailingAddress: '', paymentTerms: '', contactPerson: '' });
         setIsModalOpen(true);
     };
 
@@ -221,13 +236,13 @@ const CustomerMaster: React.FC = () => {
                                     required
                                 />
                             </div>
-                            <div>
+                            <div className={styles.formGrid}>
                                 <Input
                                     label="得意先種別"
                                     value={formData.type || ''}
                                     onChange={e => setFormData({ ...formData, type: e.target.value })}
                                     list="customer-types"
-                                    placeholder="例: ユーザー, 修理業者, 機械メーカー"
+                                    placeholder="例: ユーザー, 修理業者"
                                 />
                                 <datalist id="customer-types">
                                     <option value="ユーザー" />
@@ -235,7 +250,13 @@ const CustomerMaster: React.FC = () => {
                                     <option value="機械メーカー" />
                                     <option value="レンタル会社" />
                                 </datalist>
+                                <Input
+                                    label="担当者名"
+                                    value={formData.contactPerson || ''}
+                                    onChange={e => setFormData({ ...formData, contactPerson: e.target.value })}
+                                />
                             </div>
+
                             <div className={styles.formGrid}>
                                 <Input
                                     label="電話番号"
@@ -243,16 +264,42 @@ const CustomerMaster: React.FC = () => {
                                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                 />
                                 <Input
-                                    label="Email"
+                                    label="FAX番号"
+                                    value={formData.fax || ''}
+                                    onChange={e => setFormData({ ...formData, fax: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.formGrid}>
+                                <Input
+                                    label="メールアドレス"
                                     type="email"
                                     value={formData.email || ''}
                                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                                 />
+                                <Input
+                                    label="インボイス登録番号"
+                                    value={formData.invoiceRegistrationNumber || ''}
+                                    onChange={e => setFormData({ ...formData, invoiceRegistrationNumber: e.target.value })}
+                                    placeholder="T+13桁"
+                                />
                             </div>
+
+                            <Input
+                                label="支払条件"
+                                value={formData.paymentTerms || ''}
+                                onChange={e => setFormData({ ...formData, paymentTerms: e.target.value })}
+                                placeholder="例: 月末締め翌月末払い"
+                            />
+
                             <Input
                                 label="住所"
                                 value={formData.address || ''}
                                 onChange={e => setFormData({ ...formData, address: e.target.value })}
+                            />
+                            <Input
+                                label="請求書送付先住所（住所と異なる場合）"
+                                value={formData.invoiceMailingAddress || ''}
+                                onChange={e => setFormData({ ...formData, invoiceMailingAddress: e.target.value })}
                             />
                             <div className={styles.formActions}>
                                 <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
