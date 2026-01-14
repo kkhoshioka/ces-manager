@@ -62,15 +62,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </NavLink>
 
             <NavLink
-              to="/masters"
-              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
-              onClick={onClose}
-            >
-              <Settings size={20} />
-              <span>マスター管理</span>
-            </NavLink>
-
-            <NavLink
               to="/machines"
               className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
               onClick={onClose}
@@ -85,6 +76,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             >
               <CreditCard size={20} />
               <span>仕入先別集計</span>
+            </NavLink>
+
+            <NavLink
+              to="/masters"
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+              style={{ marginTop: 'auto' }}
+              onClick={onClose}
+            >
+              <Settings size={20} />
+              <span>マスター管理</span>
             </NavLink>
           </>
         )}
