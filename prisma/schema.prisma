@@ -213,6 +213,25 @@ model Supplier {
   updatedAt     DateTime @updatedAt
 
   projectDetails ProjectDetail[]
+  monthlyPayments SupplierMonthlyPayment[]
+}
+
+model SupplierMonthlyPayment {
+  id                Int      @id @default(autoincrement())
+  supplierId        Int
+  year              Int
+  month             Int
+  isInvoiceReceived Boolean  @default(false)
+  isPaid            Boolean  @default(false)
+  paidAt            DateTime?
+  notes             String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  supplier          Supplier @relation(fields: [supplierId], references: [id])
+
+  @@unique([supplierId, year, month])
 }
 
 

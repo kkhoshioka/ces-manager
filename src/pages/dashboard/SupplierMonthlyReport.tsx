@@ -10,6 +10,10 @@ interface SupplierCost {
     name: string;
     totalCost: number;
     count: number;
+    supplierId?: number;
+    isInvoiceReceived?: boolean;
+    isPaid?: boolean;
+    notes?: string;
 }
 
 interface SupplierDetail {
@@ -54,6 +58,40 @@ const SupplierMonthlyReport = () => {
     useEffect(() => {
         fetchReport();
     }, [fetchReport]);
+
+    const handleStatusChange = async (supplierId: number | undefined, field: 'isInvoiceReceived' | 'isPaid', value: boolean) => {
+        if (!supplierId) return;
+
+        // Optimistic update
+        setData(prev => prev.map(item =>
+            item.supplierId === supplierId ? { ...item, [field]: value } : item
+        ));
+
+        try {
+            const currentItem = data.find(item => item.supplierId === supplierId);
+            const payload = {
+                supplierId,
+                year,
+                month,
+                isInvoiceReceived: field === 'isInvoiceReceived' ? value : currentItem?.isInvoiceReceived,
+                isPaid: field === 'isPaid' ? value : currentItem?.isPaid,
+                notes: currentItem?.notes
+            };
+
+            const response = await fetch(`${API_BASE_URL}/dashboard/supplier-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error('Failed to update status');
+
+        } catch (error) {
+            console.error(error);
+            alert('ステータスの更新に失敗しました');
+            fetchReport(); // Revert on error
+        }
+    };
 
     const handleRowClick = async (supplierName: string) => {
         if (selectedSupplier === supplierName) {
@@ -153,6 +191,8 @@ const SupplierMonthlyReport = () => {
                         <thead>
                             <tr>
                                 <th>仕入先名</th>
+                                <th style={{ textAlign: 'center' }}>請求書</th>
+                                <th style={{ textAlign: 'center' }}>支払</th>
                                 <th className={styles.right}>取引回数</th>
                                 <th className={styles.right}>仕入金額 (原価)</th>
                                 <th className={styles.right}>構成比</th>
@@ -162,13 +202,13 @@ const SupplierMonthlyReport = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                                         読み込み中...
                                     </td>
                                 </tr>
                             ) : data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                                         データがありません
                                     </td>
                                 </tr>
@@ -181,6 +221,29 @@ const SupplierMonthlyReport = () => {
                                             style={{ cursor: 'pointer', backgroundColor: selectedSupplier === item.name ? '#eff6ff' : undefined }}
                                         >
                                             <td style={{ fontWeight: 500 }}>{item.name}</td>
+
+                                            {/* Invoice Checkbox */}
+                                            <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!item.isInvoiceReceived}
+                                                    onChange={(e) => handleStatusChange(item.supplierId, 'isInvoiceReceived', e.target.checked)}
+                                                    disabled={!item.supplierId}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                />
+                                            </td>
+
+                                            {/* Payment Checkbox */}
+                                            <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!item.isPaid}
+                                                    onChange={(e) => handleStatusChange(item.supplierId, 'isPaid', e.target.checked)}
+                                                    disabled={!item.supplierId}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                />
+                                            </td>
+
                                             <td className={styles.right}>{item.count} 回</td>
                                             <td className={styles.right} style={{ fontWeight: 'bold' }}>
                                                 {formatCurrency(item.totalCost)}
@@ -196,7 +259,7 @@ const SupplierMonthlyReport = () => {
                                         </tr>
                                         {selectedSupplier === item.name && (
                                             <tr className={styles.detailRow}>
-                                                <td colSpan={5} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
+                                                <td colSpan={7} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
                                                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc' }}>
                                                         <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#475569' }}>
                                                             {item.name} の取引明細

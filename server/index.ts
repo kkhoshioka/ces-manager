@@ -1150,40 +1150,58 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             return res.status(400).json({ error: 'Year is required' });
         }
 
-        const startDate = new Date(Number(year), month ? Number(month) - 1 : 0, 1);
-        const endDate = month
-            ? new Date(Number(year), Number(month), 0, 23, 59, 59)
-            : new Date(Number(year), 11, 31, 23, 59, 59);
+        const startYear = Number(year);
+        const startMonth = month ? Number(month) : 1;
 
-        // Fetch projects created (or potentially use a purchaseDate if available, using createdAt for now)
-        // actually for costs, we usually look at when it was accrued. Project creation or completion?
-        // Let's use createdAt for simplicity as per requirement context usually implies "this month's activity"
+        const startDate = new Date(startYear, startMonth - 1, 1);
+        const endDate = month
+            ? new Date(startYear, startMonth, 0, 23, 59, 59)
+            : new Date(startYear, 11, 31, 23, 59, 59);
+
+        // 1. Fetch Projects
         const projects = await prisma.project.findMany({
             where: {
                 createdAt: { gte: startDate, lte: endDate }
             },
             include: {
                 details: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    include: { supplierObj: true } as any
+                    include: { supplierObj: true }
                 }
             }
         });
 
-        // Aggregate
-        const supplierStats: Record<string, { totalCost: number; count: number }> = {};
+        // 2. Fetch Monthly Statuses
+        // If specific month is selected, fetch for that month
+        // If year only, we might need to handle differently, but requirement implies "monthly check".
+        // Let's assume this view is primarily monthly or we return the status for the aggregated period if single month
+        const monthlyStatuses = await prisma.supplierMonthlyPayment.findMany({
+            where: {
+                year: Number(year),
+                month: Number(month) || undefined // If month not specified, fetch all for year? simpler to focus on monthly view
+            }
+        });
+
+        // Map statuses by supplierId
+        const statusMap = new Map();
+        monthlyStatuses.forEach(s => {
+            statusMap.set(s.supplierId, s);
+        });
+
+        // 3. Aggregate
+        const supplierStats: Record<string, { totalCost: number; count: number; supplierId: number | null }> = {};
 
         projects.forEach(project => {
             project.details.forEach(detail => {
-                // Filter for filtering relevant costs (ignoring internal labor if unitCost is 0, but lineType check is better)
-                // Actually user wants "Supplier" costs. So detail.supplier must be present.
-                // Prefer Master Supplier Name if linked
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const name = (detail as any).supplierObj?.name || detail.supplier;
+                const name = detail.supplierObj?.name || detail.supplier;
+                const sid = detail.supplierObj?.id || null;
 
                 if (name && Number(detail.unitCost) > 0) {
                     if (!supplierStats[name]) {
-                        supplierStats[name] = { totalCost: 0, count: 0 };
+                        supplierStats[name] = { totalCost: 0, count: 0, supplierId: sid };
+                    }
+                    // Capture ID if available (priority to linked ID)
+                    if (sid && !supplierStats[name].supplierId) {
+                        supplierStats[name].supplierId = sid;
                     }
 
                     const qty = Number(detail.quantity);
@@ -1196,11 +1214,20 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
         });
 
         const result = Object.entries(supplierStats)
-            .map(([name, stats]) => ({
-                name,
-                totalCost: stats.totalCost,
-                count: stats.count
-            }))
+            .map(([name, stats]) => {
+                const status = stats.supplierId ? statusMap.get(stats.supplierId) : null;
+                return {
+                    name,
+                    supplierId: stats.supplierId,
+                    totalCost: stats.totalCost,
+                    count: stats.count,
+                    // Status fields
+                    isInvoiceReceived: status?.isInvoiceReceived || false,
+                    isPaid: status?.isPaid || false,
+                    paidAt: status?.paidAt || null,
+                    notes: status?.notes || ''
+                };
+            })
             .sort((a, b) => b.totalCost - a.totalCost);
 
         res.json(result);
@@ -1208,6 +1235,50 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
     } catch (error) {
         console.error('Supplier Report Error:', error);
         res.status(500).json({ error: 'Failed to fetch supplier report' });
+    }
+});
+
+// Update Monthly Supplier Status
+app.post('/api/dashboard/supplier-status', async (req, res) => {
+    try {
+        const { supplierId, year, month, isInvoiceReceived, isPaid, notes } = req.body;
+
+        if (!supplierId || !year || !month) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const paidAt = isPaid ? new Date() : null;
+
+        const status = await prisma.supplierMonthlyPayment.upsert({
+            where: {
+                supplierId_year_month: {
+                    supplierId: Number(supplierId),
+                    year: Number(year),
+                    month: Number(month)
+                }
+            },
+            update: {
+                isInvoiceReceived,
+                isPaid,
+                paidAt: isPaid ? new Date() : null,
+                notes
+            },
+            create: {
+                supplierId: Number(supplierId),
+                year: Number(year),
+                month: Number(month),
+                isInvoiceReceived: isInvoiceReceived || false,
+                isPaid: isPaid || false,
+                paidAt: isPaid ? new Date() : null,
+                notes
+            }
+        });
+
+        res.json(status);
+
+    } catch (error) {
+        console.error('Update Monthly Status Error:', error);
+        res.status(500).json({ error: 'Failed to update status' });
     }
 });
 
