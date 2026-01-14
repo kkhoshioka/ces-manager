@@ -56,6 +56,8 @@ const Repairs: React.FC = () => {
         hourMeter: string;
         issueDescription: string;
         notes: string;
+        orderDate: string;
+        completionDate: string;
         status: RepairStatus;
     }>({
         customerName: '',
@@ -64,6 +66,8 @@ const Repairs: React.FC = () => {
         hourMeter: '',
         issueDescription: '',
         notes: '',
+        orderDate: new Date().toISOString().split('T')[0], // Default to today
+        completionDate: '',
         status: 'received'
     });
 
@@ -447,6 +451,8 @@ const Repairs: React.FC = () => {
                 machineModel: formState.machineModel,
                 serialNumber: formState.serialNumber,
                 hourMeter: formState.hourMeter,
+                orderDate: formState.orderDate ? new Date(formState.orderDate) : null,
+                completionDate: formState.completionDate ? new Date(formState.completionDate) : null,
                 notes: ((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') ? formState.issueDescription : '') + (formState.notes ? `\n\n備考: ${formState.notes}` : ''),
                 status: formState.status,
                 totalAmount: totals.totalSales,
@@ -535,6 +541,8 @@ const Repairs: React.FC = () => {
             hourMeter: '',
             issueDescription: '',
             notes: '',
+            orderDate: new Date().toISOString().split('T')[0],
+            completionDate: '',
             status: 'received'
         });
         setDetails([]);
@@ -580,6 +588,8 @@ const Repairs: React.FC = () => {
                     machineModel: fullProject.machineModel || '',
                     serialNumber: fullProject.serialNumber || '',
                     hourMeter: fullProject.hourMeter || '',
+                    orderDate: fullProject.orderDate ? new Date(fullProject.orderDate).toISOString().split('T')[0] : '',
+                    completionDate: fullProject.completionDate ? new Date(fullProject.completionDate).toISOString().split('T')[0] : '',
                     issueDescription: issue,
                     notes: extraNotes,
                     status: (fullProject.status as RepairStatus) || 'received'
@@ -686,18 +696,17 @@ const Repairs: React.FC = () => {
                             )}
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>
                                 {type === 'labor' ? '時間' : (type === 'travel' ? '数量' : '数量')}
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>原価単価</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>原価計</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', whiteSpace: 'nowrap' }}>原価単価</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', whiteSpace: 'nowrap' }}>原価計</th>
                                 </>
                             )}
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求単価</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>請求額</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>備考</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', whiteSpace: 'nowrap' }}>請求単価</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', whiteSpace: 'nowrap' }}>請求額</th>
                             <th style={{ width: '40px' }}></th>
                         </tr>
                     </thead>
@@ -930,9 +939,7 @@ const Repairs: React.FC = () => {
                                         </div>
                                     </td>
                                     <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}円</td>
-                                    <td style={{ padding: '0.25rem' }}>
-                                        <input type="text" className={styles.tableInput} value={detail.remarks} onChange={(e) => handleDetailChange(detail.originalIndex, 'remarks', e.target.value)} />
-                                    </td>
+                                    {/* Remarks column removed */}
                                     <td style={{ padding: '0.25rem', textAlign: 'center' }}>
                                         <button type="button" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
                                             <Trash2 size={16} />
@@ -1119,25 +1126,45 @@ const Repairs: React.FC = () => {
                                         </select>
                                     </div>
 
-                                    {/* Status Selection (Moved) */}
-                                    <div className="mb-2">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-                                        <select
-                                            name="status"
-                                            value={formState.status}
-                                            onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
-                                            className="border rounded-md p-2 text-sm font-bold"
-                                            style={{
-                                                width: '200px',
-                                                backgroundColor: getStatusStyle(formState.status).bg,
-                                                color: getStatusStyle(formState.status).color,
-                                                borderColor: '#d1d5db'
-                                            }}
-                                        >
-                                            <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
-                                            <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
-                                            <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
-                                        </select>
+                                    <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+                                            <select
+                                                name="status"
+                                                value={formState.status}
+                                                onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
+                                                className="border rounded-md p-2 text-sm font-bold"
+                                                style={{
+                                                    width: '160px',
+                                                    backgroundColor: getStatusStyle(formState.status).bg,
+                                                    color: getStatusStyle(formState.status).color,
+                                                    borderColor: '#d1d5db'
+                                                }}
+                                            >
+                                                <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
+                                                <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
+                                                <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <Input
+                                                type="date"
+                                                label="受付日"
+                                                name="orderDate"
+                                                value={formState.orderDate}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Input
+                                                type="date"
+                                                label="完了日"
+                                                name="completionDate"
+                                                value={formState.completionDate}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
                                     </div>
 
                                     <div>
