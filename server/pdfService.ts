@@ -24,6 +24,7 @@ interface ProjectDetail {
     description: string;
     quantity: number | string;
     unitPrice: number | string;
+    lineType?: string; // Added for grouping logic
 }
 
 interface Customer {
@@ -48,8 +49,52 @@ const formatDate = (date: Date | string | null) => {
     return new Date(date).toLocaleDateString('ja-JP');
 };
 
+// Helper: Group Travel Time/Distance into one "Travel Expenses" line
+const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
+    let travelTotal = 0;
+    let hasTravel = false;
+
+    const filteredDetails: ProjectDetail[] = [];
+
+    details.forEach(Detail => {
+        // Check for Travel items by lineType or Description convention
+        // lineType is preferred if available.
+        const isTravel = Detail.lineType === 'travel' ||
+            Detail.description.startsWith('【移動時間】') ||
+            Detail.description.startsWith('【移動距離】') ||
+            Detail.description === '移動時間' ||
+            Detail.description === '移動距離';
+
+        if (isTravel) {
+            hasTravel = true;
+            travelTotal += Number(Detail.quantity) * Number(Detail.unitPrice);
+        } else {
+            filteredDetails.push(Detail);
+        }
+    });
+
+    if (hasTravel) {
+        // Insert "Travel Expenses" at the position where travel items usually appear?
+        // Or just append? Standard practice is often near the end or just where it fits.
+        // We'll append it before "Other" or just at the end of the filtered list for simplicity,
+        // or effectively replacing the block of travel items.
+        // For now, let's append it as a single line.
+        filteredDetails.push({
+            description: '出張費',
+            quantity: 1,
+            unitPrice: travelTotal,
+            lineType: 'travel_grouped'
+        });
+    }
+
+    return filteredDetails;
+};
+
 export const generateInvoice = (project: Project) => {
-    const subtotal = project.details.reduce((sum: number, d: ProjectDetail) => sum + (Number(d.quantity) * Number(d.unitPrice)), 0);
+    // Process details to group travel expenses
+    const processedDetails = processProjectDetails(project.details);
+
+    const subtotal = processedDetails.reduce((sum: number, d: ProjectDetail) => sum + (Number(d.quantity) * Number(d.unitPrice)), 0);
     const tax = Math.floor(subtotal * 0.1);
     const total = subtotal + tax;
 
@@ -101,7 +146,7 @@ export const generateInvoice = (project: Project) => {
                             { text: '単価', style: 'tableHeader', alignment: 'center' },
                             { text: '金額', style: 'tableHeader', alignment: 'center' }
                         ],
-                        ...project.details.map((d: ProjectDetail) => [
+                        ...processedDetails.map((d: ProjectDetail) => [
                             d.description,
                             { text: d.quantity, alignment: 'right' },
                             { text: formatCurrency(d.unitPrice), alignment: 'right' },
@@ -155,6 +200,11 @@ export const generateInvoice = (project: Project) => {
 };
 
 export const generateDeliveryNote = (project: Project) => {
+    // Process details to group travel expenses (Quantity logic for Delivery Note: just show 1 for Exps is fine?)
+    // Delivery note typically doesn't show prices, but Quantity is relevant.
+    // For "Travel Expenses", Quantity 1 is appropriate.
+    const processedDetails = processProjectDetails(project.details);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docDefinition: any = {
         content: [
@@ -194,7 +244,7 @@ export const generateDeliveryNote = (project: Project) => {
                             { text: '品名 / 内容', style: 'tableHeader' },
                             { text: '数量', style: 'tableHeader', alignment: 'center' }
                         ],
-                        ...project.details.map((d: ProjectDetail) => [
+                        ...processedDetails.map((d: ProjectDetail) => [
                             d.description,
                             { text: d.quantity, alignment: 'right' }
                         ])
