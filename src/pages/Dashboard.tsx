@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, Activity, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../components/ui/Button';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import styles from './Dashboard.module.css';
 import { formatCurrency } from '../utils/formatting';
 import { API_BASE_URL } from '../config';
@@ -151,12 +152,8 @@ const Dashboard: React.FC = () => {
             </div>
 
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{
-                        width: '2.5rem', height: '2.5rem', border: '3px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite'
-                    }} />
-                    <span style={{ color: '#64748b' }}>データを読み込み中...</span>
-                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <LoadingSpinner />
                 </div>
             ) : data ? (
                 <div className={styles.content}>

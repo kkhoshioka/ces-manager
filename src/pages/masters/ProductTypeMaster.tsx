@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { API_BASE_URL } from '../../config';
@@ -123,7 +124,7 @@ const ProductTypeMaster: React.FC = () => {
                     </thead>
                     <tbody>
                         {isLoading ? (
-                            <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>読み込み中...</td></tr>
+                            <tr><td colSpan={4} style={{ padding: '2rem' }}><LoadingSpinner /></td></tr>
                         ) : categories.length === 0 ? (
                             <tr><td colSpan={4} className={styles.emptyState}>データがありません</td></tr>
                         ) : (

@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Plus, Trash2, X, Save } from 'lucide-react';
@@ -101,8 +102,6 @@ const UserMaster: React.FC = () => {
         setError(null);
     };
 
-    if (loading) return <div className={styles.emptyState}>Loading...</div>;
-
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -127,7 +126,13 @@ const UserMaster: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map((user) => (
+                        {loading ? (
+                            <tr>
+                                <td colSpan={5} style={{ padding: '2rem' }}>
+                                    <LoadingSpinner />
+                                </td>
+                            </tr>
+                        ) : users.map((user) => (
                             <tr key={user.id}>
                                 <td style={{ fontWeight: 500 }}>{user.name || '-'}</td>
                                 <td>{user.email}</td>
@@ -158,7 +163,7 @@ const UserMaster: React.FC = () => {
                                 </td>
                             </tr>
                         ))}
-                        {users.length === 0 && (
+                        {!loading && users.length === 0 && (
                             <tr>
                                 <td colSpan={5} className={styles.emptyState}>データがありません</td>
                             </tr>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import styles from '../Dashboard.module.css'; // Reusing similar styles
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -239,8 +240,8 @@ const SalesManagement = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                                        読み込み中...
+                                    <td colSpan={6} style={{ padding: '2rem' }}>
+                                        <LoadingSpinner />
                                     </td>
                                 </tr>
                             ) : data.length === 0 ? (

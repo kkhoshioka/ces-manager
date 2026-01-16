@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Plus, Search, Filter, X, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import type { Part, NewPart, ProductCategory } from '../types/inventory';
 import { InventoryService } from '../utils/inventoryService';
@@ -13,6 +14,7 @@ const Inventory: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Derived state for form
     const [selectedSection, setSelectedSection] = useState<string>('');
@@ -29,6 +31,7 @@ const Inventory: React.FC = () => {
     const [formData, setFormData] = useState<NewPart>(initialFormState);
 
     const loadData = async () => {
+        setIsLoading(true);
         try {
             const [partsData, categoriesData] = await Promise.all([
                 InventoryService.getAll(),
@@ -38,6 +41,8 @@ const Inventory: React.FC = () => {
             setCategories(categoriesData);
         } catch (error) {
             console.error('Failed to load data', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -187,7 +192,15 @@ const Inventory: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {parts.length === 0 ? (
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={7}>
+                                    <div style={{ padding: '2rem' }}>
+                                        <LoadingSpinner />
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : parts.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className={styles.emptyState}>
                                     データがありません

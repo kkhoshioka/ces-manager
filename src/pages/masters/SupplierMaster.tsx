@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Plus, Search, Edit2, Trash2, Save, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -31,8 +32,10 @@ const SupplierMaster: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentSupplier, setCurrentSupplier] = useState<Partial<Supplier>>({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
     const fetchSuppliers = useCallback(async () => {
+        setIsLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/suppliers`);
             if (res.ok) {
@@ -41,6 +44,8 @@ const SupplierMaster: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to fetch suppliers', error);
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -125,29 +130,36 @@ const SupplierMaster: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredSuppliers.map(supplier => (
-                            <tr key={supplier.id}>
-                                <td style={{ fontFamily: 'monospace' }}>{supplier.code || '-'}</td>
-                                <td style={{ fontWeight: 500 }}>{supplier.name}</td>
-                                <td>{supplier.contactPerson || '-'}</td>
-                                <td>{supplier.phone || '-'}</td>
-                                <td>{supplier.email || '-'}</td>
-                                <td>
-                                    <div className={styles.actions} style={{ justifyContent: 'center' }}>
-                                        <button className={styles.actionButton} onClick={() => { setCurrentSupplier(supplier); setIsModalOpen(true); }}>
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(supplier.id)}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={6} style={{ padding: '2rem' }}>
+                                    <LoadingSpinner />
                                 </td>
                             </tr>
-                        ))}
-                        {filteredSuppliers.length === 0 && (
+                        ) : filteredSuppliers.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className={styles.emptyState}>データがありません</td>
                             </tr>
+                        ) : (
+                            filteredSuppliers.map(supplier => (
+                                <tr key={supplier.id}>
+                                    <td style={{ fontFamily: 'monospace' }}>{supplier.code || '-'}</td>
+                                    <td style={{ fontWeight: 500 }}>{supplier.name}</td>
+                                    <td>{supplier.contactPerson || '-'}</td>
+                                    <td>{supplier.phone || '-'}</td>
+                                    <td>{supplier.email || '-'}</td>
+                                    <td>
+                                        <div className={styles.actions} style={{ justifyContent: 'center' }}>
+                                            <button className={styles.actionButton} onClick={() => { setCurrentSupplier(supplier); setIsModalOpen(true); }}>
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(supplier.id)}>
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
                         )}
                     </tbody>
                 </table>

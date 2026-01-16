@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Link } from 'react-router-dom';
 import { Search, Plus, Edit } from 'lucide-react';
 import { format } from 'date-fns';
@@ -15,8 +16,10 @@ const MachineRegistry: React.FC = () => {
     const [filterText, setFilterText] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingMachine, setEditingMachine] = useState<CustomerMachine | undefined>(undefined);
+    const [isLoading, setIsLoading] = useState(true);
 
     const fetchMachines = useCallback(async () => {
+        setIsLoading(true);
         try {
             const res = await axios.get<CustomerMachine[]>(`${API_BASE_URL}/machines`);
             const data = Array.isArray(res.data) ? res.data : [];
@@ -41,6 +44,8 @@ const MachineRegistry: React.FC = () => {
             console.error('Failed to fetch machines', error);
             setMachines([]);
             setFilteredMachines([]);
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -119,7 +124,15 @@ const MachineRegistry: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredMachines.length === 0 ? (
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={6}>
+                                    <div style={{ padding: '2rem' }}>
+                                        <LoadingSpinner />
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : filteredMachines.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className={styles.emptyState}>データがありません</td>
                             </tr>

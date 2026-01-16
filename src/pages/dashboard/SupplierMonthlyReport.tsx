@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import styles from '../Dashboard.module.css';
 import { formatCurrency } from '../../utils/formatting';
@@ -202,8 +203,8 @@ const SupplierMonthlyReport = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                                        読み込み中...
+                                    <td colSpan={5} style={{ padding: '2rem' }}>
+                                        <LoadingSpinner />
                                     </td>
                                 </tr>
                             ) : data.length === 0 ? (
