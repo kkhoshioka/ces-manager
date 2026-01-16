@@ -151,7 +151,13 @@ const Dashboard: React.FC = () => {
             </div>
 
             {loading ? (
-                <div className={styles.loading}>読み込み中...</div>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{
+                        width: '2.5rem', height: '2.5rem', border: '3px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite'
+                    }} />
+                    <span style={{ color: '#64748b' }}>データを読み込み中...</span>
+                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                </div>
             ) : data ? (
                 <div className={styles.content}>
                     {/* Summary Cards */}
