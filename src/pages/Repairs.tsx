@@ -160,6 +160,7 @@ const Repairs: React.FC = () => {
     const [details, setDetails] = useState<DetailItem[]>([]);
     const [photos, setPhotos] = useState<ProjectPhoto[]>([]);
     const [pendingPhotos, setPendingPhotos] = useState<File[]>([]); // New state for buffering
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files.length) return;
@@ -379,6 +380,8 @@ const Repairs: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             // Customer Logic
             const customers = await customerService.getAllCustomers();
@@ -530,6 +533,8 @@ const Repairs: React.FC = () => {
         } catch (error) {
             console.error('Failed to save project', error);
             alert(`保存に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -1432,7 +1437,9 @@ const Repairs: React.FC = () => {
                                     </Button>
                                 )}
                                 <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>キャンセル</Button>
-                                <Button type="submit">{selectedProjectId ? '更新する' : '保存する'}</Button>
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? '保存中...' : (selectedProjectId ? '更新する' : '保存する')}
+                                </Button>
                             </div>
                         </form>
                     </div>
