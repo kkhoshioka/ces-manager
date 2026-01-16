@@ -542,7 +542,7 @@ app.delete('/api/projects/:id', async (req, res) => {
             }).filter(Boolean);
 
             if (fileNames.length > 0) {
-                const { error } = await supabase.storage
+                const { error } = await supabaseAdmin.storage
                     .from('uploads')
                     .remove(fileNames);
 
@@ -577,7 +577,7 @@ app.post('/api/projects/:id/photos', upload.array('photos', 10), async (req, res
             const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
 
             // Upload to Supabase
-            const { error } = await supabase.storage
+            const { error } = await supabaseAdmin.storage
                 .from('uploads')
                 .upload(fileName, file.buffer, {
                     contentType: file.mimetype
@@ -586,7 +586,7 @@ app.post('/api/projects/:id/photos', upload.array('photos', 10), async (req, res
             if (error) throw error;
 
             // Get Public URL
-            const { data: { publicUrl } } = supabase.storage
+            const { data: { publicUrl } } = supabaseAdmin.storage
                 .from('uploads')
                 .getPublicUrl(fileName);
 
