@@ -140,7 +140,7 @@ const SupplierMonthlyReport = () => {
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>仕入先別コスト集計</h1>
+                    <h1 className={styles.title}>原価管理 (仕入集計)</h1>
                     <p className={styles.subtitle}>仕入先ごとの原価発生状況を月次で確認</p>
                 </div>
                 <div className={styles.filters}>

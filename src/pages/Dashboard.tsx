@@ -19,7 +19,10 @@ interface DashboardData {
     categories: Record<string, CategoryData>;
 }
 
+import { useNavigate } from 'react-router-dom';
+
 const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState<number | ''>(new Date().getMonth() + 1);
     const [data, setData] = useState<DashboardData | null>(null);
@@ -127,7 +130,11 @@ const Dashboard: React.FC = () => {
                 <div className={styles.content}>
                     {/* Summary Cards */}
                     <div className={styles.summaryGrid}>
-                        <div className={`${styles.card} ${styles.salesCard}`}>
+                        <div
+                            className={`${styles.card} ${styles.salesCard}`}
+                            onClick={() => navigate('/sales-management')}
+                            style={{ cursor: 'pointer' }}
+                        >
                             <div className={styles.cardHeader}>
                                 <div className={styles.iconWrapper} style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}>
                                     <DollarSign size={24} />
@@ -143,7 +150,11 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className={`${styles.card} ${styles.costCard}`}>
+                        <div
+                            className={`${styles.card} ${styles.costCard}`}
+                            onClick={() => navigate('/reports/supplier-costs')}
+                            style={{ cursor: 'pointer' }}
+                        >
                             <div className={styles.cardHeader}>
                                 <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
                                     <CreditCard size={24} />
