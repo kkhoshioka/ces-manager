@@ -366,6 +366,11 @@ app.get('/api/projects', async (req, res) => {
 app.post('/api/projects', async (req, res) => {
     try {
         const { customerId, customerMachineId, details, hourMeter, ...data } = req.body;
+
+        if (!customerId || isNaN(Number(customerId))) {
+            return res.status(400).json({ error: 'Valid Customer ID is required' });
+        }
+
         const project = await prisma.project.create({
             data: {
                 ...data,
@@ -373,6 +378,12 @@ app.post('/api/projects', async (req, res) => {
                 customer: { connect: { id: Number(customerId) } },
                 ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
                 ...(details && { details: { create: details } })
+            },
+            include: {
+                customer: true,
+                customerMachine: true,
+                details: true,
+                photos: true
             }
         });
 
@@ -451,7 +462,7 @@ app.put('/api/projects/:id', async (req, res) => {
             if (isNaN(cid)) throw new Error("Invalid Customer ID");
             if (customerMachineId && isNaN(cmid!)) throw new Error("Invalid Customer Machine ID");
 
-            const updatedProject = await tx.project.update({
+            await tx.project.update({
                 where: { id: Number(id) },
                 data: {
                     ...data,
@@ -505,7 +516,16 @@ app.put('/api/projects/:id', async (req, res) => {
                 console.log('[DEBUG] Details created');
             }
 
-            return updatedProject;
+            // 3. Fetch Full Object to return
+            return await tx.project.findUnique({
+                where: { id: Number(id) },
+                include: {
+                    customer: true,
+                    customerMachine: true,
+                    details: true,
+                    photos: true
+                }
+            });
         });
 
         res.json(project);
