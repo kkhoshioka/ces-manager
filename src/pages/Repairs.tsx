@@ -102,6 +102,7 @@ const Repairs: React.FC = () => {
     // Loading Flags
     const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
     const [isFormLoading, setIsFormLoading] = useState(false);
+    const [isLoadingList, setIsLoadingList] = useState(true);
 
     // Derived state for available machines based on selected customer name
     const availableMachines = useMemo(() => {
@@ -316,12 +317,15 @@ const Repairs: React.FC = () => {
     }, [details]);
 
     const loadProjects = async () => {
+        setIsLoadingList(true);
         try {
             // Default to loading top 50 for performance
             const data = await RepairService.getAll({ limit: 50 });
             setProjects(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to load projects', error);
+        } finally {
+            setIsLoadingList(false);
         }
     };
 
@@ -1046,7 +1050,19 @@ const Repairs: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {projects.length === 0 ? (
+                        {isLoadingList ? (
+                            <tr>
+                                <td colSpan={7} className={styles.emptyState}>
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{
+                                            width: '1.5rem', height: '1.5rem', border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite'
+                                        }} />
+                                        <span>データを読み込み中...</span>
+                                    </div>
+                                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                                </td>
+                            </tr>
+                        ) : projects.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className={styles.emptyState}>データがありません</td>
                             </tr>
