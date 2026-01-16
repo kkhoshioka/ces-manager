@@ -572,33 +572,58 @@ const Repairs: React.FC = () => {
     };
 
     const handleRowClick = async (project: Repair) => {
-        // Parallelize loading for performance
-        const [fullProject] = await Promise.all([
-            RepairService.getById(project.id),
-            loadFormData()
-        ]);
+        // Optimistic UI: Open immediately with loading state
+        setIsFormOpen(true);
+        setIsFormLoading(true);
+        setSelectedProjectId(project.id);
+
+        // Populate partial data from list view
+        setFormType((project.type as 'repair' | 'sales') || 'repair');
+        const noteParts = (project.notes || '').split('\n\n備考: ');
+        setFormState({
+            customerName: project.customer?.name || '',
+            machineModel: project.machineModel || '',
+            serialNumber: project.serialNumber || '',
+            hourMeter: project.hourMeter || '',
+            orderDate: project.orderDate ? new Date(project.orderDate).toISOString().split('T')[0] : '',
+            completionDate: project.completionDate ? new Date(project.completionDate).toISOString().split('T')[0] : '',
+            issueDescription: noteParts[0] || '',
+            notes: noteParts[1] || '',
+            status: (project.status as RepairStatus) || 'received'
+        });
+
+        // Clear details/photos initially or keep previous? Better to clear to avoid confusion
+        setDetails([]);
+        setPhotos([]);
 
         try {
+            // Parallelize loading
+            const [fullProject] = await Promise.all([
+                RepairService.getById(project.id),
+                loadFormData()
+            ]);
+
             if (fullProject) {
-                setSelectedProjectId(fullProject.id);
+                // Update with full details
+                setSelectedProjectId(fullProject.id); // Confirm ID
                 setFormType((fullProject.type as 'repair' | 'sales') || 'repair');
 
-                // Parse notes back to issue + notes
-                const noteParts = (fullProject.notes || '').split('\n\n備考: ');
-                const issue = noteParts[0] || '';
-                const extraNotes = noteParts[1] || '';
+                const fullNoteParts = (fullProject.notes || '').split('\n\n備考: ');
+                const fullIssue = fullNoteParts[0] || '';
+                const fullExtraNotes = fullNoteParts[1] || '';
 
-                setFormState({
-                    customerName: fullProject.customer?.name || '',
-                    machineModel: fullProject.machineModel || '',
-                    serialNumber: fullProject.serialNumber || '',
-                    hourMeter: fullProject.hourMeter || '',
-                    orderDate: fullProject.orderDate ? new Date(fullProject.orderDate).toISOString().split('T')[0] : '',
-                    completionDate: fullProject.completionDate ? new Date(fullProject.completionDate).toISOString().split('T')[0] : '',
-                    issueDescription: issue,
-                    notes: extraNotes,
-                    status: (fullProject.status as RepairStatus) || 'received'
-                });
+                setFormState(prev => ({
+                    ...prev,
+                    customerName: fullProject.customer?.name || prev.customerName,
+                    machineModel: fullProject.machineModel || prev.machineModel,
+                    serialNumber: fullProject.serialNumber || prev.serialNumber,
+                    hourMeter: fullProject.hourMeter || prev.hourMeter,
+                    orderDate: fullProject.orderDate ? new Date(fullProject.orderDate).toISOString().split('T')[0] : prev.orderDate,
+                    completionDate: fullProject.completionDate ? new Date(fullProject.completionDate).toISOString().split('T')[0] : prev.completionDate,
+                    issueDescription: fullIssue,
+                    notes: fullExtraNotes,
+                    status: (fullProject.status as RepairStatus) || prev.status
+                }));
 
                 if (fullProject.details) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -654,11 +679,12 @@ const Repairs: React.FC = () => {
                 }
 
                 setPhotos(fullProject.photos || []);
-
-                setIsFormOpen(true);
             }
         } catch (error) {
             console.error('Failed to fetch project details', error);
+            alert('詳細データの取得に失敗しました。');
+        } finally {
+            setIsFormLoading(false);
         }
     };
 
