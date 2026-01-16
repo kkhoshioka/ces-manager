@@ -19,6 +19,7 @@ interface Customer {
     invoiceMailingAddress?: string | null;
     paymentTerms?: string | null;
     contactPerson?: string | null;
+    closingDate?: string | null;
 }
 
 const CustomerMaster: React.FC = () => {
@@ -38,7 +39,8 @@ const CustomerMaster: React.FC = () => {
         invoiceRegistrationNumber: '',
         invoiceMailingAddress: '',
         paymentTerms: '',
-        contactPerson: ''
+        contactPerson: '',
+        closingDate: ''
     });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -128,15 +130,28 @@ const CustomerMaster: React.FC = () => {
             invoiceRegistrationNumber: customer.invoiceRegistrationNumber || '',
             invoiceMailingAddress: customer.invoiceMailingAddress || '',
             paymentTerms: customer.paymentTerms || '',
-            contactPerson: customer.contactPerson || ''
+            contactPerson: customer.contactPerson || '',
+            closingDate: customer.closingDate || ''
         });
         setIsModalOpen(true);
     };
 
     const openAdd = () => {
         setEditingId(null);
-        setEditingId(null);
-        setFormData({ code: '', name: '', address: '', phone: '', email: '', type: '', fax: '', invoiceRegistrationNumber: '', invoiceMailingAddress: '', paymentTerms: '', contactPerson: '' });
+        setFormData({
+            code: '',
+            name: '',
+            address: '',
+            phone: '',
+            email: '',
+            type: '',
+            fax: '',
+            invoiceRegistrationNumber: '',
+            invoiceMailingAddress: '',
+            paymentTerms: '',
+            contactPerson: '',
+            closingDate: ''
+        });
         setIsModalOpen(true);
     };
 
@@ -285,12 +300,39 @@ const CustomerMaster: React.FC = () => {
                                 />
                             </div>
 
-                            <Input
-                                label="支払条件"
-                                value={formData.paymentTerms || ''}
-                                onChange={e => setFormData({ ...formData, paymentTerms: e.target.value })}
-                                placeholder="例: 月末締め翌月末払い"
-                            />
+                            <div className={styles.formGrid}>
+                                <Input
+                                    label="支払条件"
+                                    value={formData.paymentTerms || ''}
+                                    onChange={e => setFormData({ ...formData, paymentTerms: e.target.value })}
+                                    placeholder="例: 月末締め翌月末払い"
+                                />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#4b5563' }}>
+                                        締め日 (請求書発行用)
+                                    </label>
+                                    <select
+                                        value={formData.closingDate || ''}
+                                        onChange={e => setFormData({ ...formData, closingDate: e.target.value })}
+                                        style={{
+                                            padding: '0.625rem',
+                                            borderRadius: '0.375rem',
+                                            border: '1px solid #d1d5db',
+                                            fontSize: '0.9375rem',
+                                            width: '100%',
+                                            backgroundColor: 'white'
+                                        }}
+                                    >
+                                        <option value="">(未設定)</option>
+                                        <option value="5">5日</option>
+                                        <option value="10">10日</option>
+                                        <option value="15">15日</option>
+                                        <option value="20">20日</option>
+                                        <option value="25">25日</option>
+                                        <option value="99">末日</option>
+                                    </select>
+                                </div>
+                            </div>
 
                             <Input
                                 label="住所"

@@ -1354,6 +1354,7 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                 customerStats[custId] = {
                     customerId: custId,
                     customerName: custName,
+                    closingDate: project.customer?.closingDate, // Add closingDate
                     projects: [],
                     totalAmount: 0,
                     unbilledAmount: 0,

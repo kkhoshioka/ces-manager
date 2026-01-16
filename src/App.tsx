@@ -5,6 +5,7 @@ import Repairs from './pages/Repairs';
 import Inventory from './pages/Inventory';
 import Masters from './pages/Masters';
 import SalesManagement from './pages/dashboard/SalesManagement';
+import MonthlyInvoicing from './pages/dashboard/MonthlyInvoicing';
 import SupplierMonthlyReport from './pages/dashboard/SupplierMonthlyReport';
 import MachineRegistry from './pages/machines/MachineRegistry';
 import MachineDetail from './pages/machines/MachineDetail';
@@ -71,6 +72,7 @@ function App() {
               <Route path="machines" element={<ProtectedRoute allowedRoles={['admin']}><MachineRegistry /></ProtectedRoute>} />
               <Route path="machines/:id" element={<ProtectedRoute allowedRoles={['admin']}><MachineDetail /></ProtectedRoute>} />
               <Route path="sales-management" element={<ProtectedRoute allowedRoles={['admin']}><SalesManagement /></ProtectedRoute>} />
+              <Route path="monthly-invoicing" element={<ProtectedRoute allowedRoles={['admin']}><MonthlyInvoicing /></ProtectedRoute>} />
               <Route path="reports/supplier-costs" element={<ProtectedRoute allowedRoles={['admin']}><SupplierMonthlyReport /></ProtectedRoute>} />
             </Route>
 
