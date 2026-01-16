@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, Activity, ArrowUpRight } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, Activity, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../components/ui/Button';
 import styles from './Dashboard.module.css';
 import { formatCurrency } from '../utils/formatting';
@@ -31,6 +31,28 @@ const Dashboard: React.FC = () => {
     const calculateMargin = (profit: number, sales: number) => {
         if (sales === 0) return '0.0%';
         return `${((profit / sales) * 100).toFixed(1)}%`;
+    };
+
+    const handlePrevMonth = () => {
+        if (month === '') {
+            setMonth(12);
+        } else if (month === 1) {
+            setYear(y => y - 1);
+            setMonth(12);
+        } else {
+            setMonth(m => (m as number) - 1);
+        }
+    };
+
+    const handleNextMonth = () => {
+        if (month === '') {
+            setMonth(1);
+        } else if (month === 12) {
+            setYear(y => y + 1);
+            setMonth(1);
+        } else {
+            setMonth(m => (m as number) + 1);
+        }
     };
 
     const fetchData = React.useCallback(async () => {
@@ -94,6 +116,7 @@ const Dashboard: React.FC = () => {
                     <p className={styles.subtitle}>売上・原価・利益のリアルタイム分析</p>
                 </div>
                 <div className={styles.filters}>
+                    <Button variant="ghost" onClick={handlePrevMonth} icon={<ChevronLeft size={18} />}>前月</Button>
                     <div className={styles.filterGroup}>
                         <Calendar size={18} className={styles.icon} />
                         <select
@@ -118,6 +141,9 @@ const Dashboard: React.FC = () => {
                             ))}
                         </select>
                     </div>
+                    <Button variant="ghost" onClick={handleNextMonth}>
+                        翌月 <ChevronRight size={18} style={{ marginLeft: '4px', verticalAlign: 'middle' }} />
+                    </Button>
                     <Button icon={<Filter size={18} />} onClick={fetchData}>
                         更新
                     </Button>
