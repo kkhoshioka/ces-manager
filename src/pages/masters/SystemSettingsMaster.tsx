@@ -6,6 +6,8 @@ interface SystemSettings {
     defaultLaborRate: string;
     defaultTravelTimeRate: string;
     defaultTravelDistanceRate: string;
+    defaultLaborCost: string;
+    defaultTravelCost: string;
     [key: string]: string;
 }
 
@@ -13,7 +15,9 @@ const SystemSettingsMaster: React.FC = () => {
     const [settings, setSettings] = useState<SystemSettings>({
         defaultLaborRate: '8000',
         defaultTravelTimeRate: '3000',
-        defaultTravelDistanceRate: '50'
+        defaultTravelDistanceRate: '50',
+        defaultLaborCost: '3000',
+        defaultTravelCost: '1500'
     });
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -61,7 +65,7 @@ const SystemSettingsMaster: React.FC = () => {
     return (
         <div style={{ padding: '2rem', maxWidth: '800px' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                システム設定（デフォルト単価）
+                システム設定（デフォルト単価・原価）
             </h2>
 
             {message && (
@@ -82,49 +86,93 @@ const SystemSettingsMaster: React.FC = () => {
 
             <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
-                        自社工賃 単価 (円/時間)
-                    </label>
-                    <input
-                        type="number"
-                        name="defaultLaborRate"
-                        value={settings.defaultLaborRate}
-                        onChange={handleChange}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
-                    />
-                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
-                        修理案件の「自社工賃」追加時のデフォルト単価です
-                    </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                    <div>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                            売値（請求単価）
+                        </h3>
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+                                自社工賃 単価 (円/時間)
+                            </label>
+                            <input
+                                type="number"
+                                name="defaultLaborRate"
+                                value={settings.defaultLaborRate}
+                                onChange={handleChange}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
+                            />
+                            <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                修理案件入力時のデフォルト請求単価
+                            </p>
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+                                出張費（移動時間） 単価 (円/時間)
+                            </label>
+                            <input
+                                type="number"
+                                name="defaultTravelTimeRate"
+                                value={settings.defaultTravelTimeRate}
+                                onChange={handleChange}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+                                出張費（移動距離） 単価 (円/km)
+                            </label>
+                            <input
+                                type="number"
+                                name="defaultTravelDistanceRate"
+                                value={settings.defaultTravelDistanceRate}
+                                onChange={handleChange}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                            原価（自社コスト）
+                        </h3>
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+                                自社工賃 標準原価 (円/時間)
+                            </label>
+                            <input
+                                type="number"
+                                name="defaultLaborCost"
+                                value={settings.defaultLaborCost}
+                                onChange={handleChange}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: '#f8fafc' }}
+                            />
+                            <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                ダッシュボードの「自社コスト見込」計算に使用
+                            </p>
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+                                自社出張費 標準原価 (円/時間)
+                            </label>
+                            <input
+                                type="number"
+                                name="defaultTravelCost"
+                                value={settings.defaultTravelCost}
+                                onChange={handleChange}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: '#f8fafc' }}
+                            />
+                            <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                人件費等の見なし原価
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
-                        出張費（移動時間） 単価 (円/時間)
-                    </label>
-                    <input
-                        type="number"
-                        name="defaultTravelTimeRate"
-                        value={settings.defaultTravelTimeRate}
-                        onChange={handleChange}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
-                    />
-                </div>
-
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
-                        出張費（移動距離） 単価 (円/km)
-                    </label>
-                    <input
-                        type="number"
-                        name="defaultTravelDistanceRate"
-                        value={settings.defaultTravelDistanceRate}
-                        onChange={handleChange}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
-                    />
-                </div>
-
-                <div style={{ textAlign: 'right', marginTop: '2rem' }}>
+                <div style={{ textAlign: 'right', marginTop: '1rem' }}>
                     <button
                         onClick={handleSave}
                         style={{

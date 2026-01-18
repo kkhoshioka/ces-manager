@@ -948,6 +948,14 @@ app.get('/api/dashboard/sales', async (req, res) => {
             }
         });
 
+
+        // Fetch System Settings for Internal Cost Calculation
+        const settings = await prisma.systemSetting.findMany({
+            where: { key: { in: ['defaultLaborCost', 'defaultTravelCost'] } }
+        });
+        const laborCostRate = Number(settings.find(s => s.key === 'defaultLaborCost')?.value || 0);
+        const travelCostRate = Number(settings.find(s => s.key === 'defaultTravelCost')?.value || 0);
+
         // Initialize categories dynamically based on existing Sections in DB + fallback
         const summary = {
             totalSales: 0,
@@ -959,10 +967,17 @@ app.get('/api/dashboard/sales', async (req, res) => {
             totalProfit: 0,
             totalConfirmedProfit: 0,
             totalWipProfit: 0,
+
+            // New: Internal Cost Estimates
+            totalInternalCost: 0,
+            totalConfirmedInternalCost: 0,
+            totalWipInternalCost: 0,
+
             categories: {} as Record<string, {
                 sales: number; confirmedSales: number; wipSales: number;
                 cost: number; confirmedCost: number; wipCost: number;
                 profit: number; confirmedProfit: number; wipProfit: number;
+                internalCost: number; confirmedInternalCost: number; wipInternalCost: number;
                 label: string
             }>
         };
@@ -978,21 +993,34 @@ app.get('/api/dashboard/sales', async (req, res) => {
                 const cost = Number(detail.unitCost) || 0;
 
                 const lineSales = qty * price;
-                const lineCost = qty * cost;
-                const lineProfit = lineSales - lineCost;
+                const lineCost = qty * cost; // External Cost
+                const lineProfit = lineSales - lineCost; // Gross Profit
+
+                // Internal Cost Calculation
+                let lineInternalCost = 0;
+                if (!detail.supplierId) { // Only if no supplier (Internal)
+                    if (detail.lineType === 'labor') {
+                        lineInternalCost = qty * laborCostRate;
+                    } else if (detail.lineType === 'travel') {
+                        lineInternalCost = qty * travelCostRate;
+                    }
+                }
 
                 summary.totalSales += lineSales;
                 summary.totalCost += lineCost;
                 summary.totalProfit += lineProfit;
+                summary.totalInternalCost += lineInternalCost;
 
                 if (isConfirmed) {
                     summary.totalConfirmedSales += lineSales;
                     summary.totalConfirmedCost += lineCost;
                     summary.totalConfirmedProfit += lineProfit;
+                    summary.totalConfirmedInternalCost += lineInternalCost;
                 } else {
                     summary.totalWipSales += lineSales;
                     summary.totalWipCost += lineCost;
                     summary.totalWipProfit += lineProfit;
+                    summary.totalWipInternalCost += lineInternalCost;
                 }
 
                 // Dynamic Logic
@@ -1014,6 +1042,7 @@ app.get('/api/dashboard/sales', async (req, res) => {
                         sales: 0, confirmedSales: 0, wipSales: 0,
                         cost: 0, confirmedCost: 0, wipCost: 0,
                         profit: 0, confirmedProfit: 0, wipProfit: 0,
+                        internalCost: 0, confirmedInternalCost: 0, wipInternalCost: 0,
                         label
                     };
                 }
@@ -1021,15 +1050,18 @@ app.get('/api/dashboard/sales', async (req, res) => {
                 summary.categories[label].sales += lineSales;
                 summary.categories[label].cost += lineCost;
                 summary.categories[label].profit += lineProfit;
+                summary.categories[label].internalCost += lineInternalCost;
 
                 if (isConfirmed) {
                     summary.categories[label].confirmedSales += lineSales;
                     summary.categories[label].confirmedCost += lineCost;
                     summary.categories[label].confirmedProfit += lineProfit;
+                    summary.categories[label].confirmedInternalCost += lineInternalCost;
                 } else {
                     summary.categories[label].wipSales += lineSales;
                     summary.categories[label].wipCost += lineCost;
                     summary.categories[label].wipProfit += lineProfit;
+                    summary.categories[label].wipInternalCost += lineInternalCost;
                 }
             });
         });
