@@ -10,6 +10,13 @@ CREATE TABLE Customers (
     address TEXT COMMENT '住所',
     phone VARCHAR(20) COMMENT '電話番号',
     email VARCHAR(255) COMMENT 'メールアドレス',
+    type VARCHAR(50) COMMENT 'タイプ',
+    fax VARCHAR(20) COMMENT 'FAX番号',
+    invoice_registration_number VARCHAR(50) COMMENT '適格請求書発行事業者登録番号',
+    invoice_mailing_address TEXT COMMENT '請求書送付先住所',
+    payment_terms VARCHAR(255) COMMENT '支払条件',
+    contact_person VARCHAR(255) COMMENT '担当者名',
+    closing_date VARCHAR(10) COMMENT '締め日 (5, 10, 15, 20, 25, 99)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT='得意先マスタ';

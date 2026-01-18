@@ -53,13 +53,16 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
     }, []);
 
     // Auto-calculate next inspection date
-    useEffect(() => {
-        if (lastInspectionDate) {
-            const date = new Date(lastInspectionDate);
+    // Auto-calculate next inspection date moved to onChange handler
+    const handleLastInspectionDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setLastInspectionDate(val);
+        if (val) {
+            const date = new Date(val);
             date.setFullYear(date.getFullYear() + 1);
             setNextInspectionDate(date.toISOString().split('T')[0]);
         }
-    }, [lastInspectionDate]);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -194,7 +197,7 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
                                 label="前回年次点検日"
                                 type="date"
                                 value={lastInspectionDate}
-                                onChange={e => setLastInspectionDate(e.target.value)}
+                                onChange={handleLastInspectionDateChange}
                             />
                             <Input
                                 label="年次点検期限 (前回+1年)"

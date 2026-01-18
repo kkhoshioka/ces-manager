@@ -118,12 +118,12 @@ const MonthlyInvoicing = () => {
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
                     {[
                         { id: 'all', label: '全て' },
-                        { id: '20', label: '20日締め' },
-                        { id: '99', label: '末日締め' },
                         { id: '5', label: '5日締め' },
                         { id: '10', label: '10日締め' },
                         { id: '15', label: '15日締め' },
+                        { id: '20', label: '20日締め' },
                         { id: '25', label: '25日締め' },
+                        { id: '99', label: '末日締め' },
                         { id: 'others', label: 'その他/未設定' }
                     ].map(tab => (
                         <button

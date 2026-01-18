@@ -1405,7 +1405,19 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
             if (p.isInvoiceIssued && !p.isPaymentReceived) customerStats[custId].unpaidAmount += p.amount;
         });
 
-        const result = Object.values(customerStats).sort((a, b) => b.totalAmount - a.totalAmount);
+        const result = Object.values(customerStats).sort((a: any, b: any) => {
+            // Sort by closing date (Ascending)
+            // 5, 10, 15, 20, 25, 99 (End), null (Others) -> Last
+            const dateA = a.closingDate ? Number(a.closingDate) : 999;
+            const dateB = b.closingDate ? Number(b.closingDate) : 999;
+
+            if (dateA !== dateB) {
+                return dateA - dateB;
+            }
+
+            // Secondary sort: Total Amount (Descending)
+            return b.totalAmount - a.totalAmount;
+        });
         res.json(result);
 
     } catch (error) {
