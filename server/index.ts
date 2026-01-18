@@ -951,16 +951,26 @@ app.get('/api/dashboard/sales', async (req, res) => {
         // Initialize categories dynamically based on existing Sections in DB + fallback
         const summary = {
             totalSales: 0,
+            totalConfirmedSales: 0,
+            totalWipSales: 0,
             totalCost: 0,
+            totalConfirmedCost: 0,
+            totalWipCost: 0,
             totalProfit: 0,
-            categories: {} as Record<string, { sales: number; cost: number; profit: number; label: string }>
+            totalConfirmedProfit: 0,
+            totalWipProfit: 0,
+            categories: {} as Record<string, {
+                sales: number; confirmedSales: number; wipSales: number;
+                cost: number; confirmedCost: number; wipCost: number;
+                profit: number; confirmedProfit: number; wipProfit: number;
+                label: string
+            }>
         };
-
-        // Pre-fill categories from DB? No, just build as we go, but sorting might be desired.
-        // Let's just accumulate.
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         projects.forEach((project: any) => {
+            const isConfirmed = ['completed', 'delivered'].includes(project.status);
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             project.details.forEach((detail: any) => {
                 const qty = Number(detail.quantity);
@@ -974,6 +984,16 @@ app.get('/api/dashboard/sales', async (req, res) => {
                 summary.totalSales += lineSales;
                 summary.totalCost += lineCost;
                 summary.totalProfit += lineProfit;
+
+                if (isConfirmed) {
+                    summary.totalConfirmedSales += lineSales;
+                    summary.totalConfirmedCost += lineCost;
+                    summary.totalConfirmedProfit += lineProfit;
+                } else {
+                    summary.totalWipSales += lineSales;
+                    summary.totalWipCost += lineCost;
+                    summary.totalWipProfit += lineProfit;
+                }
 
                 // Dynamic Logic
                 let label = '未分類';
@@ -990,12 +1010,27 @@ app.get('/api/dashboard/sales', async (req, res) => {
                 }
 
                 if (!summary.categories[label]) {
-                    summary.categories[label] = { sales: 0, cost: 0, profit: 0, label };
+                    summary.categories[label] = {
+                        sales: 0, confirmedSales: 0, wipSales: 0,
+                        cost: 0, confirmedCost: 0, wipCost: 0,
+                        profit: 0, confirmedProfit: 0, wipProfit: 0,
+                        label
+                    };
                 }
 
                 summary.categories[label].sales += lineSales;
                 summary.categories[label].cost += lineCost;
                 summary.categories[label].profit += lineProfit;
+
+                if (isConfirmed) {
+                    summary.categories[label].confirmedSales += lineSales;
+                    summary.categories[label].confirmedCost += lineCost;
+                    summary.categories[label].confirmedProfit += lineProfit;
+                } else {
+                    summary.categories[label].wipSales += lineSales;
+                    summary.categories[label].wipCost += lineCost;
+                    summary.categories[label].wipProfit += lineProfit;
+                }
             });
         });
 

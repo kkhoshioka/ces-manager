@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, Activity, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import styles from './Dashboard.module.css';
@@ -8,15 +8,27 @@ import { API_BASE_URL } from '../config';
 
 interface CategoryData {
     sales: number;
+    confirmedSales: number;
+    wipSales: number;
     cost: number;
+    confirmedCost: number;
+    wipCost: number;
     profit: number;
+    confirmedProfit: number;
+    wipProfit: number;
     label: string;
 }
 
 interface DashboardData {
     totalSales: number;
+    totalConfirmedSales: number;
+    totalWipSales: number;
     totalCost: number;
+    totalConfirmedCost: number;
+    totalWipCost: number;
     totalProfit: number;
+    totalConfirmedProfit: number;
+    totalWipProfit: number;
     categories: Record<string, CategoryData>;
 }
 
@@ -168,13 +180,19 @@ const Dashboard: React.FC = () => {
                                 <div className={styles.iconWrapper} style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}>
                                     <DollarSign size={24} />
                                 </div>
-                                <span className={styles.cardLabel}>総売上高</span>
+                                <span className={styles.cardLabel}>総売上高 (見込み込)</span>
                             </div>
                             <div className={styles.cardBody}>
                                 <div className={styles.value}>{formatCurrency(data.totalSales)}</div>
-                                <div className={styles.trend}>
-                                    <ArrowUpRight size={16} className={styles.trendIcon} />
-                                    <span>前月比 +12.5%</span>
+                                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>確定:</span>
+                                        <span style={{ fontWeight: 600, color: '#0369a1' }}>{formatCurrency(data.totalConfirmedSales)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>作業中(見込):</span>
+                                        <span style={{ fontWeight: 600, color: '#94a3b8' }}>{formatCurrency(data.totalWipSales)}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -192,9 +210,15 @@ const Dashboard: React.FC = () => {
                             </div>
                             <div className={styles.cardBody}>
                                 <div className={styles.value}>{formatCurrency(data.totalCost)}</div>
-                                <div className={styles.trend} style={{ color: '#dc2626' }}>
-                                    <ArrowUpRight size={16} className={styles.trendIcon} />
-                                    <span>前月比 +8.2%</span>
+                                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>確定:</span>
+                                        <span style={{ fontWeight: 600, color: '#b91c1c' }}>{formatCurrency(data.totalConfirmedCost)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>見込:</span>
+                                        <span style={{ fontWeight: 600, color: '#94a3b8' }}>{formatCurrency(data.totalWipCost)}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -223,7 +247,7 @@ const Dashboard: React.FC = () => {
                             <thead>
                                 <tr>
                                     <th>部門 (カテゴリ)</th>
-                                    <th className={styles.right}>売上高</th>
+                                    <th className={styles.right}>売上高 (内 確定 / 見込)</th>
                                     <th className={styles.right}>原価</th>
                                     <th className={styles.right}>粗利益</th>
                                     <th className={styles.right}>粗利率</th>
@@ -233,7 +257,12 @@ const Dashboard: React.FC = () => {
                                 {Object.entries(data.categories).map(([key, cat]) => (
                                     <tr key={key} onClick={() => handleRowClick(key, cat.label)} style={{ cursor: 'pointer' }}>
                                         <td>{cat.label}</td>
-                                        <td className={styles.right}>{formatCurrency(cat.sales)}</td>
+                                        <td className={styles.right}>
+                                            <div style={{ fontWeight: 'bold' }}>{formatCurrency(cat.sales)}</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                {formatCurrency(cat.confirmedSales)} / <span style={{ color: '#94a3b8' }}>{formatCurrency(cat.wipSales)}</span>
+                                            </div>
+                                        </td>
                                         <td className={styles.right}>{formatCurrency(cat.cost)}</td>
                                         <td className={styles.right}>{formatCurrency(cat.profit)}</td>
                                         <td className={styles.right}>{calculateMargin(cat.profit, cat.sales)}</td>
@@ -241,7 +270,12 @@ const Dashboard: React.FC = () => {
                                 ))}
                                 <tr className={styles.totalRow}>
                                     <td>合計</td>
-                                    <td className={styles.right}>{formatCurrency(data.totalSales)}</td>
+                                    <td className={styles.right}>
+                                        <div>{formatCurrency(data.totalSales)}</div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 'normal', opacity: 0.8 }}>
+                                            {formatCurrency(data.totalConfirmedSales)} / {formatCurrency(data.totalWipSales)}
+                                        </div>
+                                    </td>
                                     <td className={styles.right}>{formatCurrency(data.totalCost)}</td>
                                     <td className={styles.right}>{formatCurrency(data.totalProfit)}</td>
                                     <td className={styles.right}>{calculateMargin(data.totalProfit, data.totalSales)}</td>
