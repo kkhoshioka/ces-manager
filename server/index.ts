@@ -912,6 +912,58 @@ app.delete('/api/operating-expenses/:id', async (req, res) => {
     }
 });
 
+// --- Monthly Expenses ---
+app.get('/api/monthly-expenses', async (req, res) => {
+    try {
+        const { year, month } = req.query;
+        if (!year || !month) return res.status(400).json({ error: 'Year and Month required' });
+
+        const data = await prisma.monthlyExpense.findMany({
+            where: {
+                year: Number(year),
+                month: Number(month)
+            }
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Failed to fetch monthly expenses', error);
+        res.status(500).json({ error: 'Failed to fetch monthly expenses' });
+    }
+});
+
+app.post('/api/monthly-expenses', async (req, res) => {
+    try {
+        const { year, month, expenses } = req.body;
+
+        // Use transaction for batch upsert
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ops = expenses.map((item: any) =>
+            prisma.monthlyExpense.upsert({
+                where: {
+                    year_month_expenseId: {
+                        year: Number(year),
+                        month: Number(month),
+                        expenseId: item.expenseId
+                    }
+                },
+                update: { amount: item.amount },
+                create: {
+                    year: Number(year),
+                    month: Number(month),
+                    expenseId: item.expenseId,
+                    amount: item.amount
+                }
+            })
+        );
+
+        const results = await prisma.$transaction(ops);
+        res.json(results);
+    } catch (error) {
+        console.error('Failed to save monthly expenses', error);
+        res.status(500).json({ error: 'Failed to save monthly expenses' });
+    }
+});
+
 // --- Dashboard ---
 app.get('/api/dashboard/sales', async (req, res) => {
     try {

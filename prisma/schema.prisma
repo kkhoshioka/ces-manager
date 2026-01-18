@@ -182,11 +182,28 @@ model ProductCategory {
 model OperatingExpense {
   id            Int      @id @default(autoincrement())
   name          String   @unique
+  group         String?  // Grouping for display (e.g. "その他経費")
   unit          String?
   standardCost  Decimal  @default(0)
   standardPrice Decimal  @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  monthlyExpenses MonthlyExpense[]
+}
+
+model MonthlyExpense {
+  id        Int      @id @default(autoincrement())
+  year      Int
+  month     Int
+  expenseId Int
+  amount    Decimal  @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  expense   OperatingExpense @relation(fields: [expenseId], references: [id])
+  @@unique([year, month, expenseId])
 }
 
 model SystemSetting {

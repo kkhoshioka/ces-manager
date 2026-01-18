@@ -9,6 +9,7 @@ import MonthlyInvoicing from './pages/dashboard/MonthlyInvoicing';
 import SupplierMonthlyReport from './pages/dashboard/SupplierMonthlyReport';
 import MachineRegistry from './pages/machines/MachineRegistry';
 import MachineDetail from './pages/machines/MachineDetail';
+import MonthlyExpenses from './pages/expenses/MonthlyExpenses';
 import Login from './pages/Login';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -74,6 +75,7 @@ function App() {
               <Route path="sales-management" element={<ProtectedRoute allowedRoles={['admin']}><SalesManagement /></ProtectedRoute>} />
               <Route path="monthly-invoicing" element={<ProtectedRoute allowedRoles={['admin']}><MonthlyInvoicing /></ProtectedRoute>} />
               <Route path="reports/supplier-costs" element={<ProtectedRoute allowedRoles={['admin']}><SupplierMonthlyReport /></ProtectedRoute>} />
+              <Route path="monthly-expenses" element={<ProtectedRoute allowedRoles={['admin']}><MonthlyExpenses /></ProtectedRoute>} />
             </Route>
 
             {/* Catch all redirect */}
