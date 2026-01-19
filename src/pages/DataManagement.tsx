@@ -126,10 +126,10 @@ const DataManagement: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50/50 p-8">
+        <div className="min-h-screen bg-gray-50/50 p-8 md:p-12">
             <div className="max-w-7xl mx-auto">
                 {/* Header Section */}
-                <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                             <Database className="w-7 h-7 text-blue-600" />
@@ -147,18 +147,18 @@ const DataManagement: React.FC = () => {
                 </header>
 
                 {/* Navigation Tabs */}
-                <div className="flex flex-wrap gap-2 mb-8">
+                <div className="flex flex-wrap gap-2 mb-10">
                     <TabButton category="Master" label="【マスターデータ】" />
                     <TabButton category="Transaction" label="【トランザクションデータ】" />
                     <TabButton category="System" label="【システム設定】" />
                 </div>
 
                 {/* Main Grid Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 animate-fade-in-up">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8 animate-fade-in-up">
                     {MODELS.filter(m => m.category === activeTab).map((model) => (
                         <div
                             key={model.id}
-                            className="bg-white rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 group flex items-start gap-5 relative overflow-hidden"
+                            className="bg-white rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 group flex items-start gap-6 relative overflow-hidden"
                         >
                             {/* Icon Square */}
                             <div className={`
@@ -173,7 +173,7 @@ const DataManagement: React.FC = () => {
                                 <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
                                     {model.label}
                                 </h3>
-                                <p className="text-sm text-gray-500 leading-relaxed max-w-sm mb-4">
+                                <p className="text-sm text-gray-500 leading-relaxed max-w-sm mb-6">
                                     {model.description}
                                 </p>
 
