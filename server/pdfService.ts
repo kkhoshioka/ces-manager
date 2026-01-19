@@ -92,9 +92,26 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
 
 export const generateInvoice = (project: Project) => {
     // Process details to group travel expenses
-    const processedDetails = processProjectDetails(project.details);
+    let processedDetails = processProjectDetails(project.details);
 
-    const subtotal = processedDetails.reduce((sum: number, d: ProjectDetail) => sum + (Number(d.quantity) * Number(d.unitPrice)), 0);
+    // Pad with empty rows
+    const MIN_ROWS = 15;
+    if (processedDetails.length < MIN_ROWS) {
+        const paddingCount = MIN_ROWS - processedDetails.length;
+        for (let i = 0; i < paddingCount; i++) {
+            processedDetails.push({
+                description: '',
+                quantity: '',
+                unitPrice: '',
+                lineType: 'padding'
+            });
+        }
+    }
+
+    const subtotal = processedDetails.reduce((sum: number, d: ProjectDetail) => {
+        if (d.lineType === 'padding') return sum;
+        return sum + (Number(d.quantity) * Number(d.unitPrice));
+    }, 0);
     const tax = Math.floor(subtotal * 0.1);
     const total = subtotal + tax;
 
@@ -119,6 +136,7 @@ export const generateInvoice = (project: Project) => {
             // Title and Date Line
             {
                 columns: [
+                    // Title (Centered-ish)
                     { width: '*', text: '' }, // Spacer
                     {
                         width: 150,
@@ -128,14 +146,16 @@ export const generateInvoice = (project: Project) => {
                                     text: '請 求 書',
                                     style: 'titleLabel',
                                     alignment: 'center',
-                                    fillColor: '#4287f5',
-                                    color: 'white',
-                                    border: [false, false, false, false], // clear default borders
-                                    margin: [0, 5, 0, 5]
+                                    border: [false, false, false, true], // Underline only
+                                    margin: [0, 5]
                                 }
                             ]]
                         },
-                        layout: 'noBorders', // Ensure outer table has no borders
+                        layout: {
+                            hLineWidth: (i: number) => i === 1 ? 2 : 0, // Thicker bottom line
+                            vLineWidth: () => 0,
+                            hLineColor: 'black'
+                        }
                     },
                     { width: '*', text: '' }, // Spacer
                 ]
@@ -155,7 +175,7 @@ export const generateInvoice = (project: Project) => {
                     }
                 ]
             },
-            { text: '', margin: [0, 15] },
+            { text: '', margin: [0, 20] }, // Increased margin
 
             // Recipient and Company Info
             {
@@ -189,9 +209,33 @@ export const generateInvoice = (project: Project) => {
                                 ],
                                 fontSize: 9,
                                 alignment: 'right',
-                                color: '#555'
-
+                                color: '#555',
+                                margin: [0, 0, 0, 10]
                             },
+                            // Bank Info moved here
+                            {
+                                text: '【お振込先】',
+                                fontSize: 8,
+                                bold: true,
+                                alignment: 'right',
+                                margin: [0, 2, 0, 0]
+                            },
+                            {
+                                text: [
+                                    '中国銀行 倉敷駅前支店 普通 2533151\n',
+                                    '玉島信用金庫 八王寺支店 普通 0159950'
+                                ],
+                                fontSize: 8,
+                                alignment: 'right',
+                                lineHeight: 1.2
+                            },
+                            {
+                                text: '※振込手数料は貴社ご負担にてお願いいたします。',
+                                fontSize: 7,
+                                alignment: 'right',
+                                color: '#555',
+                                margin: [0, 2, 0, 0]
+                            }
                             // Han (Stamp) placeholder would go here
                         ]
                     }
@@ -250,12 +294,12 @@ export const generateInvoice = (project: Project) => {
                         ],
                         // Data Rows
                         ...processedDetails.map((d: ProjectDetail) => [
-                            { text: billingDate, fontSize: 8, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: d.lineType === 'padding' ? '' : billingDate, fontSize: 8, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
                             { text: d.description, fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
-                            { text: d.quantity, alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
-                            { text: '式', alignment: 'center', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
-                            { text: formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
-                            { text: formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: d.lineType === 'padding' ? '' : '式', alignment: 'center', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: d.lineType === 'padding' ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: d.lineType === 'padding' ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
                             { text: '', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] }
                         ]),
 
@@ -290,17 +334,6 @@ export const generateInvoice = (project: Project) => {
                     ]
                 },
                 layout: 'noBorders' // Use cell borders
-            },
-
-            // Bank Info
-            {
-                text: [
-                    '【お振込先】 中国銀行 倉敷駅前支店 普通 2533151\n',
-                    '　　　　　　 玉島信用金庫 八王寺支店 普通 0159950\n',
-                    '※振込手数料は貴社ご負担にてお願いいたします。'
-                ],
-                fontSize: 9,
-                margin: [0, 20, 0, 0]
             }
         ],
         defaultStyle: {
@@ -309,9 +342,9 @@ export const generateInvoice = (project: Project) => {
         },
         styles: {
             titleLabel: {
-                fontSize: 16,
+                fontSize: 18, // Larger
                 bold: true,
-                letterSpacing: 5
+                letterSpacing: 2
             },
             blueHeader: {
                 fillColor: '#bde0fe', // Light blue
