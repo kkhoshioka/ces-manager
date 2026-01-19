@@ -151,7 +151,7 @@ export const generateInvoice = (project: Project) => {
                                     table: {
                                         body: [[
                                             {
-                                                text: '請 求 書',
+                                                text: '　請 求 書　',
                                                 style: 'titleLabel',
                                                 alignment: 'center',
                                                 fillColor: PRIMARY_COLOR,
@@ -195,7 +195,7 @@ export const generateInvoice = (project: Project) => {
                     paddingLeft: () => 0,
                     paddingRight: () => 0,
                     paddingTop: () => 0,
-                    paddingBottom: () => 0
+                    paddingBottom: (i: number) => 0
                 },
                 margin: [0, 0, 0, 20]
             },
@@ -218,10 +218,7 @@ export const generateInvoice = (project: Project) => {
                         width: '*',
                         stack: [
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' }, // Using dummy name from image or real? User said "CES" logo. I'll use "株式会社シーイーエス" as per code.
-                            // Image shows "株式会社シーイーエス中国" but typically we use DB data or config. 
-                            // Current code had "株式会社シーイーエス". I will stick to what was there or generic. The user said "use this image".
-                            // I'll update address to match image if legible?
-                            // Image: 〒710-0825 岡山県倉敷市安江3...
+                            // Image shows "株式会社シーイーエス中国" but typically we use DB data or config.
                             // Previous code had dummy. I'll use the image address.
                             {
                                 text: [
@@ -269,7 +266,7 @@ export const generateInvoice = (project: Project) => {
             {
                 style: 'summaryTable',
                 table: {
-                    widths: ['*', '*', '*', '*', '*', '*'],
+                    widths: ['*', '*', '*', '*', '*', 10, '*'],
                     body: [
                         [
                             { text: '前回御請求額', style: 'blueHeader' },
@@ -277,6 +274,7 @@ export const generateInvoice = (project: Project) => {
                             { text: '繰越金額', style: 'blueHeader' },
                             { text: '今回御買上額', style: 'blueHeader' },
                             { text: '消 費 税', style: 'blueHeader' },
+                            { text: '', border: [false, false, false, false] },
                             { text: '今回御請求額', style: 'blueHeaderUnique' } // Darker blue
                         ],
                         [
@@ -285,7 +283,8 @@ export const generateInvoice = (project: Project) => {
                             { text: '', style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: formatCurrency(subtotal).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                            { text: '', border: [false, false, false, false] },
+                            { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: ['#1a3c7e', '#1a3c7e', '#1a3c7e', '#1a3c7e'], fillColor: '#EBF5FF' }
                         ]
                     ]
                 },
