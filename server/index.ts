@@ -1435,6 +1435,58 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
 
 
 
+// Generate PDF for a single project
+app.get('/api/projects/:id/pdf', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type } = req.query; // 'invoice' or 'delivery'
+
+        const project = await prisma.project.findUnique({
+            where: { id: Number(id) },
+            include: {
+                customer: true,
+                customerMachine: true,
+                details: true
+            }
+        });
+
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const safeDetails = project.details.map((d: any) => ({
+            description: d.description,
+            quantity: Number(d.quantity),
+            unitPrice: Number(d.unitPrice),
+            lineType: d.lineType
+        }));
+
+        const pdfData = {
+            id: project.id,
+            customer: { name: project.customer.name },
+            machineModel: project.machineModel || project.customerMachine?.machineModel || '',
+            serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+            details: safeDetails,
+            notes: project.notes || ''
+        };
+
+        const pdfDoc = type === 'delivery'
+            ? generateDeliveryNote(pdfData)
+            : generateInvoice(pdfData);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${type}_${project.id}.pdf"`);
+
+        pdfDoc.pipe(res);
+        pdfDoc.end();
+
+    } catch (error) {
+        console.error('PDF Generation Error:', error);
+        res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+});
+
 // ==============================================
 // Sales & Deposit Management (Sales Management Dashboard)
 // ==============================================
