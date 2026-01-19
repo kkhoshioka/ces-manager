@@ -129,7 +129,7 @@ const DataManagement: React.FC = () => {
         <div className="min-h-screen bg-gray-50/50 p-8 md:p-12">
             <div className="max-w-7xl mx-auto">
                 {/* Header Section */}
-                <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <header className="mb-16 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                             <Database className="w-7 h-7 text-blue-600" />
@@ -147,7 +147,7 @@ const DataManagement: React.FC = () => {
                 </header>
 
                 {/* Navigation Tabs */}
-                <div className="flex flex-wrap gap-2 mb-10">
+                <div className="flex flex-wrap gap-2 mb-20">
                     <TabButton category="Master" label="【マスターデータ】" />
                     <TabButton category="Transaction" label="【トランザクションデータ】" />
                     <TabButton category="System" label="【システム設定】" />
