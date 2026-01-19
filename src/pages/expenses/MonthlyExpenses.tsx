@@ -129,7 +129,7 @@ const MonthlyExpenses: React.FC = () => {
 
     // Group expenses
     const groupedExpenses = React.useMemo(() => {
-        const groups: Record<string, OperatingExpense[]> = { '基本経費': [] };
+        const groups: Record<string, OperatingExpense[]> = {};
 
         expenses.forEach(exp => {
             const groupName = exp.group || '基本経費';
@@ -139,10 +139,34 @@ const MonthlyExpenses: React.FC = () => {
             groups[groupName].push(exp);
         });
 
-        // Sort keys to put '基本経費' first, then others
+        const order = ['人件費', '車両・設備費', '営業活動費', '一般管理費'];
+        const bottom = ['営業外', 'その他経費', 'その他', '基本経費'];
+
         const sortedKeys = Object.keys(groups).sort((a, b) => {
-            if (a === '基本経費') return -1;
-            if (b === '基本経費') return 1;
+            const idxA = order.indexOf(a);
+            const idxB = order.indexOf(b);
+
+            // Check top priority first
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+
+            // Check bottom priority
+            const isBottomA = bottom.some(k => a.includes(k));
+            const isBottomB = bottom.some(k => b.includes(k));
+
+            if (isBottomA && isBottomB) {
+                // Keep relative order in bottom array if possible, or simple locale
+                return order.indexOf(a) - order.indexOf(b); // Wait, they aren't in 'order'. 
+                // Just alphabetical among themselves if both are bottom?
+                // Or preserve 'bottom' array order?
+                const bIdxA = bottom.findIndex(k => a.includes(k));
+                const bIdxB = bottom.findIndex(k => b.includes(k));
+                return bIdxA - bIdxB;
+            }
+            if (isBottomA) return 1;
+            if (isBottomB) return -1;
+
             return a.localeCompare(b);
         });
 
