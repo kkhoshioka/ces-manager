@@ -95,7 +95,7 @@ export const generateInvoice = (project: Project) => {
     let processedDetails = processProjectDetails(project.details);
 
     // Pad with empty rows
-    const MIN_ROWS = 15;
+    const MIN_ROWS = 10;
     if (processedDetails.length < MIN_ROWS) {
         const paddingCount = MIN_ROWS - processedDetails.length;
         for (let i = 0; i < paddingCount; i++) {
@@ -121,9 +121,9 @@ export const generateInvoice = (project: Project) => {
     const closingDateStr = project.customer?.name?.includes('締') ? '末' : '20'; // Placeholder logic
 
     // UI Colors
-    const PRIMARY_COLOR = '#1a3c7e'; // Navy Blue
-    const ACCENT_COLOR = '#f5f7fa';  // Very Light Gray/Blue for stripes
-    const BORDER_COLOR = '#1a3c7e';
+    const PRIMARY_COLOR = '#5B9BD5'; // Water/Light Blue
+    const ACCENT_COLOR = '#EBF5FF';  // Lighter matching stripe
+    const BORDER_COLOR = '#5B9BD5';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docDefinition: any = {
