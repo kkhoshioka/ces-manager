@@ -121,12 +121,28 @@
 .actions {
     position: sticky;
     bottom: 2rem;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 1rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 1rem 2rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     backdrop-filter: blur(4px);
     border: 1px solid #e2e8f0;
+}
+
+.totalDisplay {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.totalLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
 }

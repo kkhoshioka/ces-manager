@@ -173,6 +173,10 @@ const MonthlyExpenses: React.FC = () => {
         return { groups, sortedKeys };
     }, [expenses]);
 
+    const totalAmount = React.useMemo(() => {
+        return Object.values(monthlyData).reduce((sum, val) => sum + (val || 0), 0);
+    }, [monthlyData]);
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -221,6 +225,11 @@ const MonthlyExpenses: React.FC = () => {
                     ))}
 
                     <div className={styles.actions}>
+                        <div className={styles.totalDisplay}>
+                            <span className={styles.totalLabel}>月次合計:</span>
+                            {totalAmount.toLocaleString()}
+                            <span style={{ fontSize: '1rem', marginLeft: '4px', fontWeight: 'normal' }}>円</span>
+                        </div>
                         <Button onClick={handleSave} disabled={isSaving} icon={<Save size={18} />}>
                             {isSaving ? '保存中...' : '保存する'}
                         </Button>
