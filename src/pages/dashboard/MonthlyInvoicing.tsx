@@ -95,6 +95,37 @@ const MonthlyInvoicing = () => {
             if (res.ok) {
                 alert('一括発行（ステータス更新）が完了しました。');
                 fetchReport();
+
+                // Batch Download
+                if (confirm('続けて、すべての請求書をまとめて印刷（ダウンロード）しますか？')) {
+                    try {
+                        const downloadRes = await fetch(`${API_BASE_URL}/invoices/batch-pdf`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session?.access_token}`
+                            },
+                            body: JSON.stringify({ year, month, closingDate: selectedClosingDate })
+                        });
+
+                        if (downloadRes.ok) {
+                            const blob = await downloadRes.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `invoices_${year}${month}_${selectedClosingDate}.zip`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        } else {
+                            alert('一括ダウンロードに失敗しました。対象データがない可能性があります。');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('ダウンロード中にエラーが発生しました。');
+                    }
+                }
             } else {
                 throw new Error('Failed');
             }
@@ -118,7 +149,17 @@ const MonthlyInvoicing = () => {
 
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
-            window.open(url, '_blank');
+
+            // Fix for blank page: use <a> tag simulation
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `invoice_${projectId}.pdf`;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => window.URL.revokeObjectURL(url), 100);
         } catch (e) {
             alert('請求書のダウンロードに失敗しました。ログイン状態を確認してください。');
         }

@@ -1440,6 +1440,99 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
 // ==============================================
 
 // Batch Issue Monthly Invoices (Status Update)
+import archiver from 'archiver';
+
+app.post('/api/invoices/batch-pdf', async (req, res) => {
+    try {
+        const { year, month, closingDate } = req.body;
+
+        if (!year || !month || !closingDate) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const startDate = new Date(Number(year), Number(month) - 1, 1);
+        const endDate = new Date(Number(year), Number(month), 0, 23, 59, 59);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const whereClause: any = {};
+        if (closingDate !== 'all') {
+            if (closingDate === 'others') {
+                whereClause.NOT = { closingDate: { in: ['5', '10', '15', '20', '25', '99'] } };
+            } else {
+                whereClause.closingDate = closingDate;
+            }
+        }
+
+        const projects = await prisma.project.findMany({
+            where: {
+                AND: [
+                    { customer: whereClause },
+                    {
+                        OR: [
+                            { completionDate: { gte: startDate, lte: endDate } },
+                            { createdAt: { gte: startDate, lte: endDate } }
+                        ]
+                    }
+                ]
+            },
+            include: {
+                customer: true,
+                customerMachine: true,
+                details: true
+            }
+        });
+
+        if (projects.length === 0) {
+            return res.status(404).json({ error: 'No projects found' });
+        }
+
+        const archive = archiver('zip', {
+            zlib: { level: 9 }
+        });
+
+        res.attachment(`invoices_${year}${month}_${closingDate}.zip`);
+
+        archive.on('error', function (err) {
+            console.error('Archive Error:', err);
+            if (!res.headersSent) res.status(500).send({ error: err.message });
+        });
+
+        archive.pipe(res);
+
+        for (const project of projects) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const safeDetails = project.details.map((d: any) => ({
+                description: d.description,
+                quantity: Number(d.quantity),
+                unitPrice: Number(d.unitPrice),
+                lineType: d.lineType
+            }));
+
+            const pdfData = {
+                id: project.id,
+                customer: { name: project.customer.name },
+                machineModel: project.machineModel || project.customerMachine?.machineModel || '',
+                serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+                details: safeDetails,
+                notes: project.notes || ''
+            };
+
+            const pdfDoc = generateInvoice(pdfData);
+            pdfDoc.end();
+
+            archive.append(pdfDoc as any, { name: `${project.customer.name}_${project.id}.pdf` });
+        }
+
+        await archive.finalize();
+
+    } catch (error) {
+        console.error('Batch PDF Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to generate batch PDF' });
+        }
+    }
+});
+
 app.post('/api/invoices/batch-issue', async (req, res) => {
     try {
         const { year, month, closingDate } = req.body;
