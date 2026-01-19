@@ -105,7 +105,11 @@ const ExpenseMaster: React.FC = () => {
 
     return (
         <div>
-            {/* ... (header) ... */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                <Button icon={<Plus size={18} />} onClick={openAdd}>
+                    新規登録
+                </Button>
+            </div>
 
             <div className={styles.tableContainer}>
                 <table className={styles.table}>
