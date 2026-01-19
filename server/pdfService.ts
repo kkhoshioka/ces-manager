@@ -147,7 +147,7 @@ export const generateInvoice = (project: Project) => {
                             columns: [
                                 // Left: Title Box
                                 {
-                                    width: 200,
+                                    width: 'auto',
                                     table: {
                                         body: [[
                                             {
@@ -157,7 +157,7 @@ export const generateInvoice = (project: Project) => {
                                                 fillColor: PRIMARY_COLOR,
                                                 color: 'white',
                                                 border: [false, false, false, false],
-                                                margin: [0, 5]
+                                                margin: [40, 5]
                                             }
                                         ]]
                                     },
