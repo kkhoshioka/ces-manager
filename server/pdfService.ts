@@ -416,75 +416,198 @@ export const generateInvoice = (project: Project) => {
 };
 
 export const generateDeliveryNote = (project: Project) => {
-    // Process details to group travel expenses (Quantity logic for Delivery Note: just show 1 for Exps is fine?)
-    // Delivery note typically doesn't show prices, but Quantity is relevant.
-    // For "Travel Expenses", Quantity 1 is appropriate.
+    // Process details (Group travel, etc if needed - reusing same logic as Invoice)
     const processedDetails = processProjectDetails(project.details);
+
+    // Pad with empty rows
+    const MIN_ROWS = 10;
+    if (processedDetails.length < MIN_ROWS) {
+        const paddingCount = MIN_ROWS - processedDetails.length;
+        for (let i = 0; i < paddingCount; i++) {
+            processedDetails.push({
+                description: '\u00A0',
+                quantity: '',
+                unitPrice: '',
+                lineType: 'padding'
+            });
+        }
+    }
+
+    const now = new Date();
+    const deliveryDate = formatDate(now);
+
+    // UI Colors (Shared)
+    const PRIMARY_COLOR = '#5B9BD5';
+    const ACCENT_COLOR = '#EBF5FF';
+    const BORDER_COLOR = '#5B9BD5';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docDefinition: any = {
+        pageMargins: [30, 30, 30, 30],
         content: [
-            { text: '納品書', style: 'header', alignment: 'center', margin: [0, 0, 0, 20] },
+            // Top Header Line
+            {
+                columns: [
+                    { text: '〒710-0825\n岡山県倉敷市安江374-1', fontSize: 9 },
+                    { text: `Page 1`, alignment: 'right', fontSize: 9 }
+                ]
+            },
+            { text: '', margin: [0, 5] },
+
+            // Title Block
+            {
+                table: {
+                    widths: ['*'],
+                    body: [[
+                        {
+                            columns: [
+                                // Left: Title Box
+                                {
+                                    width: 'auto',
+                                    table: {
+                                        body: [[
+                                            {
+                                                text: '　納　品　書　',
+                                                style: 'titleLabel',
+                                                alignment: 'center',
+                                                fillColor: PRIMARY_COLOR,
+                                                color: 'white',
+                                                border: [false, false, false, false],
+                                                margin: [40, 5]
+                                            }
+                                        ]]
+                                    },
+                                    layout: 'noBorders',
+                                },
+                                // Right: Date and No
+                                {
+                                    width: '*',
+                                    stack: [
+                                        {
+                                            columns: [
+                                                { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                                { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                            ],
+                                            margin: [0, 0, 0, 2]
+                                        },
+                                        {
+                                            columns: [
+                                                { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                                { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
+                                            ]
+                                        }
+                                    ],
+                                    alignment: 'right',
+                                    margin: [0, 0, 0, 0]
+                                }
+                            ]
+                        }
+                    ]]
+                },
+                layout: {
+                    hLineWidth: (i: number) => i === 1 ? 1 : 0,
+                    vLineWidth: () => 0,
+                    hLineColor: PRIMARY_COLOR,
+                    paddingLeft: () => 0,
+                    paddingRight: () => 0,
+                    paddingTop: () => 0,
+                    paddingBottom: (i: number) => 0
+                },
+                margin: [0, 0, 0, 20]
+            },
+
+            // Recipient and Company Info
             {
                 columns: [
                     {
-                        width: '*',
-                        text: [
-                            { text: `${project.customer?.name} 御中\n`, fontSize: 14, bold: true },
-                            `\n`,
-                            `件名: ${project.machineModel} (${project.serialNumber}) 修理完了品\n`,
-                            `納品日: ${formatDate(new Date())}\n`,
-                            `納品番号: DEL-${project.id}-${Date.now().toString().slice(-6)}`
+                        width: 280,
+                        stack: [
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            { text: '\n' },
+                            { text: `件名: ${project.machineModel} (${project.serialNumber}) 修理完了品`, fontSize: 9 },
+                            { text: '\n\n' },
+                            { text: '毎度ありがとうございます。', fontSize: 9 },
+                            { text: '下記の通り納品いたしました。', fontSize: 9 }
                         ]
                     },
                     {
-                        width: 200,
-                        text: [
-                            { text: '株式会社シーイーエス\n', bold: true },
-                            '〒000-0000\n',
-                            '住所: 東京都XXXXX\n',
-                            'TEL: 03-0000-0000\n',
-                            '担当: 担当者名'
-                        ],
-                        alignment: 'right'
+                        width: '*',
+                        stack: [
+                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
+                            {
+                                text: [
+                                    '〒710-0825 岡山県倉敷市安江374-1\n',
+                                    'TEL 086-441-3741\n',
+                                    'FAX 086-441-3742\n',
+                                    '登録番号 T4260001033325'
+                                ],
+                                fontSize: 9,
+                                alignment: 'right',
+                                color: '#555',
+                                margin: [0, 0, 0, 10]
+                            }
+                        ]
                     }
                 ]
             },
-            { text: '下記の通り納品いたしました。', margin: [0, 20] },
+
+            // Spacing
+            { text: '', margin: [0, 0, 0, 20] },
+
+            // Detail Table
             {
+                style: 'detailTable',
                 table: {
                     headerRows: 1,
-                    widths: ['*', 'auto'],
+                    // Col widths: Date, Code/Name, Qty, Unit, Remarks
+                    widths: [55, '*', 30, 30, '*'],
+                    heights: 24,
                     body: [
                         [
-                            { text: '品名 / 内容', style: 'tableHeader' },
-                            { text: '数量', style: 'tableHeader', alignment: 'center' }
+                            { text: '日付', style: 'tableHeaderMain' },
+                            { text: '品名 / 内容', style: 'tableHeaderMain' },
+                            { text: '数量', style: 'tableHeaderMain' },
+                            { text: '単位', style: 'tableHeaderMain' },
+                            { text: '備考', style: 'tableHeaderMain' }
                         ],
-                        ...processedDetails.map((d: ProjectDetail) => [
-                            d.description,
-                            { text: d.quantity, alignment: 'right' }
-                        ])
+                        // Data Rows with Zebra Striping
+                        ...processedDetails.map((d: ProjectDetail, index: number) => {
+                            const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
+                            const rowBorder = [true, true, true, true];
+                            const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
+                            return [
+                                { text: d.lineType === 'padding' ? '' : deliveryDate, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' ? '' : '式', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
+                            ];
+                        })
                     ]
                 },
-                layout: 'lightHorizontalLines'
+                layout: 'noBorders' // Use cell borders
             },
-            { text: '備考:', margin: [0, 20, 0, 5] },
-            { text: project.notes || 'なし', fontSize: 10, color: '#555' }
+
+            // Notes
+            { text: '備考:', margin: [0, 20, 0, 5], fontSize: 9 },
+            { text: project.notes || 'なし', fontSize: 9, color: '#555' }
         ],
         defaultStyle: {
             font: 'Roboto',
             fontSize: 10
         },
         styles: {
-            header: {
-                fontSize: 18,
-                bold: true
-            },
-            tableHeader: {
+            titleLabel: {
+                fontSize: 16,
                 bold: true,
-                fontSize: 10,
-                color: 'black',
-                fillColor: '#eeeeee'
+                letterSpacing: 6
+            },
+            tableHeaderMain: {
+                fillColor: PRIMARY_COLOR,
+                color: 'white',
+                fontSize: 9,
+                alignment: 'center',
+                bold: true
             }
         }
     };
