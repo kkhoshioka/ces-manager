@@ -119,16 +119,23 @@ export const generateInvoice = (project: Project) => {
             // Title and Date Line
             {
                 columns: [
-                    // Title (Centered-ish)
                     { width: '*', text: '' }, // Spacer
                     {
                         width: 150,
                         table: {
                             body: [[
-                                { text: '請 求 書', style: 'titleLabel', alignment: 'center', fillColor: '#4287f5', color: 'white' }
+                                {
+                                    text: '請 求 書',
+                                    style: 'titleLabel',
+                                    alignment: 'center',
+                                    fillColor: '#4287f5',
+                                    color: 'white',
+                                    border: [false, false, false, false], // clear default borders
+                                    margin: [0, 5, 0, 5]
+                                }
                             ]]
                         },
-                        layout: 'noBorders',
+                        layout: 'noBorders', // Ensure outer table has no borders
                     },
                     { width: '*', text: '' }, // Spacer
                 ]
@@ -140,7 +147,7 @@ export const generateInvoice = (project: Project) => {
                         width: 'auto',
                         text: [
                             `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日  締切分 No.`,
-                            { text: ` ${project.id.toString().padStart(6, '0')}`, bold: true }
+                            { text: ` ${String(project.id).padStart(6, '0')}`, bold: true }
                         ],
                         fontSize: 9,
                         alignment: 'right',
@@ -156,7 +163,7 @@ export const generateInvoice = (project: Project) => {
                     {
                         width: 280,
                         stack: [
-                            { text: `${project.customer.name} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
                             { text: 'お客様コード  (       )', fontSize: 9 },
                             { text: '\n\n' },
@@ -206,18 +213,18 @@ export const generateInvoice = (project: Project) => {
                             { text: '今回御請求額', style: 'blueHeaderUnique' } // Darker blue
                         ],
                         [
-                            { text: '', style: 'summaryCell' }, // Previous
-                            { text: '', style: 'summaryCell' }, // Payment
-                            { text: '', style: 'summaryCell' }, // Carry over
-                            { text: formatCurrency(subtotal).replace('¥', ''), style: 'summaryCell' },
-                            { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell' },
-                            { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell' }
+                            { text: '', style: 'summaryCell', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] }, // Explicit borders
+                            { text: '', style: 'summaryCell', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '', style: 'summaryCell', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: formatCurrency(subtotal).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] }
                         ]
                     ]
                 },
                 layout: {
-                    hLineWidth: (i: number) => i === 0 || i === 2 ? 1 : 0.5,
-                    vLineWidth: (i: number) => i === 0 || i === 6 ? 1 : 0.5,
+                    hLineWidth: (i: number) => 1,
+                    vLineWidth: (i: number) => 1,
                     hLineColor: '#4287f5',
                     vLineColor: '#4287f5',
                 },
@@ -243,54 +250,46 @@ export const generateInvoice = (project: Project) => {
                         ],
                         // Data Rows
                         ...processedDetails.map((d: ProjectDetail) => [
-                            { text: billingDate, fontSize: 8 }, // Using billing date as placeholder for row date
-                            { text: d.description, fontSize: 9 },
-                            { text: d.quantity, alignment: 'right', fontSize: 9 },
-                            { text: '式', alignment: 'center', fontSize: 9 }, // Unit placeholder
-                            { text: formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9 },
-                            { text: formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9 },
-                            { text: '', fontSize: 9 } // Remarks
+                            { text: billingDate, fontSize: 8, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: d.description, fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: d.quantity, alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '式', alignment: 'center', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '', fontSize: 9, border: [true, true, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] }
                         ]),
-                        // Empty rows to fill space? (Optional, maybe later)
 
-                        // Totals in grid?
+                        // Consumption Tax Row (Footer 1)
                         [
-                            { text: '', border: [true, false, true, false] },
-                            { text: '消費税', colSpan: 1, alignment: 'left', fontSize: 9, border: [false, false, false, false] },
-                            { text: '', border: [true, false, true, false] },
-                            { text: '', border: [true, false, true, false] },
-                            { text: '', border: [true, false, true, false] },
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9 },
-                            { text: '', border: [true, false, true, false] }
+                            { text: '', border: [true, true, true, false], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '消費税', fontSize: 9, border: [true, true, true, false], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '', border: [true, true, true, false], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '', border: [true, true, true, false], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '', border: [true, true, true, false], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, false], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '', fontSize: 9, border: [true, true, true, false], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] }
                         ],
+                        // Total Taxable (Footer 2)
                         [
-                            { text: '', border: [true, false, true, true] },
-                            { text: '【合計 課税10.0% 税抜額】', colSpan: 3, fontSize: 9, border: [false, false, false, true] },
+                            { text: '', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '【合計 課税10.0% 税抜額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
                             {}, {},
-                            { text: formatCurrency(subtotal).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true] },
+                            { text: formatCurrency(subtotal).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
                             {},
-                            {}
+                            { text: '', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] }
                         ],
+                        // Total Tax (Footer 3)
                         [
-                            { text: '', border: [false, false, true, true] },
-                            { text: '【合計 課税10.0% 消費税額】', colSpan: 3, fontSize: 9, border: [false, false, false, true] },
+                            { text: '', border: [false, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
+                            { text: '【合計 課税10.0% 消費税額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
                             {}, {},
-                            { text: formatCurrency(tax).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true] },
+                            { text: formatCurrency(tax).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] },
                             {},
-                            {}
+                            { text: '', border: [true, false, true, true], borderColor: ['#4287f5', '#4287f5', '#4287f5', '#4287f5'] }
                         ]
                     ]
                 },
-                layout: {
-                    hLineWidth: function (i: number, node: any) {
-                        return (i === 0 || i === node.table.body.length) ? 1 : 0.5;
-                    },
-                    vLineWidth: function (i: number, node: any) {
-                        return (i === 0 || i === node.table.widths.length) ? 1 : 0.5;
-                    },
-                    hLineColor: '#4287f5',
-                    vLineColor: '#4287f5',
-                }
+                layout: 'noBorders' // Use cell borders
             },
 
             // Bank Info
