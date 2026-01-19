@@ -100,7 +100,7 @@ export const generateInvoice = (project: Project) => {
         const paddingCount = MIN_ROWS - processedDetails.length;
         for (let i = 0; i < paddingCount; i++) {
             processedDetails.push({
-                description: '',
+                description: '\u00A0',
                 quantity: '',
                 unitPrice: '',
                 lineType: 'padding'
@@ -189,13 +189,13 @@ export const generateInvoice = (project: Project) => {
                     ]]
                 },
                 layout: {
-                    hLineWidth: (i: number) => i === 1 ? 2 : 0, // Bottom line only
+                    hLineWidth: (i: number) => i === 1 ? 1 : 0, // Bottom line only
                     vLineWidth: () => 0,
                     hLineColor: PRIMARY_COLOR,
                     paddingLeft: () => 0,
                     paddingRight: () => 0,
                     paddingTop: () => 0,
-                    paddingBottom: (i: number) => i === 0 ? 5 : 0
+                    paddingBottom: () => 0
                 },
                 margin: [0, 0, 0, 20]
             },
@@ -305,6 +305,7 @@ export const generateInvoice = (project: Project) => {
                     headerRows: 1,
                     // Col widths: Date, Code/Name, Qty, Unit, Price, Amount, Check?
                     widths: [55, '*', 25, 25, 55, 60, 40],
+                    heights: 24, // FIXED HEIGHT FOR ALL ROWS
                     body: [
                         [
                             { text: '日付/伝票番号', style: 'tableHeaderMain' },
@@ -322,7 +323,7 @@ export const generateInvoice = (project: Project) => {
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
                                 { text: d.lineType === 'padding' ? '' : billingDate, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : '式', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
