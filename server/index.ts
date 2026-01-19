@@ -1464,7 +1464,7 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
 
         const pdfData = {
             id: project.id,
-            customer: { name: project.customer.name },
+            customer: { name: project.customer?.name || '得意先不明' },
             machineModel: project.machineModel || project.customerMachine?.machineModel || '',
             serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
             details: safeDetails,

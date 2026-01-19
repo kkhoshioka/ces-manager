@@ -101,7 +101,7 @@ export const generateInvoice = (project: Project) => {
     const now = new Date();
     const billingDate = formatDate(now);
     // Assuming deadline is end of next month for now, or just leave blank/generic
-    const closingDateStr = project.customer?.name.includes('締') ? '末' : '20'; // Placeholder logic
+    const closingDateStr = project.customer?.name?.includes('締') ? '末' : '20'; // Placeholder logic
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docDefinition: any = {
@@ -361,7 +361,7 @@ export const generateDeliveryNote = (project: Project) => {
                     {
                         width: '*',
                         text: [
-                            { text: `${project.customer.name} 御中\n`, fontSize: 14, bold: true },
+                            { text: `${project.customer?.name} 御中\n`, fontSize: 14, bold: true },
                             `\n`,
                             `件名: ${project.machineModel} (${project.serialNumber}) 修理完了品\n`,
                             `納品日: ${formatDate(new Date())}\n`,
