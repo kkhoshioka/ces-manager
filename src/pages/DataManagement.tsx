@@ -147,7 +147,7 @@ const DataManagement: React.FC = () => {
                 </header>
 
                 {/* Navigation Tabs */}
-                <div className="flex flex-wrap gap-2 mb-20">
+                <div className="flex flex-wrap gap-2 mb-32">
                     <TabButton category="Master" label="【マスターデータ】" />
                     <TabButton category="Transaction" label="【トランザクションデータ】" />
                     <TabButton category="System" label="【システム設定】" />
