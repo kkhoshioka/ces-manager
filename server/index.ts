@@ -15,6 +15,8 @@ import { generateInvoice, generateDeliveryNote } from './pdfService';
 import systemSettingsRouter from './routes/systemSettings';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
+import { stringify } from 'csv-stringify';
+import { parse } from 'csv-parse/sync';
 
 // Init Supabase
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
@@ -1803,6 +1805,157 @@ app.put('/api/projects/:id/status', async (req, res) => {
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../dist')));
+
+// --- Data Backup & Restore (CSV) ---
+
+// Map URL param 'model' to Prisma Client key
+const getPrismaModel = (modelName: string) => {
+    switch (modelName) {
+        case 'customers': return prisma.customer;
+        case 'suppliers': return prisma.supplier;
+        case 'products': return prisma.product;
+        case 'categories': return prisma.productCategory;
+        case 'machines': return prisma.customerMachine;
+        case 'projects': return prisma.project;
+        case 'project-details': return prisma.projectDetail;
+        case 'project-photos': return prisma.projectPhoto;
+        case 'expenses': return prisma.operatingExpense;
+        case 'monthly-expenses': return prisma.monthlyExpense;
+        case 'system-settings': return prisma.systemSetting;
+        case 'profiles': return prisma.profile;
+        case 'monthly-bill-status': return prisma.monthlyBillStatus;
+        default: return null;
+    }
+};
+
+app.get('/api/data/:model/export', async (req, res) => {
+    try {
+        const { model } = req.params;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const prismaModel: any = getPrismaModel(model);
+
+        if (!prismaModel) {
+            return res.status(400).json({ error: `Invalid model: ${model}` });
+        }
+
+        const data = await prismaModel.findMany();
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${model}_${new Date().toISOString().split('T')[0]}.csv"`);
+
+        const stream = stringify({ header: true, cast: { date: (date) => date.toISOString() } });
+        stream.pipe(res);
+
+        data.forEach((row: any) => {
+            stream.write(row);
+        });
+        stream.end();
+
+    } catch (error) {
+        console.error('Export error:', error);
+        res.status(500).json({ error: 'Failed to export data' });
+    }
+});
+
+app.post('/api/data/:model/import', upload.single('file'), async (req, res) => {
+    try {
+        const { model } = req.params;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const prismaModel: any = getPrismaModel(model);
+
+        if (!prismaModel) {
+            return res.status(400).json({ error: `Invalid model: ${model}` });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const csvContent = req.file.buffer.toString('utf-8');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const records: any[] = parse(csvContent, {
+            columns: true,
+            skip_empty_lines: true,
+            cast: (value, context) => {
+                if (value === '') return null;
+                // Basic type inference if needed, but Prisma usually handles string conversion well enough 
+                // EXCEPT for Int/Float/Boolean/Date which sometimes need explicit casting.
+                // For now, let's keep it simplest: pass strings/nulls and let Prisma try, 
+                // or we might need a better casting strategy if this fails.
+                return value;
+            }
+        });
+
+        console.log(`Importing ${records.length} records into ${model}`);
+
+        // Using transaction for safety (optional: insertMany/createMany is faster but less safe for updates)
+        // For "Restore", we ideally want to UPSERT or Overwrite.
+        // Prisma createMany has skipDuplicates, but no updateOnDuplicate.
+        // Users might want to restore deleted data or update existing.
+        // Let's try to upsert loop for now. It's slower but safer relationally.
+
+        await prisma.$transaction(async (tx) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const txModel: any = (tx as any)[(prismaModel as any).name]; // Access transactional model delegate
+
+            for (const record of records) {
+                // Formatting for specific types based on model
+                // This is the tricky part of generic import.
+                // We'll try to cast known numeric fields.
+
+                // Helper to auto-cast based on key naming conventions or simple heuristics
+                for (const key in record) {
+                    if (key.endsWith('Id') && record[key] !== null) record[key] = Number(record[key]);
+                    if ((key === 'id') && record[key] !== null && model !== 'profiles') record[key] = Number(record[key]); // Profile ID is string (UUID)
+                    if ((key === 'year' || key === 'month' || key === 'stockQuantity') && record[key] !== null) record[key] = Number(record[key]);
+                    if ((key.includes('Price') || key.includes('Cost') || key.includes('Amount') || key === 'quantity') && record[key] !== null) {
+                        // Decimals/Floats
+                        // Prisma expects Decimal or Number.
+                        record[key] = Number(record[key]);
+                    }
+                    if (record[key] === 'true') record[key] = true;
+                    if (record[key] === 'false') record[key] = false;
+                    // Date strings (ISO) are usually auto-parsed by Prisma Client if they match standard
+                }
+
+                // If ID exists, try upsert
+                if (record.id) {
+                    // Profiles use string ID, others Int.
+                    const where = { id: record.id };
+
+                    // Upsert is ideal
+                    // But generic upsert is hard because 'create' and 'update' payloads might differ 
+                    // (e.g. relational connect which we don't have here, we just have raw IDs).
+                    // However, since we pre-processed IDs to numbers, raw create/update SHOULD work for Foreign Keys.
+
+                    // We use a try-catch per record or check existence?
+                    // Prisma Upsert requires a unique constraint. ID is usually unique.
+                    try {
+                        await prismaModel.upsert({
+                            where,
+                            update: record,
+                            create: record
+                        });
+                    } catch (e) {
+                        console.warn(`Upsert failed for ${model} ID ${record.id}, trying naive create`, e);
+                        // Fallback?
+                    }
+                } else {
+                    // Create
+                    await prismaModel.create({ data: record });
+                }
+            }
+        }, {
+            maxWait: 5000, // 5s max wait
+            timeout: 20000 // 20s timeout
+        });
+
+        res.json({ success: true, count: records.length });
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({ error: 'Failed to import data', details: error instanceof Error ? error.message : String(error) });
+    }
+});
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.

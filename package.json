@@ -21,6 +21,8 @@
     "axios": "^1.13.2",
     "better-sqlite3": "^12.5.0",
     "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
+    "csv-stringify": "^6.6.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
