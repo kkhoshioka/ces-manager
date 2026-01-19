@@ -268,6 +268,7 @@ export const generateInvoice = (project: Project) => {
                             { text: '【合計 課税10.0% 税抜額】', colSpan: 3, fontSize: 9, border: [false, false, false, true] },
                             {}, {},
                             { text: formatCurrency(subtotal).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true] },
+                            {},
                             {}
                         ],
                         [
@@ -275,6 +276,7 @@ export const generateInvoice = (project: Project) => {
                             { text: '【合計 課税10.0% 消費税額】', colSpan: 3, fontSize: 9, border: [false, false, false, true] },
                             {}, {},
                             { text: formatCurrency(tax).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true] },
+                            {},
                             {}
                         ]
                     ]
