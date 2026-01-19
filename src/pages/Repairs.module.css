@@ -445,3 +445,11 @@
     white-space: nowrap;
     user-select: none;
 }
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+}
