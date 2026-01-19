@@ -137,7 +137,7 @@ const MonthlyInvoicing = () => {
         }
     };
 
-    const handleDownloadInvoice = async (projectId: number, e: React.MouseEvent) => {
+    const handleDownloadInvoice = async (projectId: number, customerName: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation(); // Stop row toggle
         if (downloadingId === projectId) return;
@@ -157,7 +157,8 @@ const MonthlyInvoicing = () => {
             // Fix for blank page: use <a> tag simulation
             const a = document.createElement('a');
             a.href = url;
-            a.download = `invoice_${projectId}.pdf`;
+            const filenameDate = `${year}${String(month).padStart(2, '0')}`;
+            a.download = `請求書-${customerName} (${filenameDate}).pdf`;
             a.target = '_blank';
             document.body.appendChild(a);
             a.click();
@@ -349,7 +350,7 @@ const MonthlyInvoicing = () => {
                                                                             <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                                                                                 <a
                                                                                     href="#"
-                                                                                    onClick={(e) => handleDownloadInvoice(p.id, e)}
+                                                                                    onClick={(e) => handleDownloadInvoice(p.id, item.customerName, e)}
                                                                                     style={{
                                                                                         display: 'inline-flex',
                                                                                         alignItems: 'center',
