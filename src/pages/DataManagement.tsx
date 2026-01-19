@@ -129,7 +129,7 @@ const DataManagement: React.FC = () => {
         <div className="min-h-screen bg-gray-50/50 p-8 md:p-12">
             <div className="max-w-7xl mx-auto">
                 {/* Header Section */}
-                <header className="mb-16 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                             <Database className="w-7 h-7 text-blue-600" />
@@ -146,15 +146,19 @@ const DataManagement: React.FC = () => {
                     )}
                 </header>
 
+                <div className="h-16"></div>
+
                 {/* Navigation Tabs */}
-                <div className="flex flex-wrap gap-2 mb-32">
+                <div className="flex flex-wrap gap-2">
                     <TabButton category="Master" label="【マスターデータ】" />
                     <TabButton category="Transaction" label="【トランザクションデータ】" />
                     <TabButton category="System" label="【システム設定】" />
                 </div>
 
+                <div className="h-32"></div>
+
                 {/* Main Grid Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8 animate-fade-in-up">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8">
                     {MODELS.filter(m => m.category === activeTab).map((model) => (
                         <div
                             key={model.id}
