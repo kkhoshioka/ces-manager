@@ -1096,9 +1096,27 @@ const Repairs: React.FC = () => {
                                     <td className={styles.issue}>{(project.notes || '').split('\n\n備考: ')[0]}</td>
                                     <td>
                                         <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
-                                            <Button variant="ghost" size="sm" onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/invoice`, '_blank')} title="請求書PDF"><FileText size={16} /></Button>
-                                            <Button variant="ghost" size="sm" onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/delivery`, '_blank')} title="納品書PDF"><FileText size={16} color="#10b981" /></Button>
-                                            <Button variant="ghost" size="sm" onClick={(e) => handleDeleteProject(project.id, e)} title="削除" style={{ color: '#ef4444' }}><Trash2 size={16} /></Button>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/invoice`, '_blank')}
+                                                title="請求書PDF"
+                                                style={{ color: '#2563eb', fontWeight: 'bold', border: '1px solid #bfdbfe', background: '#eff6ff', fontSize: '0.8rem', padding: '0.2rem 0.5rem', height: 'auto' }}
+                                            >
+                                                <FileText size={14} style={{ marginRight: '4px' }} /> 請求書
+                                            </Button>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/delivery`, '_blank')}
+                                                title="納品書PDF"
+                                                style={{ color: '#059669', fontWeight: 'bold', border: '1px solid #a7f3d0', background: '#f0fdf4', fontSize: '0.8rem', padding: '0.2rem 0.5rem', height: 'auto' }}
+                                            >
+                                                <FileText size={14} style={{ marginRight: '4px' }} /> 納品書
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={(e) => handleDeleteProject(project.id, e)} title="削除" style={{ color: '#ef4444' }}>
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </div>
                                     </td>
                                 </tr>
