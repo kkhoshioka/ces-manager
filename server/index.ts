@@ -1538,6 +1538,13 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
             return res.status(404).json({ error: 'No projects found' });
         }
 
+        // Auto-update status to "Issued" for Sales Management
+        const projectIds = projects.map(p => p.id);
+        await prisma.project.updateMany({
+            where: { id: { in: projectIds } },
+            data: { isInvoiceIssued: true }
+        });
+
         const archive = archiver('zip', {
             zlib: { level: 9 }
         });

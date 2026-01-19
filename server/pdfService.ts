@@ -370,9 +370,9 @@ export const generateInvoice = (project: Project) => {
         },
         styles: {
             titleLabel: {
-                fontSize: 22, // Larger
+                fontSize: 16, // Reduced from 22
                 bold: true,
-                letterSpacing: 10 // Much wider
+                letterSpacing: 6 // Reduced from 10
             },
             blueHeader: {
                 fillColor: PRIMARY_COLOR, // Light blue
