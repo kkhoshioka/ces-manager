@@ -151,7 +151,7 @@ export const generateInvoice = (project: Project) => {
                                     table: {
                                         body: [[
                                             {
-                                                text: '　請 求 書　',
+                                                text: '請　求　書',
                                                 style: 'titleLabel',
                                                 alignment: 'center',
                                                 fillColor: PRIMARY_COLOR,
@@ -370,9 +370,9 @@ export const generateInvoice = (project: Project) => {
         },
         styles: {
             titleLabel: {
-                fontSize: 18, // Larger
+                fontSize: 22, // Larger
                 bold: true,
-                letterSpacing: 5
+                letterSpacing: 10 // Much wider
             },
             blueHeader: {
                 fillColor: PRIMARY_COLOR, // Light blue
