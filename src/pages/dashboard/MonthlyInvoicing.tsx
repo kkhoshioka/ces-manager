@@ -45,6 +45,7 @@ const MonthlyInvoicing = () => {
     const [selectedClosingDate, setSelectedClosingDate] = useState<string>('all');
     const [expandedCustomer, setExpandedCustomer] = useState<number | null>(null);
     const [isBatchIssuing, setIsBatchIssuing] = useState(false);
+    const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
     const fetchReport = React.useCallback(async () => {
         setLoading(true);
@@ -139,6 +140,9 @@ const MonthlyInvoicing = () => {
     const handleDownloadInvoice = async (projectId: number, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation(); // Stop row toggle
+        if (downloadingId === projectId) return;
+
+        setDownloadingId(projectId);
         try {
             const res = await fetch(`${API_BASE_URL}/projects/${projectId}/pdf?type=invoice`, {
                 headers: {
@@ -162,6 +166,8 @@ const MonthlyInvoicing = () => {
             setTimeout(() => window.URL.revokeObjectURL(url), 100);
         } catch (e) {
             alert('請求書のダウンロードに失敗しました。ログイン状態を確認してください。');
+        } finally {
+            setDownloadingId(null);
         }
     };
 
@@ -344,9 +350,18 @@ const MonthlyInvoicing = () => {
                                                                                 <a
                                                                                     href="#"
                                                                                     onClick={(e) => handleDownloadInvoice(p.id, e)}
-                                                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer' }}
+                                                                                    style={{
+                                                                                        display: 'inline-flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: '4px',
+                                                                                        textDecoration: 'none',
+                                                                                        color: downloadingId === p.id ? '#94a3b8' : '#2563eb',
+                                                                                        fontSize: '0.8rem',
+                                                                                        cursor: downloadingId === p.id ? 'wait' : 'pointer',
+                                                                                        pointerEvents: downloadingId === p.id ? 'none' : 'auto'
+                                                                                    }}
                                                                                 >
-                                                                                    <Printer size={14} /> 発行
+                                                                                    {downloadingId === p.id ? '処理中...' : <><Printer size={14} /> 発行</>}
                                                                                 </a>
                                                                             </td>
                                                                         </tr>
