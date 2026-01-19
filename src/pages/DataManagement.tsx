@@ -155,7 +155,7 @@ const DataManagement: React.FC = () => {
                     <TabButton category="System" label="【システム設定】" />
                 </div>
 
-                <div className="h-32"></div>
+                <div className="h-12"></div>
 
                 {/* Main Grid Content */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8">
@@ -230,8 +230,10 @@ const DataManagement: React.FC = () => {
                     ))}
                 </div>
 
+                <div className="h-16"></div>
+
                 {/* Info Footer */}
-                <div className="mt-12 flex items-start gap-4 p-6 bg-yellow-50/50 border border-yellow-100 rounded-xl text-yellow-800/80 max-w-4xl mx-auto">
+                <div className="flex items-start gap-4 p-6 bg-yellow-50/50 border border-yellow-100 rounded-xl text-yellow-800/80 max-w-4xl mx-auto">
                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                     <div className="text-sm leading-relaxed">
                         <strong className="block text-yellow-900 mb-1">データ復元時のご注意</strong>
