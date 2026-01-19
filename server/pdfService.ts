@@ -147,11 +147,11 @@ export const generateInvoice = (project: Project) => {
                             columns: [
                                 // Left: Title Box
                                 {
-                                    width: 150,
+                                    width: 200,
                                     table: {
                                         body: [[
                                             {
-                                                text: '請　求　書',
+                                                text: '　請　求　書　',
                                                 style: 'titleLabel',
                                                 alignment: 'center',
                                                 fillColor: PRIMARY_COLOR,
