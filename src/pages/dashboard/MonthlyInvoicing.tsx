@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Printer, FileText } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import styles from '../Dashboard.module.css';
+import { useAuth } from '../../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -27,6 +28,7 @@ interface CustomerStat {
     customerId: number;
     customerName: string;
     closingDate?: string | null;
+    monthlyStatus?: string;
     projects: Project[];
     totalAmount: number;
     unbilledAmount: number;
@@ -35,12 +37,14 @@ interface CustomerStat {
 }
 
 const MonthlyInvoicing = () => {
+    const { session } = useAuth();
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [data, setData] = useState<CustomerStat[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedClosingDate, setSelectedClosingDate] = useState<string>('all');
     const [expandedCustomer, setExpandedCustomer] = useState<number | null>(null);
+    const [isBatchIssuing, setIsBatchIssuing] = useState(false);
 
     const fetchReport = React.useCallback(async () => {
         setLoading(true);
@@ -72,6 +76,52 @@ const MonthlyInvoicing = () => {
 
     const toggleExpand = (customerId: number) => {
         setExpandedCustomer(expandedCustomer === customerId ? null : customerId);
+    };
+
+    const handleBatchIssue = async () => {
+        if (!confirm(`${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締めの請求書を一括発行（ステータス更新）しますか？`)) return;
+
+        setIsBatchIssuing(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/invoices/batch-issue`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
+                body: JSON.stringify({ year, month, closingDate: selectedClosingDate })
+            });
+
+            if (res.ok) {
+                alert('一括発行（ステータス更新）が完了しました。');
+                fetchReport();
+            } else {
+                throw new Error('Failed');
+            }
+        } catch (e) {
+            alert('一括発行に失敗しました');
+        } finally {
+            setIsBatchIssuing(false);
+        }
+    };
+
+    const handleDownloadInvoice = async (projectId: number, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation(); // Stop row toggle
+        try {
+            const res = await fetch(`${API_BASE_URL}/projects/${projectId}/pdf?type=invoice`, {
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                }
+            });
+            if (!res.ok) throw new Error('Failed to download');
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (e) {
+            alert('請求書のダウンロードに失敗しました。ログイン状態を確認してください。');
+        }
     };
 
     // Group data by closing date
@@ -115,7 +165,7 @@ const MonthlyInvoicing = () => {
 
             <div className={styles.content}>
                 {/* Closing Date Filter Tabs */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '4px', alignItems: 'center' }}>
                     {[
                         { id: 'all', label: '全て' },
                         { id: '5', label: '5日締め' },
@@ -145,6 +195,17 @@ const MonthlyInvoicing = () => {
                             {tab.label}
                         </button>
                     ))}
+
+                    {selectedClosingDate !== 'all' && selectedClosingDate !== 'others' && (
+                        <Button
+                            onClick={handleBatchIssue}
+                            disabled={isBatchIssuing || loading || groupedData.length === 0}
+                            style={{ marginLeft: 'auto', backgroundColor: '#0f172a' }}
+                            icon={<FileText size={18} />}
+                        >
+                            {isBatchIssuing ? '処理中...' : `${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締め 請求確定 (一括)`}
+                        </Button>
+                    )}
                 </div>
 
                 <div className={styles.tableCard}>
@@ -191,6 +252,18 @@ const MonthlyInvoicing = () => {
                                             <td style={{ fontWeight: 500 }}>{item.customerName}</td>
                                             <td>
                                                 {item.closingDate === '99' ? '末日' : item.closingDate ? `${item.closingDate}日` : '-'}
+                                                {item.monthlyStatus === 'issued' && (
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        marginLeft: '0.5rem',
+                                                        padding: '2px 6px',
+                                                        backgroundColor: '#dcfce7',
+                                                        color: '#166534',
+                                                        fontSize: '0.75rem',
+                                                        borderRadius: '4px',
+                                                        border: '1px solid #bbb'
+                                                    }}>請求確定済</span>
+                                                )}
                                             </td>
                                             <td className={styles.right}>{item.projects.length} 件</td>
                                             <td className={styles.right} style={{ fontWeight: 'bold' }}>{formatCurrency(item.totalAmount)}</td>
@@ -228,10 +301,9 @@ const MonthlyInvoicing = () => {
                                                                             <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(p.amount)}</td>
                                                                             <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                                                                                 <a
-                                                                                    href={`${API_BASE_URL}/projects/${p.id}/pdf?type=invoice`}
-                                                                                    target="_blank"
-                                                                                    rel="noreferrer"
-                                                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', color: '#2563eb', fontSize: '0.8rem' }}
+                                                                                    href="#"
+                                                                                    onClick={(e) => handleDownloadInvoice(p.id, e)}
+                                                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer' }}
                                                                                 >
                                                                                     <Printer size={14} /> 発行
                                                                                 </a>

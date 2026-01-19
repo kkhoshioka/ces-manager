@@ -1439,6 +1439,68 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
 // Sales & Deposit Management (Sales Management Dashboard)
 // ==============================================
 
+// Batch Issue Monthly Invoices (Status Update)
+app.post('/api/invoices/batch-issue', async (req, res) => {
+    try {
+        const { year, month, closingDate } = req.body;
+
+        if (!year || !month || !closingDate) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const y = Number(year);
+        const m = Number(month);
+
+        // 1. Find target customers
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const whereClause: any = {};
+        if (closingDate !== 'all') {
+            if (closingDate === 'others') {
+                whereClause.NOT = { closingDate: { in: ['5', '10', '15', '20', '25', '99'] } };
+            } else {
+                whereClause.closingDate = closingDate;
+            }
+        }
+
+        const customers = await prisma.customer.findMany({
+            where: whereClause,
+            select: { id: true }
+        });
+
+        if (customers.length === 0) {
+            return res.json({ count: 0, message: 'No customers found' });
+        }
+
+        // 2. Upsert Bill Status
+        const ops = customers.map(c =>
+            prisma.monthlyBillStatus.upsert({
+                where: {
+                    year_month_customerId: {
+                        year: y,
+                        month: m,
+                        customerId: c.id
+                    }
+                },
+                update: { status: 'issued', issuedAt: new Date() },
+                create: {
+                    year: y,
+                    month: m,
+                    customerId: c.id,
+                    status: 'issued',
+                    issuedAt: new Date()
+                }
+            })
+        );
+
+        await prisma.$transaction(ops);
+
+        res.json({ success: true, count: customers.length });
+    } catch (error) {
+        console.error('Batch Issue Error:', error);
+        res.status(500).json({ error: 'Failed to batch issue' });
+    }
+});
+
 // Get Sales Management Report (Aggregated by Customer)
 app.get('/api/dashboard/sales-management', async (req, res) => {
     try {
@@ -1481,6 +1543,15 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
+        // Fetch Monthly Invoice Status
+        const monthlyStatuses = await prisma.monthlyBillStatus.findMany({
+            where: {
+                year: startYear,
+                month: startMonth
+            }
+        });
+        const statusMap = new Map(monthlyStatuses.map(s => [s.customerId, s.status]));
+
         // Group by Customer
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const customerStats: Record<string, any> = {};
@@ -1494,6 +1565,7 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                     customerId: custId,
                     customerName: custName,
                     closingDate: project.customer?.closingDate, // Add closingDate
+                    monthlyStatus: statusMap.get(custId) || 'draft',
                     projects: [],
                     totalAmount: 0,
                     unbilledAmount: 0,
