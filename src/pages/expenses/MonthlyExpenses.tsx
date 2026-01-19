@@ -22,19 +22,32 @@ const MonthlyExpenses: React.FC = () => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [expenses, setExpenses] = useState<OperatingExpense[]>([]);
     const [monthlyData, setMonthlyData] = useState<Record<number, number>>({}); // expenseId -> amount
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const isFirstRun = React.useRef(true);
 
     useEffect(() => {
-        fetchMasterData();
+        const init = async () => {
+            await fetchMasterData();
+            await fetchMonthlyData();
+            setIsLoading(false);
+        };
+        init();
     }, []);
 
     useEffect(() => {
-        if (expenses.length > 0) {
-            fetchMonthlyData();
+        if (isFirstRun.current) {
+            isFirstRun.current = false;
+            return;
         }
-    }, [year, month, expenses]);
+        const refresh = async () => {
+            setIsLoading(true);
+            await fetchMonthlyData();
+            setIsLoading(false);
+        };
+        refresh();
+    }, [year, month]);
 
     const fetchMasterData = async () => {
         try {
@@ -49,7 +62,6 @@ const MonthlyExpenses: React.FC = () => {
     };
 
     const fetchMonthlyData = async () => {
-        setIsLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/monthly-expenses?year=${year}&month=${month}`);
             if (res.ok) {
@@ -62,8 +74,6 @@ const MonthlyExpenses: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to fetch monthly data', error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
