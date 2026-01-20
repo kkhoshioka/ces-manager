@@ -1829,21 +1829,44 @@ const getPrismaModel = (modelName: string) => {
 };
 
 app.get('/api/data/:model/export', async (req, res) => {
+    console.log(`[CSV Export] Request for model: ${req.params.model}`);
     try {
         const { model } = req.params;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const prismaModel: any = getPrismaModel(model);
 
         if (!prismaModel) {
+            console.error(`[CSV Export] Invalid model: ${model}`);
             return res.status(400).json({ error: `Invalid model: ${model}` });
         }
 
         const data = await prismaModel.findMany();
+        console.log(`[CSV Export] Fetched ${data.length} records for ${model}`);
 
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="${model}_${new Date().toISOString().split('T')[0]}.csv"`);
 
-        const stream = stringify({ header: true, cast: { date: (date) => date.toISOString() } });
+        // Prepare columns based on data if available, to ensure correct headers
+        const options: any = {
+            header: true,
+            bom: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            cast: { date: (date: Date) => date.toISOString() }
+        };
+
+        if (data.length > 0) {
+            // Explicitly set columns from the first record keys to ensure consistent order/existence
+            options.columns = Object.keys(data[0]);
+        }
+
+        const stream = stringify(options);
+
+        stream.on('error', (err) => {
+            console.error('[CSV Export] Stream error:', err);
+            // If headers are not sent, we can try sending JSON error, but standard stream error usually means socket closed or similar
+            if (!res.headersSent) res.status(500).end();
+        });
+
         stream.pipe(res);
 
         data.forEach((row: any) => {
@@ -1851,9 +1874,13 @@ app.get('/api/data/:model/export', async (req, res) => {
         });
         stream.end();
 
+        console.log(`[CSV Export] Stream ended for ${model}`);
+
     } catch (error) {
-        console.error('Export error:', error);
-        res.status(500).json({ error: 'Failed to export data' });
+        console.error('[CSV Export] Critical Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to export data', details: error instanceof Error ? error.message : String(error) });
+        }
     }
 });
 
