@@ -15,7 +15,7 @@ import { generateInvoice, generateDeliveryNote, generateQuotation } from './pdfS
 import systemSettingsRouter from './routes/systemSettings';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
-import { stringify } from 'csv-stringify';
+import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
 
 // Init Supabase
@@ -1851,43 +1851,54 @@ app.get('/api/data/:model/export', async (req, res) => {
         const data = await prismaModel.findMany();
         console.log(`[CSV Export] Fetched ${data.length} records for ${model}`);
 
-        res.setHeader('Content-Type', 'text/csv');
+        // Pre-process data to handle Prisma Decimals, Dates, etc.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cleanData = data.map((row: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const cleanRow: any = {};
+            for (const key in row) {
+                const value = row[key];
+                if (value instanceof Date) {
+                    cleanRow[key] = value.toISOString();
+                } else if (typeof value === 'object' && value !== null && 'toNumber' in value) {
+                    // Handle Prisma Decimal (it usually has toNumber or toString)
+                    cleanRow[key] = value.toString();
+                } else if (typeof value === 'object' && value !== null) {
+                    // Other objects (json, etc) - stringify
+                    cleanRow[key] = JSON.stringify(value);
+                } else {
+                    cleanRow[key] = value;
+                }
+            }
+            return cleanRow;
+        });
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${model}_${new Date().toISOString().split('T')[0]}.csv"`);
 
-        // Prepare columns based on data if available, to ensure correct headers
+        // Prepare columns based on data if available
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const options: any = {
             header: true,
-            bom: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cast: { date: (date: Date) => date.toISOString() }
+            bom: true
         };
 
-        if (data.length > 0) {
-            // Explicitly set columns from the first record keys to ensure consistent order/existence
-            options.columns = Object.keys(data[0]);
+        if (cleanData.length > 0) {
+            options.columns = Object.keys(cleanData[0]);
         }
 
-        const stream = stringify(options);
+        // Use synchronous stringify for stability
+        const csvString = stringify(cleanData, options);
+        res.send(csvString);
 
-        stream.on('error', (err) => {
-            console.error('[CSV Export] Stream error:', err);
-            // If headers are not sent, we can try sending JSON error, but standard stream error usually means socket closed or similar
-            if (!res.headersSent) res.status(500).end();
-        });
-
-        stream.pipe(res);
-
-        data.forEach((row: any) => {
-            stream.write(row);
-        });
-        stream.end();
-
-        console.log(`[CSV Export] Stream ended for ${model}`);
+        console.log(`[CSV Export] Completed for ${model}`);
 
     } catch (error) {
         console.error('[CSV Export] Critical Error:', error);
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Failed to export data', details: error instanceof Error ? error.message : String(error) });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const msg = error instanceof Error ? error.message : String(error);
+            res.status(500).json({ error: 'Failed to export data', details: msg });
         }
     }
 });
