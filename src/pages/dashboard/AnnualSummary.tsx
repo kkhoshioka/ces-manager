@@ -16,7 +16,13 @@ interface AnnualData {
 }
 
 const AnnualSummary: React.FC = () => {
-  const [year, setYear] = useState(new Date().getFullYear()); // Fiscal start year
+  const [year, setYear] = useState(() => {
+    const now = new Date();
+    // Fiscal year starts in July. 
+    // If we are in Jan-Jun (0-5), the fiscal year started last calendar year.
+    // If we are in Jul-Dec (6-11), the fiscal year started this calendar year.
+    return now.getMonth() < 6 ? now.getFullYear() - 1 : now.getFullYear();
+  });
   const [data, setData] = useState<AnnualData[]>([]);
   const [loading, setLoading] = useState(false);
 
