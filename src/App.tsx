@@ -11,6 +11,7 @@ import MachineRegistry from './pages/machines/MachineRegistry';
 import MachineDetail from './pages/machines/MachineDetail';
 import MonthlyExpenses from './pages/expenses/MonthlyExpenses';
 import DataManagement from './pages/DataManagement';
+import AnnualSummary from './pages/dashboard/AnnualSummary';
 import Login from './pages/Login';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -77,6 +78,8 @@ function App() {
               <Route path="monthly-invoicing" element={<ProtectedRoute allowedRoles={['admin']}><MonthlyInvoicing /></ProtectedRoute>} />
               <Route path="reports/supplier-costs" element={<ProtectedRoute allowedRoles={['admin']}><SupplierMonthlyReport /></ProtectedRoute>} />
               <Route path="monthly-expenses" element={<ProtectedRoute allowedRoles={['admin']}><MonthlyExpenses /></ProtectedRoute>} />
+              <Route path="monthly-expenses" element={<ProtectedRoute allowedRoles={['admin']}><MonthlyExpenses /></ProtectedRoute>} />
+              <Route path="dashboard/annual-summary" element={<ProtectedRoute allowedRoles={['admin', 'staff']}><AnnualSummary /></ProtectedRoute>} />
               <Route path="data-management" element={<ProtectedRoute allowedRoles={['admin']}><DataManagement /></ProtectedRoute>} />
             </Route>
 
