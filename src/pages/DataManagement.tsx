@@ -77,9 +77,10 @@ const DataManagement: React.FC = () => {
 
             setMessage({ text: `${modelId} のエクスポートが完了しました`, type: 'success' });
             setTimeout(() => setMessage(null), 3000);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Export failed', error);
-            setMessage({ text: 'エクスポートに失敗しました', type: 'error' });
+            const errorDetail = error.response?.data?.details || error.message || '不明なエラー';
+            setMessage({ text: `エクスポートに失敗しました: ${errorDetail}`, type: 'error' });
         } finally {
             setLoading(null);
         }
