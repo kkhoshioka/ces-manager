@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Package, X, Settings, LogOut, PieChart, Banknote, FileText, Tractor, Receipt, Database } from 'lucide-react';
+import { LayoutDashboard, Wrench, Package, X, Settings, LogOut, PieChart, Banknote, FileText, Tractor, Receipt, Database, TrendingUp } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useAuth } from '../contexts/AuthContext';
 
