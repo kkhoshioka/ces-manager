@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 import 'dotenv/config';
-import { generateInvoice, generateDeliveryNote } from './pdfService';
+import { generateInvoice, generateDeliveryNote, generateQuotation } from './pdfService';
 import systemSettingsRouter from './routes/systemSettings';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
@@ -704,6 +704,14 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
         } else if (type === 'delivery') {
             const pdfDoc = generateDeliveryNote(projectForPdf);
             const filename = `Delivery_${project.id}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+            pdfDoc.pipe(res);
+            pdfDoc.end();
+        } else if (type === 'quotation') {
+            const pdfDoc = generateQuotation(projectForPdf);
+            // Filename: Estimate_ID.pdf
+            const filename = `Estimate_${project.id}.pdf`;
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
             pdfDoc.pipe(res);

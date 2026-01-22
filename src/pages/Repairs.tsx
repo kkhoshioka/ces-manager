@@ -1099,11 +1099,11 @@ const Repairs: React.FC = () => {
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
-                                                onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/invoice`, '_blank')}
-                                                title="請求書PDF"
+                                                onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/quotation`, '_blank')}
+                                                title="見積書PDF"
                                                 style={{ color: '#2563eb', fontWeight: 'bold', border: '1px solid #bfdbfe', background: '#eff6ff', fontSize: '0.8rem', padding: '0.2rem 0.5rem', height: 'auto' }}
                                             >
-                                                <FileText size={14} style={{ marginRight: '4px' }} /> 請求書
+                                                <FileText size={14} style={{ marginRight: '4px' }} /> 見積書
                                             </Button>
                                             <Button
                                                 variant="secondary"
