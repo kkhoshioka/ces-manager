@@ -201,7 +201,7 @@ const Repairs: React.FC = () => {
     };
 
     const nextIdRef = React.useRef(0);
-    const addDetail = (type: DetailItem['lineType']) => {
+    const addDetail = (type: DetailItem['lineType'], defaultDescription: string = '') => {
         nextIdRef.current += 1;
 
         if (type === 'travel') {
@@ -240,7 +240,7 @@ const Repairs: React.FC = () => {
             setDetails(prev => [...prev, {
                 lineType: type,
                 productCode: '',
-                description: '',
+                description: defaultDescription,
                 supplier: '',
                 supplierId: null,
                 remarks: '',
@@ -708,9 +708,23 @@ const Repairs: React.FC = () => {
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
                     <span>{title}</span>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type)}>
-                        <Plus size={16} /> 追加
-                    </Button>
+                    {type === 'outsourcing' ? (
+                        <div className="flex gap-2">
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, '工賃')}>
+                                <Plus size={16} /> 工賃追加
+                            </Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, '部品')}>
+                                <Plus size={16} /> 部品追加
+                            </Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, '出張費')}>
+                                <Plus size={16} /> 出張費追加
+                            </Button>
+                        </div>
+                    ) : (
+                        <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type)}>
+                            <Plus size={16} /> 追加
+                        </Button>
+                    )}
                 </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
