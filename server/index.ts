@@ -1779,6 +1779,208 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
     }
 });
 
+// Annual Summary Report (PL)
+app.get('/api/dashboard/annual-summary', async (req, res) => {
+    try {
+        const { year } = req.query;
+        if (!year) return res.status(400).json({ error: 'Year is required' });
+
+        const fiscalYear = Number(year); // Start Year (e.g. 2024 for July 2024 - June 2025)
+
+        // Fiscal Year: July 1st of `year` to June 30th of `year + 1`
+        const startDate = new Date(fiscalYear, 6, 1); // Month 6 is July
+        const endDate = new Date(fiscalYear + 1, 5, 30, 23, 59, 59); // Month 5 is June
+
+        // 1. Fetch Sales & Cost Data (Projects)
+        // Use completionDate or createdAt. Consistent with Sales Dashboard: Created OR Completed in range.
+        const projects = await prisma.project.findMany({
+            where: {
+                OR: [
+                    { completionDate: { gte: startDate, lte: endDate } },
+                    {
+                        completionDate: null,
+                        createdAt: { gte: startDate, lte: endDate }
+                    }
+                ]
+            },
+            include: {
+                details: {
+                    include: {
+                        product: { include: { productCategory: true } },
+                        category: true
+                    }
+                }
+            }
+        });
+
+        // 2. Fetch SGA Expenses (Monthlyinput)
+        const expenses = await prisma.monthlyExpense.findMany({
+            where: {
+                // Logic: Fiscal 2024 = 2024/7 ~ 2024/12 AND 2025/1 ~ 2025/6
+                OR: [
+                    { year: fiscalYear, month: { gte: 7 } },
+                    { year: fiscalYear + 1, month: { lte: 6 } }
+                ]
+            },
+            include: { expense: true }
+        });
+
+        // Initialize Data Structure
+        // Months: 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6
+        const months = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
+
+        // Define Categories
+        const salesCategories = ["新車販売", "中古車販売", "アタッチメント販売", "レンタル", "修理", "部品・他", "美容品販売"];
+        const costCategories = ["商品仕入", "レンタル仕入", "外注費", "材料費", "荷造運賃", "その他", "美容品仕入"];
+
+        // Helper to get month key: "YYYY-M"
+        const getMonthKey = (y: number, m: number) => `${y}-${m}`;
+
+        // Create Result Map [MonthKey] -> Data
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const monthlyData: Record<string, any> = {};
+
+        // Init empty months
+        months.forEach(m => {
+            const y = m >= 7 ? fiscalYear : fiscalYear + 1;
+            const key = getMonthKey(y, m);
+            monthlyData[key] = {
+                month: m,
+                year: y,
+                sales: {} as Record<string, number>,
+                cost: {} as Record<string, number>,
+                sga: {} as Record<string, number>,
+                totalSales: 0,
+                totalCost: 0,
+                totalSga: 0
+            };
+            salesCategories.forEach(c => monthlyData[key].sales[c] = 0);
+            costCategories.forEach(c => monthlyData[key].cost[c] = 0);
+        });
+
+        // --- Aggregate Projects (Sales/Cost) ---
+        projects.forEach(p => {
+            const date = p.completionDate || p.createdAt;
+            const y = date.getFullYear();
+            const m = date.getMonth() + 1;
+            const key = getMonthKey(y, m);
+
+            if (!monthlyData[key]) return; // Should likely match, but safety check
+
+            p.details.forEach(d => {
+                const qty = Number(d.quantity);
+                const sales = qty * Number(d.unitPrice);
+                const cost = qty * Number(d.unitCost || 0);
+
+                // Categorize
+                let label = '未分類';
+                // Try ProductCategory first
+                if (d.category?.section) label = d.category.section;
+                else if (d.product?.productCategory?.section) label = d.product.productCategory.section;
+                else {
+                    // Fallback mapping based on lineType
+                    // "labor", "travel", "outsourcing" -> usually "修理" related in simplified logic,
+                    // BUT user wants specific rows.
+                    // Let's rely on Section names matching the hardcoded categories primarily.
+                    // If no section, map "labor/travel" -> "修理"?
+                    if (d.lineType === 'labor' || d.lineType === 'travel') label = '修理';
+                    else if (d.lineType === 'part') label = '部品・他'; // Default part
+                    else label = '部品・他';
+                }
+
+                // Map label to Sales/Cost categories
+                // If label matches a Sales Category, add to Sales.
+                // For Cost, we need to know WHICH cost category it maps to.
+                // Usually Sales Category "新車販売" corresponds to Cost Category "商品仕入"?
+                // Or does the line item explicitly say "Cost Type"?
+                // In this system, we only have one category per line.
+                // Heuristic: 
+                // - Sales Amount goes to matched Sales Category.
+                // - Cost Amount goes to matched Cost Category... BUT proper cost accounting usually maps Line -> Cost Type.
+                // The current schema doesn't have separate "Cost Type".
+                // We will assume:
+                //   If Category is "新車販売", sales goes to "新車販売", cost goes to "商品仕入".
+                //   If Category is "レンタル", sales -> "レンタル", cost -> "レンタル仕入".
+                //   If Category is "修理", sales -> "修理", cost -> "材料費" or "外注費" (if outsourcing).
+
+                // Refined Logic for Cost Mapping:
+                let costLabel = 'その他';
+                if (label === '新車販売' || label === '中古車販売' || label === 'アタッチメント販売') costLabel = '商品仕入';
+                else if (label === 'レンタル') costLabel = 'レンタル仕入';
+                else if (label === '美容品販売') costLabel = '美容品仕入'; // If exists? Or just mapping
+                else if (label === '修理') {
+                    if (d.lineType === 'outsourcing') costLabel = '外注費';
+                    else if (d.lineType === 'part') costLabel = '材料費'; // Parts in repair = Materials
+                    else costLabel = 'その他';
+                } else if (label === '部品・他') {
+                    costLabel = '荷造運賃'; // Wait, "shipping" is unlikely default. Maybe 'その他'?
+                    // If lineType is 'other', maybe 'その他'.
+                }
+
+                // *Override* if user specifically selected a category that looks like a cost name?
+                // Unlikely. The user selects "Product Category".
+
+                // Special handling for predefined names matching exact categories
+                if (salesCategories.includes(label)) {
+                    monthlyData[key].sales[label] += sales;
+                } else {
+                    monthlyData[key].sales['部品・他'] += sales; // Fallback
+                }
+
+                // For now, map cost to specific target if possible, else 'その他'
+                // Or maybe aggregation targets:
+                // "商品仕入": New/Used/Attachment sales cost
+                // "レンタル仕入": Rental cost
+                // "外注費": Outsourcing
+                // "材料費": Parts cost in Repair
+                // "荷造運賃": Shipping? (No clear source unless lineType/category says so)
+                // "美容品仕入": Beauty sales cost
+
+                if (d.lineType === 'outsourcing') costLabel = '外注費';
+                else if (label.includes('販売')) costLabel = '商品仕入';
+                else if (label === '美容品販売') costLabel = '美容品仕入';
+                else if (label === 'レンタル') costLabel = 'レンタル仕入';
+                else if (label === '修理' && d.lineType === 'part') costLabel = '材料費';
+
+                if (costCategories.includes(costLabel)) {
+                    monthlyData[key].cost[costLabel] += cost;
+                } else {
+                    monthlyData[key].cost['その他'] += cost;
+                }
+
+                monthlyData[key].totalSales += sales;
+                monthlyData[key].totalCost += cost;
+            });
+        });
+
+        // --- Aggregate Expenses ---
+        expenses.forEach(e => {
+            const key = getMonthKey(e.year, e.month);
+            if (monthlyData[key]) {
+                const name = e.expense.name;
+                const amt = Number(e.amount);
+
+                if (!monthlyData[key].sga[name]) monthlyData[key].sga[name] = 0;
+                monthlyData[key].sga[name] += amt;
+                monthlyData[key].totalSga += amt;
+            }
+        });
+
+        // Convert to Array sorted by month (7..6)
+        const result = months.map(m => {
+            const y = m >= 7 ? fiscalYear : fiscalYear + 1;
+            const key = getMonthKey(y, m);
+            return monthlyData[key];
+        });
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('Annual Summary Error:', error);
+        res.status(500).json({ error: 'Failed to generate annual summary' });
+    }
+});
+
 // Update Project Status (Invoice/Payment)
 app.put('/api/projects/:id/status', async (req, res) => {
     try {

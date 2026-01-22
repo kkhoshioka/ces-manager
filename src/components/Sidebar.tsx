@@ -78,6 +78,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </NavLink>
 
             <NavLink
+              to="/dashboard/annual-summary"
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+              onClick={onClose}
+            >
+              <TrendingUp size={20} />
+              <span>年間損益概況</span>
+            </NavLink>
+
+            <NavLink
               to="/sales-management"
               className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
               onClick={onClose}

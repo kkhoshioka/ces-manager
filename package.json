@@ -10,7 +10,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "debug-csv": "tsx verify_csv_export.ts"
   },
   "dependencies": {
     "@fontsource/noto-sans-jp": "^5.2.8",
