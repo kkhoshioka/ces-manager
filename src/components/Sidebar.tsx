@@ -50,6 +50,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <span>修理・販売管理</span>
         </NavLink>
 
+        <NavLink
+          to="/dashboard/annual-summary"
+          className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+          onClick={onClose}
+        >
+          <TrendingUp size={20} />
+          <span>年間損益概況</span>
+        </NavLink>
+
         {isAdmin && (
           <>
             <NavLink
@@ -77,14 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <span className={styles.navText}>原価管理</span>
             </NavLink>
 
-            <NavLink
-              to="/dashboard/annual-summary"
-              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
-              onClick={onClose}
-            >
-              <TrendingUp size={20} />
-              <span>年間損益概況</span>
-            </NavLink>
+
 
             <NavLink
               to="/sales-management"
