@@ -620,7 +620,7 @@ export const generateQuotation = (project: Project) => {
     let processedDetails = processProjectDetails(project.details);
 
     // Pad with empty rows
-    const MIN_ROWS = 10;
+    const MIN_ROWS = 13; // Increased from 10
     if (processedDetails.length < MIN_ROWS) {
         const paddingCount = MIN_ROWS - processedDetails.length;
         for (let i = 0; i < paddingCount; i++) {
@@ -641,8 +641,9 @@ export const generateQuotation = (project: Project) => {
     const total = subtotal + tax;
 
     const now = new Date();
-    // Expiration: 1 month from now? Or just print date.
-    // Let's add expiration note in remarks or simply print issue date.
+    // Use the first line of notes as the issue summary for the subject
+    const issueSummary = (project.notes || '').split('\n')[0];
+    const subjectLine = `件名: ${project.machineModel} / ${project.serialNumber} / ${issueSummary}`;
 
     // UI Colors
     const PRIMARY_COLOR = '#5B9BD5'; // Water/Light Blue
@@ -732,7 +733,7 @@ export const generateQuotation = (project: Project) => {
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
-                            { text: `件名: ${project.machineModel} (${project.serialNumber})`, fontSize: 9 },
+                            { text: subjectLine, fontSize: 9 }, // Updated Subject
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り御見積申し上げます。', fontSize: 9 },
@@ -794,24 +795,28 @@ export const generateQuotation = (project: Project) => {
                 style: 'detailTable',
                 table: {
                     headerRows: 1,
-                    widths: [55, '*', 25, 25, 55, 60, 40],
+                    // Removed Date Column (55), kept others.
+                    // Old: [55, '*', 25, 25, 55, 60, 40]
+                    // New: ['*', 25, 25, 55, 60, 40]
+                    widths: ['*', 35, 30, 65, 70, 50], // Adjusted slightly allowing more for name
                     heights: 24,
                     body: [
                         [
-                            { text: '日付/No', style: 'tableHeaderMain' },
-                            { text: '品名 / 内容', style: 'tableHeaderMain' },
+                            // Removed Date Header
+                            { text: '商品コード / 商品名', style: 'tableHeaderMain' },
                             { text: '数量', style: 'tableHeaderMain' },
                             { text: '単位', style: 'tableHeaderMain' },
                             { text: '単価', style: 'tableHeaderMain' },
                             { text: '金額', style: 'tableHeaderMain' },
                             { text: '備考', style: 'tableHeaderMain' }
                         ],
+                        // Data Rows with Zebra Striping
                         ...processedDetails.map((d: ProjectDetail, index: number) => {
                             const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
                             const rowBorder = [true, true, true, true];
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
-                                { text: d.lineType === 'padding' ? '' : '', fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                // Removed Date Cell
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : '式', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
@@ -823,7 +828,6 @@ export const generateQuotation = (project: Project) => {
 
                         // Consumption Tax Row (Footer 1)
                         [
-                            { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '消費税', fontSize: 9, border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
@@ -833,31 +837,24 @@ export const generateQuotation = (project: Project) => {
                         ],
                         // Total Taxable (Footer 2)
                         [
-                            { text: '', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '【合計 課税10.0% 税抜額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {},
-                            { text: formatCurrency(subtotal).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            {},
+                            { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }, // Spacer due to removed date col
+                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Tax (Footer 3)
                         [
-                            { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '【合計 課税10.0% 消費税額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {},
-                            { text: formatCurrency(tax).replace('¥', ''), colSpan: 2, alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            {},
+                            { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }, // Spacer due to removed date col
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ]
                     ]
                 },
-                layout: 'noBorders'
-            },
-
-            // Notes
-            { text: '備考:', margin: [0, 20, 0, 5], fontSize: 9 },
-            { text: project.notes || 'なし', fontSize: 9, color: '#555' },
-            { text: '\n有効期限: 発行日から1ヶ月以内', fontSize: 9, color: '#555', margin: [0, 5] }
+                layout: 'noBorders' // Use cell borders
+            }
         ],
         defaultStyle: {
             font: 'Roboto',
@@ -865,12 +862,12 @@ export const generateQuotation = (project: Project) => {
         },
         styles: {
             titleLabel: {
-                fontSize: 16,
+                fontSize: 16, // Reduced from 22
                 bold: true,
-                letterSpacing: 6
+                letterSpacing: 6 // Reduced from 10
             },
             blueHeader: {
-                fillColor: PRIMARY_COLOR,
+                fillColor: PRIMARY_COLOR, // Light blue
                 color: 'white',
                 fontSize: 9,
                 alignment: 'center',
@@ -878,7 +875,7 @@ export const generateQuotation = (project: Project) => {
                 margin: [0, 2]
             },
             blueHeaderUnique: {
-                fillColor: PRIMARY_COLOR,
+                fillColor: PRIMARY_COLOR, // Darker blue
                 color: 'white',
                 fontSize: 9,
                 alignment: 'center',
@@ -892,10 +889,17 @@ export const generateQuotation = (project: Project) => {
                 alignment: 'center',
                 bold: true
             },
+            blueHeaderSmall: {
+                fillColor: PRIMARY_COLOR,
+                color: 'white',
+                fontSize: 9,
+                alignment: 'center',
+                bold: true
+            },
             summaryCell: {
                 fontSize: 10,
                 alignment: 'center',
-                margin: [0, 5]
+                margin: [0, 2] // Reduced from [0, 5]
             }
         }
     };
