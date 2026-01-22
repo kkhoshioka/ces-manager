@@ -505,7 +505,8 @@ app.put('/api/projects/:id', async (req, res) => {
                         amountSales: (Number(detail.quantity) || 0) * (Number(detail.unitPrice) || 0),
                         productId: detail.productId ? Number(detail.productId) : null,
                         productCategoryId: detail.productCategoryId ? Number(detail.productCategoryId) : null,
-                        projectId: Number(id)
+                        projectId: Number(id),
+                        outsourcingDetailType: detail.outsourcingDetailType || null
                     };
                     return safeDetail;
                 });

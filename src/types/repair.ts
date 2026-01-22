@@ -17,6 +17,7 @@ export interface ProjectDetail {
     amountCost: number;
     amountSales: number;
     outsourcingCost: number;
+    outsourcingDetailType?: string | null;
 }
 
 export interface ProjectPhoto {

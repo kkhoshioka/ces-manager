@@ -139,6 +139,8 @@ model ProjectDetail {
   
   outsourcingCost Decimal  @default(0)
   
+  outsourcingDetailType String? // labor, part, travel, etc.
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

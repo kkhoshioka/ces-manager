@@ -157,6 +157,7 @@ const Repairs: React.FC = () => {
         amountCost: number;
         amountSales: number;
         originalIndex: number;
+        outsourcingDetailType?: string | null;
     }
 
     const [details, setDetails] = useState<DetailItem[]>([]);
@@ -201,42 +202,81 @@ const Repairs: React.FC = () => {
     };
 
     const nextIdRef = React.useRef(0);
-    const addDetail = (type: DetailItem['lineType'], defaultDescription: string = '') => {
+    const addDetail = (type: DetailItem['lineType'], subType: string = '') => {
         nextIdRef.current += 1;
 
-        if (type === 'travel') {
+        if (type === 'travel' || (type === 'outsourcing' && subType === 'travel')) {
             // Add Time and Distance rows
             const timeRow: DetailItem = {
-                lineType: 'travel',
+                lineType: type,
                 travelType: 'time',
-                description: '',
+                productCode: '',
+                description: type === 'outsourcing' ? '出張費(時間)' : '',
                 supplier: '',
                 supplierId: null,
                 remarks: '',
                 quantity: 1,
-                unitPrice: systemSettings.defaultTravelTimeRate,
+                unitPrice: type === 'travel' ? systemSettings.defaultTravelTimeRate : 0,
                 unitCost: 0,
                 amountCost: 0,
-                amountSales: systemSettings.defaultTravelTimeRate,
-                originalIndex: nextIdRef.current
+                amountSales: type === 'travel' ? systemSettings.defaultTravelTimeRate : 0,
+                originalIndex: nextIdRef.current,
+                outsourcingDetailType: type === 'outsourcing' ? 'travel' : undefined
             };
             nextIdRef.current += 1;
+
             const distanceRow: DetailItem = {
-                lineType: 'travel',
+                lineType: type,
                 travelType: 'distance',
-                description: '',
+                productCode: '',
+                description: type === 'outsourcing' ? '出張費(距離)' : '',
                 supplier: '',
                 supplierId: null,
                 remarks: '',
                 quantity: 10,
-                unitPrice: systemSettings.defaultTravelDistanceRate,
+                unitPrice: type === 'travel' ? systemSettings.defaultTravelDistanceRate : 0,
                 unitCost: 0,
                 amountCost: 0,
-                amountSales: systemSettings.defaultTravelDistanceRate * 10,
-                originalIndex: nextIdRef.current
+                amountSales: type === 'travel' ? systemSettings.defaultTravelDistanceRate * 10 : 0,
+                originalIndex: nextIdRef.current,
+                outsourcingDetailType: type === 'outsourcing' ? 'travel' : undefined
             };
             setDetails(prev => [...prev, timeRow, distanceRow]);
         } else {
+            let defaultDescription = '';
+            let unitPrice = 0;
+            let sales = 0;
+
+            if (type === 'outsourcing') {
+                if (subType === 'labor') defaultDescription = '工賃';
+                else if (subType === 'part') defaultDescription = '部品';
+                else if (subType === 'travel') defaultDescription = '出張費';
+            } else {
+                if (type === 'labor') {
+                    defaultDescription = ''; // Labor usually has free text? Or '工賃'? Existing code had `defaultDescription`.
+                    // Current caller usage: addDetail('labor') -> desc=''
+                    // If type is labor, price is defaultLaborRate
+                    unitPrice = systemSettings.defaultLaborRate;
+                    sales = systemSettings.defaultLaborRate;
+                }
+                // pass-through defaultDescription from subType arg if it makes sense, but subType is now used for type.
+                // Actually the existing call `addDetail` was `addDetail(type, defaultDesc)`.
+                // I am changing signature to `addDetail(type, subType)`.
+                // For 'labor', subType might be empty.
+                defaultDescription = subType === '工賃' ? '工賃' : ''; // Fallback for old calls?
+
+                // Re-evaluating logic:
+                // Old: `addDetail('labor')` -> subType='' -> desc=''
+                // Old: `addDetail('outsourcing', '工賃')` -> subType='工賃' -> desc='工賃' (wait, I wanted subType to be 'labor')
+                // I should normalize the calls in `renderDetailTable`.
+            }
+
+            // Adjust for standardized logic
+            if (type === 'labor') {
+                unitPrice = systemSettings.defaultLaborRate;
+                sales = systemSettings.defaultLaborRate;
+            }
+
             setDetails(prev => [...prev, {
                 lineType: type,
                 productCode: '',
@@ -245,11 +285,12 @@ const Repairs: React.FC = () => {
                 supplierId: null,
                 remarks: '',
                 quantity: 1,
-                unitPrice: type === 'labor' ? systemSettings.defaultLaborRate : 0,
+                unitPrice: unitPrice,
                 unitCost: 0,
                 amountCost: 0,
-                amountSales: type === 'labor' ? systemSettings.defaultLaborRate : 0,
-                originalIndex: nextIdRef.current
+                amountSales: sales,
+                originalIndex: nextIdRef.current,
+                outsourcingDetailType: type === 'outsourcing' ? (subType === '工賃' ? 'labor' : (subType === '部品' ? 'part' : (subType === '出張費' ? 'travel' : subType))) : undefined
             }]);
         }
     };
@@ -505,7 +546,8 @@ const Repairs: React.FC = () => {
                         unitCost: safeCost,
                         productCategoryId: validCategoryId, // Pass to backend
                         amountCost: safeQty * safeCost,
-                        amountSales: safeQty * safePrice
+                        amountSales: safeQty * safePrice,
+                        outsourcingDetailType: d.outsourcingDetailType
                     };
                 })
             };
@@ -676,7 +718,8 @@ const Repairs: React.FC = () => {
                             unitPrice: Number(d.unitPrice),
                             unitCost: Number(d.unitCost),
                             productCategoryId: d.productCategoryId || (d.product ? d.product.categoryId : null), // Try to resolve category
-                            section: d.category ? d.category.section : (d.product && d.product.productCategory ? d.product.productCategory.section : '') // Helper for UI
+                            section: d.category ? d.category.section : (d.product && d.product.productCategory ? d.product.productCategory.section : ''), // Helper for UI
+                            outsourcingDetailType: d.outsourcingDetailType
                         } as DetailItem;
                     }));
                 } else {
@@ -710,13 +753,13 @@ const Repairs: React.FC = () => {
                     <span>{title}</span>
                     {type === 'outsourcing' ? (
                         <div className="flex gap-2">
-                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, '工賃')}>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'labor')}>
                                 <Plus size={16} /> 工賃追加
                             </Button>
-                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, '部品')}>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'part')}>
                                 <Plus size={16} /> 部品追加
                             </Button>
-                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, '出張費')}>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'travel')}>
                                 <Plus size={16} /> 出張費追加
                             </Button>
                         </div>
@@ -729,25 +772,25 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
-                            {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
+                            {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
+                            {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
 
-                            {type === 'part' && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
+                            {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
                             {/* Travel Type has split columns */}
-                            {type === 'travel' ? (
+                            {(type === 'travel' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'travel' || d.travelType))) ? (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'left', width: '35%' }}>移動場所・区間</th>
                                     <th style={{ padding: '0.5rem', textAlign: 'center', width: '20%' }}>項目</th>
                                 </>
                             ) : (
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '25%' : '55%' }}>
-                                    {type === 'part' ? '内容・品名' : '内容'}
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '25%' : (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part') ? '25%' : '55%') }}>
+                                    {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) ? '内容・品名' : '内容'}
                                 </th>
                             )}
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>
-                                {type === 'labor' ? '時間' : (type === 'travel' ? '数量' : '数量')}
+                                {(type === 'labor' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'labor'))) ? '時間' : '数量'}
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
@@ -817,7 +860,7 @@ const Repairs: React.FC = () => {
 
                             return (
                                 <tr key={detail.originalIndex} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    {type === 'part' && (
+                                    {(type === 'part' || (type === 'outsourcing' && (detail.description === '部品' || detail.description === '商品'))) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -826,7 +869,6 @@ const Repairs: React.FC = () => {
                                                     const newSec = e.target.value;
                                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                     handleDetailChange(detail.originalIndex, 'section' as any, newSec);
-                                                    // Also clear category ID if section changes
                                                     handleDetailChange(detail.originalIndex, 'productCategoryId', null);
                                                 }}
                                             >
@@ -835,7 +877,7 @@ const Repairs: React.FC = () => {
                                             </select>
                                         </td>
                                     )}
-                                    {type === 'part' && (
+                                    {(type === 'part' || (type === 'outsourcing' && (detail.description === '部品' || detail.description === '商品'))) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -843,7 +885,6 @@ const Repairs: React.FC = () => {
                                                 onChange={(e) => {
                                                     const val = e.target.value ? Number(e.target.value) : null;
                                                     handleDetailChange(detail.originalIndex, 'productCategoryId', val);
-                                                    // Auto update section if category selected directly (if we allowed it)
                                                     const cat = categories.find(c => c.id === val);
                                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                     if (cat) handleDetailChange(detail.originalIndex, 'section' as any, cat.section);
@@ -861,7 +902,7 @@ const Repairs: React.FC = () => {
                                         </td>
                                     )}
 
-                                    {type === 'part' && (
+                                    {(type === 'part' || (type === 'outsourcing' && (detail.description === '部品' || detail.description === '商品'))) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <input
                                                 type="text"
