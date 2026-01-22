@@ -737,8 +737,16 @@ const Repairs: React.FC = () => {
     };
 
     // Helper to render Detail Section
-    const renderDetailTable = (title: string, type: DetailItem['lineType'], showSupplier: boolean = false) => {
-        const sectionDetails = details.map((d, i) => ({ ...d, originalIndex: i })).filter(d => d.lineType === type);
+    const renderDetailTable = (title: string, type: DetailItem['lineType'], subType?: string, showSupplier: boolean = false) => {
+        const sectionDetails = details
+            .map((d, i) => ({ ...d, originalIndex: i }))
+            .filter(d => {
+                if (d.lineType !== type) return false;
+                if (type === 'outsourcing' && subType) {
+                    return d.outsourcingDetailType === subType;
+                }
+                return true;
+            });
 
         const subtotalCost = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitCost), 0);
         const subtotalSales = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitPrice), 0);
@@ -751,17 +759,24 @@ const Repairs: React.FC = () => {
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
                     <span>{title}</span>
+                    <span>{title}</span>
                     {type === 'outsourcing' ? (
                         <div className="flex gap-2">
-                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'labor')}>
-                                <Plus size={16} /> 工賃追加
-                            </Button>
-                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'part')}>
-                                <Plus size={16} /> 部品追加
-                            </Button>
-                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'travel')}>
-                                <Plus size={16} /> 出張費追加
-                            </Button>
+                            {subType === 'labor' && (
+                                <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'labor')}>
+                                    <Plus size={16} /> 工賃追加
+                                </Button>
+                            )}
+                            {subType === 'part' && (
+                                <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'part')}>
+                                    <Plus size={16} /> 部品追加
+                                </Button>
+                            )}
+                            {subType === 'travel' && (
+                                <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'travel')}>
+                                    <Plus size={16} /> 出張費追加
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type)}>
@@ -772,25 +787,25 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
-                            {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
+                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
+                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
 
-                            {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
+                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
                             {/* Travel Type has split columns */}
-                            {(type === 'travel' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'travel' || d.travelType))) ? (
+                            {(type === 'travel' || (type === 'outsourcing' && subType === 'travel')) ? (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'left', width: '35%' }}>移動場所・区間</th>
                                     <th style={{ padding: '0.5rem', textAlign: 'center', width: '20%' }}>項目</th>
                                 </>
                             ) : (
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '25%' : (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part') ? '25%' : '55%') }}>
-                                    {(type === 'part' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'part'))) ? '内容・品名' : '内容'}
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '25%' : (type === 'outsourcing' && subType === 'part' ? '25%' : '55%') }}>
+                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) ? '内容・品名' : '内容'}
                                 </th>
                             )}
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>
-                                {(type === 'labor' || (type === 'outsourcing' && sectionDetails.some(d => d.outsourcingDetailType === 'labor'))) ? '時間' : '数量'}
+                                {(type === 'labor' || (type === 'outsourcing' && subType === 'labor')) ? '時間' : '数量'}
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
@@ -1533,11 +1548,14 @@ const Repairs: React.FC = () => {
 
                             {/* Details Sections */}
                             <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
-                                {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', false)}
-                                {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', false)}
-                                {renderDetailTable('部品・商品', 'part', true)}
-                                {renderDetailTable('外注費', 'outsourcing', true)}
-                                {renderDetailTable('その他', 'other', false)}
+                                {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false)}
+                                {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false)}
+                                {renderDetailTable('部品・商品', 'part', 'part', true)}
+
+                                {renderDetailTable('外注費 (工賃)', 'outsourcing', 'labor', true)}
+                                {renderDetailTable('外注費 (部品)', 'outsourcing', 'part', true)}
+                                {renderDetailTable('外注費 (出張費)', 'outsourcing', 'travel', true)}
+                                {renderDetailTable('その他', 'other', undefined, false)}
                             </div>
 
                             <div className={styles.formActions}>
