@@ -1550,11 +1550,11 @@ const Repairs: React.FC = () => {
                             <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
                                 {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false)}
                                 {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false)}
-                                {renderDetailTable('部品・商品', 'part', 'part', true)}
+                                {renderDetailTable('自社発注部品・商品', 'part', 'part', true)}
 
                                 {renderDetailTable('外注費 (工賃)', 'outsourcing', 'labor', true)}
-                                {renderDetailTable('外注費 (部品)', 'outsourcing', 'part', true)}
                                 {renderDetailTable('外注費 (出張費)', 'outsourcing', 'travel', true)}
+                                {renderDetailTable('外注費 (部品)', 'outsourcing', 'part', true)}
                                 {renderDetailTable('その他', 'other', undefined, false)}
                             </div>
 
