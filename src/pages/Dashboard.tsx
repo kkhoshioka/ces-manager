@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, Activity, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, Activity, ChevronLeft, ChevronRight, Users, PieChart as PieIcon, BarChart } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import styles from './Dashboard.module.css';
 import { formatCurrency } from '../utils/formatting';
 import { API_BASE_URL } from '../config';
+import { SalesTrendChart } from '../components/dashboard/SalesTrendChart';
+import { CategoryPieChart } from '../components/dashboard/CategoryPieChart';
 
 interface CategoryData {
     sales: number;
@@ -45,6 +47,7 @@ const Dashboard: React.FC = () => {
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState<number | ''>(new Date().getMonth() + 1);
     const [data, setData] = useState<DashboardData | null>(null);
+    const [trendData, setTrendData] = useState<{ month: number; sales: number; cost: number; profit: number; }[]>([]);
     const [loading, setLoading] = useState(false);
 
     const calculateMargin = (profit: number, sales: number) => {
@@ -81,6 +84,13 @@ const Dashboard: React.FC = () => {
             if (!response.ok) throw new Error('Failed to fetch dashboard data');
             const result = await response.json();
             setData(result);
+
+            // Fetch Trend Data (Once or when year changes)
+            const trendResponse = await fetch(`${API_BASE_URL}/dashboard/trend?year=${year}`);
+            if (trendResponse.ok) {
+                const trendResult = await trendResponse.json();
+                setTrendData(trendResult);
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -275,6 +285,35 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
 
+
+
+
+                    {/* Charts Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                        <div className={styles.card} style={{ padding: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                                <BarChart size={20} style={{ marginRight: '8px', color: '#3b82f6' }} />
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>売上・粗利推移 ({year}年)</h2>
+                            </div>
+                            <SalesTrendChart data={trendData} />
+                        </div>
+
+                        <div className={styles.card} style={{ padding: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                                <PieIcon size={20} style={{ marginRight: '8px', color: '#8b5cf6' }} />
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>売上構成比 ({year}年{month ? `${month}月` : '度'})</h2>
+                            </div>
+                            {/* Prepare data for Pie Chart */}
+                            <CategoryPieChart
+                                data={Object.values(data.categories).map(cat => ({
+                                    name: cat.label,
+                                    value: cat.sales
+                                })).sort((a, b) => b.value - a.value)}
+                                title="部門別売上シェア"
+                            />
+                        </div>
+                    </div>
+
                     {/* Detailed Table */}
                     <div className={styles.tableCard}>
                         <h2>部門別集計表 ({year}年{month ? `${month}月` : '度'})</h2>
@@ -324,53 +363,56 @@ const Dashboard: React.FC = () => {
                 </div>
             ) : (
                 <div className={styles.empty}>データがありません</div>
-            )}
+            )
+            }
 
             {/* Details Modal */}
-            {isDetailOpen && (
-                <div className={styles.modalOverlay} onClick={() => setIsDetailOpen(false)}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <h2>{selectedCategory} 詳細一覧</h2>
-                            <button className={styles.closeButton} onClick={() => setIsDetailOpen(false)}>×</button>
-                        </div>
-                        <div className={styles.modalContent}>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>日付</th>
-                                        <th>顧客名</th>
-                                        <th>機種 / シリアル</th>
-                                        <th className={styles.right}>部門売上</th>
-                                        <th className={styles.right}>部門粗利</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {detailData.length === 0 ? (
-                                        <tr><td colSpan={5} className={styles.empty}>該当データなし</td></tr>
-                                    ) : (
-                                        detailData.map((item: DashboardDetailItem) => (
-                                            <tr key={item.id}>
-                                                <td>{new Date(item.completionDate || item.createdAt).toLocaleDateString()}</td>
-                                                <td>{item.customer?.name}</td>
-                                                <td>
-                                                    <div className={styles.machineInfo}>
-                                                        <span>{item.machineModel}</span>
-                                                        <span className={styles.serial}>{item.serialNumber}</span>
-                                                    </div>
-                                                </td>
-                                                <td className={styles.right}>{formatCurrency(item.categorySales)}</td>
-                                                <td className={styles.right}>{formatCurrency(item.categoryProfit)}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+            {
+                isDetailOpen && (
+                    <div className={styles.modalOverlay} onClick={() => setIsDetailOpen(false)}>
+                        <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                            <div className={styles.modalHeader}>
+                                <h2>{selectedCategory} 詳細一覧</h2>
+                                <button className={styles.closeButton} onClick={() => setIsDetailOpen(false)}>×</button>
+                            </div>
+                            <div className={styles.modalContent}>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>日付</th>
+                                            <th>顧客名</th>
+                                            <th>機種 / シリアル</th>
+                                            <th className={styles.right}>部門売上</th>
+                                            <th className={styles.right}>部門粗利</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {detailData.length === 0 ? (
+                                            <tr><td colSpan={5} className={styles.empty}>該当データなし</td></tr>
+                                        ) : (
+                                            detailData.map((item: DashboardDetailItem) => (
+                                                <tr key={item.id}>
+                                                    <td>{new Date(item.completionDate || item.createdAt).toLocaleDateString()}</td>
+                                                    <td>{item.customer?.name}</td>
+                                                    <td>
+                                                        <div className={styles.machineInfo}>
+                                                            <span>{item.machineModel}</span>
+                                                            <span className={styles.serial}>{item.serialNumber}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className={styles.right}>{formatCurrency(item.categorySales)}</td>
+                                                    <td className={styles.right}>{formatCurrency(item.categoryProfit)}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

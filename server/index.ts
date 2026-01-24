@@ -1137,6 +1137,73 @@ app.get('/api/dashboard/sales', async (req, res) => {
     }
 });
 
+app.get('/api/dashboard/trend', async (req, res) => {
+    try {
+        const { year } = req.query;
+
+        if (!year) {
+            return res.status(400).json({ error: 'Year is required' });
+        }
+
+        const targetYear = Number(year);
+        const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+        // Fetch all projects for the year (completed or created)
+        const projects = await prisma.project.findMany({
+            where: {
+                OR: [
+                    { completionDate: { gte: new Date(targetYear, 0, 1), lte: new Date(targetYear, 11, 31, 23, 59, 59) } },
+                    {
+                        completionDate: null,
+                        createdAt: { gte: new Date(targetYear, 0, 1), lte: new Date(targetYear, 11, 31, 23, 59, 59) }
+                    }
+                ]
+            },
+            include: {
+                details: true
+            }
+        });
+
+        // Initialize 12 months data
+        const trendData = months.map(month => ({
+            month,
+            sales: 0,
+            cost: 0,
+            profit: 0
+        }));
+
+        projects.forEach(project => {
+            // Determine which month this project belongs to
+            // Priority: Completion Date -> Created Date
+            const date = project.completionDate || project.createdAt;
+            const projectMonth = new Date(date).getMonth() + 1; // 1-12
+
+            if (projectMonth < 1 || projectMonth > 12) return;
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            project.details.forEach((detail: any) => {
+                const qty = Number(detail.quantity);
+                const price = Number(detail.unitPrice);
+                const cost = Number(detail.unitCost) || 0;
+
+                const lineSales = qty * price;
+                const lineCost = qty * cost;
+                const lineProfit = lineSales - lineCost;
+
+                trendData[projectMonth - 1].sales += lineSales;
+                trendData[projectMonth - 1].cost += lineCost;
+                trendData[projectMonth - 1].profit += lineProfit;
+            });
+        });
+
+        res.json(trendData);
+
+    } catch (error) {
+        console.error('Dashboard Trend Error:', error);
+        res.status(500).json({ error: 'Failed to fetch dashboard trend data' });
+    }
+});
+
 app.get('/api/dashboard/details', async (req, res) => {
     try {
         const { year, month, category } = req.query;
