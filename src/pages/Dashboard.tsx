@@ -41,6 +41,7 @@ interface DashboardData {
 }
 
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -49,6 +50,7 @@ const Dashboard: React.FC = () => {
     const [data, setData] = useState<DashboardData | null>(null);
     const [trendData, setTrendData] = useState<{ month: number; sales: number; cost: number; profit: number; }[]>([]);
     const [loading, setLoading] = useState(false);
+    const { isAdmin } = useAuth();
 
     const calculateMargin = (profit: number, sales: number) => {
         if (sales === 0) return '0.0%';
@@ -213,76 +215,80 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        <div
-                            className={`${styles.card} ${styles.costCard}`}
-                            onClick={() => navigate('/reports/supplier-costs')}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <div className={styles.cardHeader}>
-                                <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
-                                    <CreditCard size={24} />
-                                </div>
-                                <span className={styles.cardLabel}>総外注費・仕入 (外部)</span>
-                            </div>
-                            <div className={styles.cardBody}>
-                                <div className={styles.value}>{formatCurrency(data.totalCost)}</div>
-                                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>確定:</span>
-                                        <span style={{ fontWeight: 600, color: '#b91c1c' }}>{formatCurrency(data.totalConfirmedCost)}</span>
+                        {isAdmin && (
+                            <>
+                                <div
+                                    className={`${styles.card} ${styles.costCard}`}
+                                    onClick={() => navigate('/reports/supplier-costs')}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                                            <CreditCard size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>総外注費・仕入 (外部)</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>見込:</span>
-                                        <span style={{ fontWeight: 600, color: '#94a3b8' }}>{formatCurrency(data.totalWipCost)}</span>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value}>{formatCurrency(data.totalCost)}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>確定:</span>
+                                                <span style={{ fontWeight: 600, color: '#b91c1c' }}>{formatCurrency(data.totalConfirmedCost)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>見込:</span>
+                                                <span style={{ fontWeight: 600, color: '#94a3b8' }}>{formatCurrency(data.totalWipCost)}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Internal Cost Card */}
-                        <div className={styles.card} style={{ borderLeft: '4px solid #8b5cf6' }}>
-                            <div className={styles.cardHeader}>
-                                <div className={styles.iconWrapper} style={{ backgroundColor: '#f3e8ff', color: '#7c3aed' }}>
-                                    <Users size={24} />
-                                </div>
-                                <span className={styles.cardLabel}>自社コスト (見込)</span>
-                            </div>
-                            <div className={styles.cardBody}>
-                                <div className={styles.value}>{formatCurrency(data.totalInternalCost)}</div>
-                                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>確定:</span>
-                                        <span style={{ fontWeight: 600, color: '#7c3aed' }}>{formatCurrency(data.totalConfirmedInternalCost)}</span>
+                                {/* Internal Cost Card */}
+                                <div className={styles.card} style={{ borderLeft: '4px solid #8b5cf6' }}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#f3e8ff', color: '#7c3aed' }}>
+                                            <Users size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>自社コスト (見込)</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>見込:</span>
-                                        <span style={{ fontWeight: 600, color: '#94a3b8' }}>{formatCurrency(data.totalWipInternalCost)}</span>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value}>{formatCurrency(data.totalInternalCost)}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>確定:</span>
+                                                <span style={{ fontWeight: 600, color: '#7c3aed' }}>{formatCurrency(data.totalConfirmedInternalCost)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>見込:</span>
+                                                <span style={{ fontWeight: 600, color: '#94a3b8' }}>{formatCurrency(data.totalWipInternalCost)}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className={`${styles.card} ${styles.profitCard}`}>
-                            <div className={styles.cardHeader}>
-                                <div className={styles.iconWrapper} style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
-                                    <TrendingUp size={24} />
-                                </div>
-                                <span className={styles.cardLabel}>総粗利 (実質利益)</span>
-                            </div>
-                            <div className={styles.cardBody}>
-                                <div className={styles.value}>{formatCurrency(data.totalProfit)}</div>
-                                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                        <span style={{ display: 'flex', alignItems: 'center' }}><Activity size={14} style={{ marginRight: '4px' }} /> 粗利率:</span>
-                                        <span>{calculateMargin(data.totalProfit, data.totalSales)}</span>
+                                <div className={`${styles.card} ${styles.profitCard}`}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+                                            <TrendingUp size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>総粗利 (実質利益)</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '4px', marginTop: '4px' }}>
-                                        <span>実質利益見込:</span>
-                                        <span style={{ fontWeight: 600, color: '#15803d' }}>{formatCurrency(data.totalProfit - data.totalInternalCost)}</span>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value}>{formatCurrency(data.totalProfit)}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                                <span style={{ display: 'flex', alignItems: 'center' }}><Activity size={14} style={{ marginRight: '4px' }} /> 粗利率:</span>
+                                                <span>{calculateMargin(data.totalProfit, data.totalSales)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '4px', marginTop: '4px' }}>
+                                                <span>実質利益見込:</span>
+                                                <span style={{ fontWeight: 600, color: '#15803d' }}>{formatCurrency(data.totalProfit - data.totalInternalCost)}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </div>
 
 
@@ -295,7 +301,7 @@ const Dashboard: React.FC = () => {
                                 <BarChart size={20} style={{ marginRight: '8px', color: '#3b82f6' }} />
                                 <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>売上・粗利推移 ({year}年)</h2>
                             </div>
-                            <SalesTrendChart data={trendData} />
+                            <SalesTrendChart data={isAdmin ? trendData : trendData.map(d => ({ ...d, profit: 0 }))} />
                         </div>
 
                         <div className={styles.card} style={{ padding: '1.5rem' }}>
@@ -322,10 +328,14 @@ const Dashboard: React.FC = () => {
                                 <tr>
                                     <th>部門 (カテゴリ)</th>
                                     <th className={styles.right}>売上高 (確定/見込)</th>
-                                    <th className={styles.right}>外部原価</th>
-                                    <th className={styles.right} style={{ color: '#7c3aed' }}>自社原価</th>
-                                    <th className={styles.right}>粗利益</th>
-                                    <th className={styles.right}>粗利率</th>
+                                    {isAdmin && (
+                                        <>
+                                            <th className={styles.right}>外部原価</th>
+                                            <th className={styles.right} style={{ color: '#7c3aed' }}>自社原価</th>
+                                            <th className={styles.right}>粗利益</th>
+                                            <th className={styles.right}>粗利率</th>
+                                        </>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
@@ -338,10 +348,14 @@ const Dashboard: React.FC = () => {
                                                 {formatCurrency(cat.confirmedSales)} / <span style={{ color: '#94a3b8' }}>{formatCurrency(cat.wipSales)}</span>
                                             </div>
                                         </td>
-                                        <td className={styles.right}>{formatCurrency(cat.cost)}</td>
-                                        <td className={styles.right} style={{ color: '#7c3aed' }}>{formatCurrency(cat.internalCost)}</td>
-                                        <td className={styles.right}>{formatCurrency(cat.profit)}</td>
-                                        <td className={styles.right}>{calculateMargin(cat.profit, cat.sales)}</td>
+                                        {isAdmin && (
+                                            <>
+                                                <td className={styles.right}>{formatCurrency(cat.cost)}</td>
+                                                <td className={styles.right} style={{ color: '#7c3aed' }}>{formatCurrency(cat.internalCost)}</td>
+                                                <td className={styles.right}>{formatCurrency(cat.profit)}</td>
+                                                <td className={styles.right}>{calculateMargin(cat.profit, cat.sales)}</td>
+                                            </>
+                                        )}
                                     </tr>
                                 ))}
                                 <tr className={styles.totalRow}>
@@ -352,10 +366,14 @@ const Dashboard: React.FC = () => {
                                             {formatCurrency(data.totalConfirmedSales)} / {formatCurrency(data.totalWipSales)}
                                         </div>
                                     </td>
-                                    <td className={styles.right}>{formatCurrency(data.totalCost)}</td>
-                                    <td className={styles.right}>{formatCurrency(data.totalInternalCost)}</td>
-                                    <td className={styles.right}>{formatCurrency(data.totalProfit)}</td>
-                                    <td className={styles.right}>{calculateMargin(data.totalProfit, data.totalSales)}</td>
+                                    {isAdmin && (
+                                        <>
+                                            <td className={styles.right}>{formatCurrency(data.totalCost)}</td>
+                                            <td className={styles.right}>{formatCurrency(data.totalInternalCost)}</td>
+                                            <td className={styles.right}>{formatCurrency(data.totalProfit)}</td>
+                                            <td className={styles.right}>{calculateMargin(data.totalProfit, data.totalSales)}</td>
+                                        </>
+                                    )}
                                 </tr>
                             </tbody>
                         </table>
@@ -383,7 +401,7 @@ const Dashboard: React.FC = () => {
                                             <th>顧客名</th>
                                             <th>機種 / シリアル</th>
                                             <th className={styles.right}>部門売上</th>
-                                            <th className={styles.right}>部門粗利</th>
+                                            {isAdmin && <th className={styles.right}>部門粗利</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -401,7 +419,7 @@ const Dashboard: React.FC = () => {
                                                         </div>
                                                     </td>
                                                     <td className={styles.right}>{formatCurrency(item.categorySales)}</td>
-                                                    <td className={styles.right}>{formatCurrency(item.categoryProfit)}</td>
+                                                    {isAdmin && <td className={styles.right}>{formatCurrency(item.categoryProfit)}</td>}
                                                 </tr>
                                             ))
                                         )}

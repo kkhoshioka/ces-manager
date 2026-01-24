@@ -29,17 +29,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       </div>
 
       <nav className={styles.nav}>
-        {isAdmin && (
-          <NavLink
-            to="/"
-            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
-            end
-            onClick={onClose}
-          >
-            <LayoutDashboard size={20} />
-            <span>ダッシュボード</span>
-          </NavLink>
-        )}
+        <NavLink
+          to="/"
+          className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+          end
+          onClick={onClose}
+        >
+          <LayoutDashboard size={20} />
+          <span>ダッシュボード</span>
+        </NavLink>
 
         <NavLink
           to="/repairs"
@@ -124,18 +122,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <span>データ管理</span>
             </NavLink>
 
-            <div className={styles.divider}></div>
-            <NavLink
-              to="/masters"
-              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
-              style={{ marginTop: 'auto' }}
-              onClick={onClose}
-            >
-              <Settings size={20} />
-              <span>マスター管理</span>
-            </NavLink>
           </>
         )}
+
+        <div className={styles.divider}></div>
+        <NavLink
+          to="/masters"
+          className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+          style={{ marginTop: 'auto' }}
+          onClick={onClose}
+        >
+          <Settings size={20} />
+          <span>マスター管理</span>
+        </NavLink>
       </nav>
 
       <div className={styles.footer}>

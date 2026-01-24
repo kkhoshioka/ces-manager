@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Customer {
     id: number;
@@ -43,6 +44,7 @@ const CustomerMaster: React.FC = () => {
         closingDate: ''
     });
     const [isLoading, setIsLoading] = useState(false);
+    const { isAdmin } = useAuth();
 
     useEffect(() => {
         fetchCustomers();
@@ -216,9 +218,11 @@ const CustomerMaster: React.FC = () => {
                                             <button className={styles.actionButton} onClick={() => openEdit(customer)}>
                                                 <Edit size={16} />
                                             </button>
-                                            <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(customer.id)}>
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {isAdmin && (
+                                                <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(customer.id)}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
