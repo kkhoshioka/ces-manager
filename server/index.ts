@@ -993,10 +993,7 @@ app.get('/api/dashboard/sales', async (req, res) => {
             where: {
                 OR: [
                     { completionDate: { gte: startDate, lte: endDate } },
-                    {
-                        completionDate: null,
-                        createdAt: { gte: startDate, lte: endDate }
-                    }
+                    { createdAt: { gte: startDate, lte: endDate } }
                 ]
             },
             include: {
@@ -1016,8 +1013,8 @@ app.get('/api/dashboard/sales', async (req, res) => {
         const settings = await prisma.systemSetting.findMany({
             where: { key: { in: ['defaultLaborCost', 'defaultTravelCost'] } }
         });
-        const laborCostRate = Number(settings.find(s => s.key === 'defaultLaborCost')?.value || 0);
-        const travelCostRate = Number(settings.find(s => s.key === 'defaultTravelCost')?.value || 0);
+        const laborCostRate = Number(settings.find(s => s.key === 'defaultLaborCost')?.value || 3000);
+        const travelCostRate = Number(settings.find(s => s.key === 'defaultTravelCost')?.value || 1500);
 
         // Initialize categories dynamically based on existing Sections in DB + fallback
         const summary = {
@@ -1046,6 +1043,7 @@ app.get('/api/dashboard/sales', async (req, res) => {
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         projects.forEach((project: any) => {
             const isConfirmed = ['completed', 'delivered'].includes(project.status);
 
@@ -1053,36 +1051,57 @@ app.get('/api/dashboard/sales', async (req, res) => {
             project.details.forEach((detail: any) => {
                 const qty = Number(detail.quantity);
                 const price = Number(detail.unitPrice);
-                const cost = Number(detail.unitCost) || 0;
+                const unitCost = Number(detail.unitCost) || 0;
 
                 const lineSales = qty * price;
-                const lineCost = qty * cost; // External Cost
-                const lineProfit = lineSales - lineCost; // Gross Profit
 
-                // Internal Cost Calculation
+                let lineExternalCost = 0;
                 let lineInternalCost = 0;
-                if (!detail.supplierId) { // Only if no supplier (Internal)
-                    if (detail.lineType === 'labor') {
-                        lineInternalCost = qty * laborCostRate;
-                    } else if (detail.lineType === 'travel') {
-                        lineInternalCost = qty * travelCostRate;
+
+                if (detail.supplierId) {
+                    // External Cost (Has Supplier)
+                    lineExternalCost = qty * unitCost;
+                } else {
+                    // Internal Cost (No Supplier)
+                    if (unitCost > 0) {
+                        // Explicitly entered internal cost (priority)
+                        lineInternalCost = qty * unitCost;
+                    } else {
+                        // Fallback to defaults for Labor/Travel
+                        if (detail.lineType === 'labor') {
+                            lineInternalCost = qty * laborCostRate;
+                        } else if (detail.lineType === 'travel') {
+                            lineInternalCost = qty * travelCostRate;
+                        }
                     }
                 }
 
+                // Total Cost usually means External Expenses in this context, 
+                // but Profit should be Sales - External - Internal?
+                // The dashboard UI shows: Sales, Cost (External), Internal Cost, Profit.
+                // Profit in UI is often Sales - ExternalCost. 
+                // And "Real Profit" is Profit - InternalCost.
+                // Let's check the UI logic in Dashboard.tsx later or assume standard definition:
+                // totalCost = External Cost
+                // totalInternalCost = Internal Cost
+                // totalProfit = Sales - External Cost (Gross Profit)
+
+                const lineGrossProfit = lineSales - lineExternalCost;
+
                 summary.totalSales += lineSales;
-                summary.totalCost += lineCost;
-                summary.totalProfit += lineProfit;
+                summary.totalCost += lineExternalCost;
+                summary.totalProfit += lineGrossProfit;
                 summary.totalInternalCost += lineInternalCost;
 
                 if (isConfirmed) {
                     summary.totalConfirmedSales += lineSales;
-                    summary.totalConfirmedCost += lineCost;
-                    summary.totalConfirmedProfit += lineProfit;
+                    summary.totalConfirmedCost += lineExternalCost;
+                    summary.totalConfirmedProfit += lineGrossProfit;
                     summary.totalConfirmedInternalCost += lineInternalCost;
                 } else {
                     summary.totalWipSales += lineSales;
-                    summary.totalWipCost += lineCost;
-                    summary.totalWipProfit += lineProfit;
+                    summary.totalWipCost += lineExternalCost;
+                    summary.totalWipProfit += lineGrossProfit;
                     summary.totalWipInternalCost += lineInternalCost;
                 }
 
@@ -1111,19 +1130,19 @@ app.get('/api/dashboard/sales', async (req, res) => {
                 }
 
                 summary.categories[label].sales += lineSales;
-                summary.categories[label].cost += lineCost;
-                summary.categories[label].profit += lineProfit;
+                summary.categories[label].cost += lineExternalCost;
+                summary.categories[label].profit += lineGrossProfit;
                 summary.categories[label].internalCost += lineInternalCost;
 
                 if (isConfirmed) {
                     summary.categories[label].confirmedSales += lineSales;
-                    summary.categories[label].confirmedCost += lineCost;
-                    summary.categories[label].confirmedProfit += lineProfit;
+                    summary.categories[label].confirmedCost += lineExternalCost;
+                    summary.categories[label].confirmedProfit += lineGrossProfit;
                     summary.categories[label].confirmedInternalCost += lineInternalCost;
                 } else {
                     summary.categories[label].wipSales += lineSales;
-                    summary.categories[label].wipCost += lineCost;
-                    summary.categories[label].wipProfit += lineProfit;
+                    summary.categories[label].wipCost += lineExternalCost;
+                    summary.categories[label].wipProfit += lineGrossProfit;
                     summary.categories[label].wipInternalCost += lineInternalCost;
                 }
             });
@@ -1217,14 +1236,18 @@ app.get('/api/dashboard/details', async (req, res) => {
             ? new Date(Number(year), Number(month), 0, 23, 59, 59)
             : new Date(Number(year), 11, 31, 23, 59, 59);
 
+        // Fetch System Settings for Internal Cost Calculation
+        const settings = await prisma.systemSetting.findMany({
+            where: { key: { in: ['defaultLaborCost', 'defaultTravelCost'] } }
+        });
+        const laborCostRate = Number(settings.find(s => s.key === 'defaultLaborCost')?.value || 3000);
+        const travelCostRate = Number(settings.find(s => s.key === 'defaultTravelCost')?.value || 1500);
+
         const projects = await prisma.project.findMany({
             where: {
                 OR: [
                     { completionDate: { gte: startDate, lte: endDate } },
-                    {
-                        completionDate: null,
-                        createdAt: { gte: startDate, lte: endDate }
-                    }
+                    { createdAt: { gte: startDate, lte: endDate } }
                 ]
             },
             include: {
@@ -1273,9 +1296,36 @@ app.get('/api/dashboard/details', async (req, res) => {
                 }
 
                 if (label === category) {
-                    categorySales += lineSales;
-                    categoryCost += lineCost;
-                    categoryProfit += lineProfit;
+                    let lineInternalCost = 0;
+                    if (detail.supplierId) {
+                        // External
+                        categorySales += lineSales;
+                        categoryCost += lineCost; // External
+                        categoryProfit += lineProfit;
+                    } else {
+                        // Internal
+                        categorySales += lineSales;
+                        // External Cost is 0
+
+                        // Internal Cost Logic
+                        const unitCost = Number(detail.unitCost) || 0;
+                        if (unitCost > 0) {
+                            lineInternalCost = Number(detail.quantity) * unitCost;
+                        } else {
+                            if (detail.lineType === 'labor') lineInternalCost = Number(detail.quantity) * laborCostRate;
+                            if (detail.lineType === 'travel') lineInternalCost = Number(detail.quantity) * travelCostRate;
+                        }
+
+                        // For Profit Calculation in Details:
+                        // Details usually show "Gross Profit" (Sales - External).
+                        // But if we want to align with "Real Profit" (Sales - External - Internal)...
+                        // The dashboard summary shows "Gross Profit (Real Profit)" which is Total Profit (Sales - Ext) - Internal.
+                        // The Details table shows "Category Profit".
+                        // If we want consistency, Category Profit here should probably be Gross Profit?
+                        // Current logic was: categoryProfit += lineProfit (Sales - Cost).
+                        // My new logic: lineProfit is Sales - ExternalCost. (Internal is separate).
+                        categoryProfit += (lineSales - (detail.supplierId ? lineCost : 0));
+                    }
                 }
             });
 
