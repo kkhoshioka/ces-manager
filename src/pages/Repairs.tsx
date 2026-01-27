@@ -211,7 +211,7 @@ const Repairs: React.FC = () => {
                 lineType: type,
                 travelType: 'time',
                 productCode: '',
-                description: type === 'outsourcing' ? '出張費(時間)' : '',
+                description: '',
                 supplier: '',
                 supplierId: null,
                 remarks: '',
@@ -229,7 +229,7 @@ const Repairs: React.FC = () => {
                 lineType: type,
                 travelType: 'distance',
                 productCode: '',
-                description: type === 'outsourcing' ? '出張費(距離)' : '',
+                description: '',
                 supplier: '',
                 supplierId: null,
                 remarks: '',
@@ -533,7 +533,7 @@ const Repairs: React.FC = () => {
 
                     return {
                         lineType: d.lineType,
-                        description: d.lineType === 'travel' && d.travelType
+                        description: ((d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel')) && d.travelType)
                             ? `【${d.travelType === 'time' ? '移動時間' : '移動距離'}】${d.description}`
                             : (d.lineType === 'part' && d.productCode
                                 ? `【${d.productCode}】${d.description}`
@@ -680,17 +680,17 @@ const Repairs: React.FC = () => {
                         let pCode = '';
                         let desc = d.description;
 
-                        if (d.lineType === 'travel') {
+                        if (d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel')) {
                             if (desc.startsWith('【移動時間】')) {
                                 tType = 'time';
                                 desc = desc.replace('【移動時間】', '');
                             } else if (desc.startsWith('【移動距離】')) {
                                 tType = 'distance';
                                 desc = desc.replace('【移動距離】', '');
-                            } else if (desc === '移動時間' || desc === '移動時間(H)') {
+                            } else if (desc === '移動時間' || desc === '移動時間(H)' || desc === '出張費(時間)') {
                                 tType = 'time';
                                 desc = ''; // Clear legacy fixed text
-                            } else if (desc === '移動距離' || desc === '移動距離(km)') {
+                            } else if (desc === '移動距離' || desc === '移動距離(km)' || desc === '出張費(距離)') {
                                 tType = 'distance';
                                 desc = ''; // Clear legacy fixed text
                             } else {
@@ -930,7 +930,7 @@ const Repairs: React.FC = () => {
                                     )}
 
                                     {/* Description / Location Column */}
-                                    {type === 'travel' ? (
+                                    {(type === 'travel' || (type === 'outsourcing' && subType === 'travel')) ? (
                                         <>
                                             {/* Location Input Column */}
                                             <td style={{ padding: '0.25rem' }}>
@@ -997,6 +997,7 @@ const Repairs: React.FC = () => {
                                                 value={detail.supplier}
                                                 list={`supplier-list-${detail.originalIndex}`}
                                                 onChange={(e) => handleDetailChange(detail.originalIndex, 'supplier', e.target.value)}
+                                                placeholder="仕入先"
                                             />
                                             <datalist id={`supplier-list-${detail.originalIndex}`}>
                                                 {suppliers.map(s => (
@@ -1016,14 +1017,14 @@ const Repairs: React.FC = () => {
                                                 min="0"
                                                 step="0.1"
                                                 placeholder={
-                                                    type === 'travel' && detail.travelType === 'distance' ? '10' : '1.0'
+                                                    (type === 'travel' || (type === 'outsourcing' && subType === 'travel')) && detail.travelType === 'distance' ? '10' : '1.0'
                                                 }
                                             />
                                             {/* Unit Logic */}
                                             <span className={styles.currencyUnit}>
                                                 {type === 'labor' ? 'H' :
-                                                    (type === 'travel' && detail.travelType === 'distance' ? 'km' :
-                                                        (type === 'travel' ? 'H' : ''))}
+                                                    ((type === 'travel' || (type === 'outsourcing' && subType === 'travel')) && detail.travelType === 'distance' ? 'km' :
+                                                        ((type === 'travel' || (type === 'outsourcing' && subType === 'travel')) ? 'H' : ''))}
                                             </span>
                                         </div>
                                     </td>
