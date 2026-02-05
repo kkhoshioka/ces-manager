@@ -1,4 +1,4 @@
-import PdfPrinter from 'pdfmake';
+// import PdfPrinter from 'pdfmake';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -9,15 +9,7 @@ const __dirname = path.dirname(__filename);
 const notoSansRegular = path.join(__dirname, 'fonts/NotoSansJP-Regular.otf');
 const notoSansBold = path.join(__dirname, 'fonts/NotoSansJP-Bold.otf');
 
-const fonts = {
-    Roboto: {
-        normal: notoSansRegular,
-        bold: notoSansBold,
-        italics: notoSansRegular, // Fallback
-        bolditalics: notoSansBold // Fallback
-    }
-};
-
+/*
 let printer: PdfPrinter;
 try {
     printer = new PdfPrinter(fonts);
@@ -26,6 +18,9 @@ try {
     // Fallback or let it fail later
     printer = new PdfPrinter({ Roboto: { normal: 'Helvetica', bold: 'Helvetica-Bold', italics: 'Helvetica-Oblique', bolditalics: 'Helvetica-BoldOblique' } });
 }
+*/
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const printer: any = null;
 
 interface ProjectDetail {
     id?: number; // Added for tracking
