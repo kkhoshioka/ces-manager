@@ -54,14 +54,21 @@ const formatDate = (date: Date | string | null) => {
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
+// Helper: Group Travel Time/Distance into one "Travel Expenses" line
 const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
     const processed: ProjectDetail[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processedIds = new Set<number>();
 
+    const normalizeDescription = (desc: string) => {
+        return (desc || '')
+            .replace(/【移動時間】/g, '')
+            .replace(/【移動距離】/g, '')
+            .trim();
+    };
+
     for (let i = 0; i < details.length; i++) {
         const current = details[i];
-        // If no ID, rely on index as fallback unique ID (though DB details should have IDs)
         const currentId = current.id || (i * -1);
 
         if (processedIds.has(currentId)) continue;
@@ -70,6 +77,8 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
             let totalAmount = Number(current.quantity) * Number(current.unitPrice);
             processedIds.add(currentId);
 
+            const currentDesc = normalizeDescription(current.description);
+
             // Search for other travel items with same description and date
             for (let j = i + 1; j < details.length; j++) {
                 const other = details[j];
@@ -77,12 +86,7 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
 
                 if (processedIds.has(otherId)) continue;
 
-                // Match Logic:
-                // 1. Line Type must be travel
-                // 2. Description must loosely match (trimmed)
-                // 3. Date must match (or both empty)
-                const currentDesc = (current.description || '').trim();
-                const otherDesc = (other.description || '').trim();
+                const otherDesc = normalizeDescription(other.description);
 
                 const isMatch = other.lineType === 'travel' &&
                     currentDesc === otherDesc &&
@@ -96,7 +100,7 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
 
             processed.push({
                 ...current,
-                description: `${current.description} (出張費)`,
+                description: `${currentDesc} (出張費)`,
                 quantity: 1,
                 unitPrice: totalAmount,
                 lineType: 'travel'
