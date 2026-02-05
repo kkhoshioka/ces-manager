@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.node.json",
+    "compilerOptions": {
+        "noEmit": false,
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true
+    },
+    "include": [
+        "server/**/*",
+        "api/**/*"
+    ]
+}
