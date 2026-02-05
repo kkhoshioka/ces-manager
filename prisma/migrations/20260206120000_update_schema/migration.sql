@@ -1,26 +1,26 @@
 -- AlterTable Customer
-ALTER TABLE "Customer" ADD COLUMN "fax" TEXT,
-ADD COLUMN "invoiceRegistrationNumber" TEXT,
-ADD COLUMN "invoiceMailingAddress" TEXT,
-ADD COLUMN "paymentTerms" TEXT,
-ADD COLUMN "contactPerson" TEXT,
-ADD COLUMN "closingDate" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "fax" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "invoiceRegistrationNumber" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "invoiceMailingAddress" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "paymentTerms" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "contactPerson" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "closingDate" TEXT;
 
 -- AlterTable Supplier
-ALTER TABLE "Supplier" ADD COLUMN "fax" TEXT,
-ADD COLUMN "invoiceRegistrationNumber" TEXT,
-ADD COLUMN "bankName" TEXT,
-ADD COLUMN "branchName" TEXT,
-ADD COLUMN "accountType" TEXT,
-ADD COLUMN "accountNumber" TEXT,
-ADD COLUMN "accountHolder" TEXT,
-ADD COLUMN "paymentTerms" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "fax" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "invoiceRegistrationNumber" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "bankName" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "branchName" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "accountType" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "accountNumber" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "accountHolder" TEXT;
+ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "paymentTerms" TEXT;
 
 -- AlterTable Project
-ALTER TABLE "Project" ADD COLUMN "hourMeter" TEXT,
-ADD COLUMN "isInvoiceIssued" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN "isPaymentReceived" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN "paymentDate" TIMESTAMP(3);
+ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "hourMeter" TEXT;
+ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "isInvoiceIssued" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "isPaymentReceived" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "paymentDate" TIMESTAMP(3);
 
 -- AlterTable ProjectDetail
 ALTER TABLE "ProjectDetail" ADD COLUMN "date" TIMESTAMP(3);
