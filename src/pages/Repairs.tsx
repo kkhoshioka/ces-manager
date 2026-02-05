@@ -158,6 +158,7 @@ const Repairs: React.FC = () => {
         amountSales: number;
         originalIndex: number;
         outsourcingDetailType?: string | null;
+        date?: string; // Travel Date
     }
 
     const [details, setDetails] = useState<DetailItem[]>([]);
@@ -794,13 +795,19 @@ const Repairs: React.FC = () => {
                             {/* Travel Type has split columns */}
                             {type === 'travel' ? (
                                 <>
-                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '35%' }}>移動場所・区間</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'center', width: '20%' }}>項目</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>日付</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>移動場所・区間</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'center', width: '15%' }}>項目</th>
                                 </>
                             ) : (
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: type === 'part' ? '25%' : (type === 'outsourcing' && subType === 'part' ? '25%' : '55%') }}>
-                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) ? '内容・品名' : '内容'}
-                                </th>
+                                <>
+                                    {(type === 'outsourcing' && subType === 'travel') && (
+                                        <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>日付</th>
+                                    )}
+                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: (type === 'outsourcing' && subType === 'travel') ? '40%' : (type === 'part' ? '25%' : (type === 'outsourcing' && subType === 'part' ? '25%' : '55%')) }}>
+                                        {(type === 'part' || (type === 'outsourcing' && subType === 'part')) ? '内容・品名' : '内容'}
+                                    </th>
+                                </>
                             )}
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
@@ -932,6 +939,36 @@ const Repairs: React.FC = () => {
                                     {/* Description / Location Column */}
                                     {type === 'travel' ? (
                                         <>
+                                            {/* Date Input Column */}
+                                            <td style={{ padding: '0.25rem' }}>
+                                                {detail.travelType === 'time' && (
+                                                    <input
+                                                        type="date"
+                                                        className={styles.tableInput}
+                                                        value={detail.date || ''}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            // Sync Next Row (Distance)
+                                                            setDetails(prev => {
+                                                                const newDetails = [...prev];
+                                                                newDetails[detail.originalIndex] = { ...newDetails[detail.originalIndex], date: val };
+                                                                const nextIdx = detail.originalIndex + 1;
+                                                                if (nextIdx < newDetails.length) {
+                                                                    const nextItem = newDetails[nextIdx];
+                                                                    if (nextItem.lineType === 'travel' && nextItem.travelType === 'distance') {
+                                                                        newDetails[nextIdx] = { ...newDetails[nextIdx], date: val };
+                                                                    }
+                                                                }
+                                                                return newDetails;
+                                                            });
+                                                        }}
+                                                    />
+                                                )}
+                                                {detail.travelType === 'distance' && (
+                                                    <div style={{ height: '34px' }}></div>
+                                                )}
+                                            </td>
+
                                             {/* Location Input Column */}
                                             <td style={{ padding: '0.25rem' }}>
                                                 {detail.travelType === 'time' && (
@@ -979,15 +1016,27 @@ const Repairs: React.FC = () => {
                                         </>
                                     ) : (
                                         /* Standard Content Column for other types */
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <input
-                                                type="text"
-                                                className={styles.tableInput}
-                                                value={detail.description}
-                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
-                                                placeholder={type === 'labor' ? '作業内容（点検、清掃、部品交換など）' : '詳細内容'}
-                                            />
-                                        </td>
+                                        <>
+                                            {(type === 'outsourcing' && subType === 'travel') && (
+                                                <td style={{ padding: '0.25rem' }}>
+                                                    <input
+                                                        type="date"
+                                                        className={styles.tableInput}
+                                                        value={detail.date || ''}
+                                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'date' as any, e.target.value)}
+                                                    />
+                                                </td>
+                                            )}
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <input
+                                                    type="text"
+                                                    className={styles.tableInput}
+                                                    value={detail.description}
+                                                    onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
+                                                    placeholder={type === 'labor' ? '作業内容（点検、清掃、部品交換など）' : '詳細内容'}
+                                                />
+                                            </td>
+                                        </>
                                     )}
                                     {showSupplier && (
                                         <td style={{ padding: '0.25rem' }}>

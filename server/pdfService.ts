@@ -25,6 +25,8 @@ interface ProjectDetail {
     quantity: number | string;
     unitPrice: number | string;
     lineType?: string; // Added for grouping logic
+    date?: string | Date; // Added Date
+    travelType?: string;
 }
 
 interface Customer {
@@ -51,9 +53,38 @@ const formatDate = (date: Date | string | null) => {
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
 const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
-    // Previously grouped Travel Time/Distance into one "Travel Expenses" line.
-    // Disabling this to show individual rows as entered by the user (preserving location info).
-    return details;
+    const processed: ProjectDetail[] = [];
+    let skipNext = false;
+
+    for (let i = 0; i < details.length; i++) {
+        if (skipNext) {
+            skipNext = false;
+            continue;
+        }
+
+        const current = details[i];
+        const next = details[i + 1];
+
+        // Group Company Travel (Time + Distance) if adjacent and same location
+        if (current.lineType === 'travel' && next && next.lineType === 'travel' && current.description === next.description) {
+            const amount1 = Number(current.quantity) * Number(current.unitPrice);
+            const amount2 = Number(next.quantity) * Number(next.unitPrice);
+
+            processed.push({
+                ...current,
+                description: `${current.description} (出張費)`,
+                quantity: 1,
+                unitPrice: amount1 + amount2,
+                lineType: 'travel', // Keep as travel or useful type
+                date: current.date
+            });
+            skipNext = true;
+        } else {
+            processed.push(current);
+        }
+    }
+
+    return processed;
 };
 
 export const generateInvoice = (project: Project) => {
@@ -525,7 +556,7 @@ export const generateDeliveryNote = (project: Project) => {
                 style: 'detailTable',
                 table: {
                     headerRows: 1,
-                    // Col widths: Date, Code/Name, Qty, Unit, Remarks
+                    // Col widths: Date, Name, Qty, Unit, Remarks
                     widths: [55, '*', 30, 30, '*'],
                     heights: 24,
                     body: [
@@ -542,7 +573,7 @@ export const generateDeliveryNote = (project: Project) => {
                             const rowBorder = [true, true, true, true];
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
-                                { text: d.lineType === 'padding' ? '' : deliveryDate, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' ? '' : formatDate(d.date || null), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : '式', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
@@ -761,20 +792,17 @@ export const generateQuotation = (project: Project) => {
                 style: 'detailTable',
                 table: {
                     headerRows: 1,
-                    // Removed Date Column (55), kept others.
-                    // Old: [55, '*', 25, 25, 55, 60, 40]
-                    // New: ['*', 25, 25, 55, 60, 40]
-                    widths: ['*', 35, 30, 65, 70, 50], // Adjusted slightly allowing more for name
+                    // New: [Date, Content, Qty, Unit, Price, Amount]
+                    widths: [50, '*', 30, 25, 60, 60],
                     heights: 24,
                     body: [
                         [
-                            // Removed Date Header
+                            { text: '日付', style: 'tableHeaderMain' },
                             { text: '商品コード / 商品名', style: 'tableHeaderMain' },
                             { text: '数量', style: 'tableHeaderMain' },
                             { text: '単位', style: 'tableHeaderMain' },
                             { text: '単価', style: 'tableHeaderMain' },
-                            { text: '金額', style: 'tableHeaderMain' },
-                            { text: '備考', style: 'tableHeaderMain' }
+                            { text: '金額', style: 'tableHeaderMain' }
                         ],
                         // Data Rows with Zebra Striping
                         ...processedDetails.map((d: ProjectDetail, index: number) => {
@@ -782,40 +810,37 @@ export const generateQuotation = (project: Project) => {
                             const rowBorder = [true, true, true, true];
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
-                                // Removed Date Cell
+                                { text: d.lineType === 'padding' ? '' : formatDate(d.date || null), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : '式', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
                             ];
                         }),
 
                         // Consumption Tax Row (Footer 1)
                         [
-                            { text: '消費税', fontSize: 9, border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '消費税', colSpan: 1, fontSize: 9, border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            { text: '', fontSize: 9, border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                            { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Taxable (Footer 2)
                         [
-                            { text: '【合計 課税10.0% 税抜額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            {}, {},
-                            { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }, // Spacer due to removed date col
-                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            { text: '', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                            { text: '【合計 課税10.0% 税抜額】', colSpan: 4, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            {}, {}, {},
+                            { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Tax (Footer 3)
                         [
-                            { text: '【合計 課税10.0% 消費税額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            {}, {},
-                            { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }, // Spacer due to removed date col
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            { text: '', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                            { text: '【合計 課税10.0% 消費税額】', colSpan: 4, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            {}, {}, {},
+                            { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ]
                     ]
                 },

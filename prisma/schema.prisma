@@ -141,6 +141,8 @@ model ProjectDetail {
   
   outsourcingDetailType String? // labor, part, travel, etc.
   
+  date            DateTime? // Date of the expense/work (New)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

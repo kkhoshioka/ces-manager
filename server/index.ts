@@ -506,7 +506,8 @@ app.put('/api/projects/:id', async (req, res) => {
                         productId: detail.productId ? Number(detail.productId) : null,
                         productCategoryId: detail.productCategoryId ? Number(detail.productCategoryId) : null,
                         projectId: Number(id),
-                        outsourcingDetailType: detail.outsourcingDetailType || null
+                        outsourcingDetailType: detail.outsourcingDetailType || null,
+                        date: detail.date ? new Date(detail.date) : null
                     };
                     return safeDetail;
                 });
