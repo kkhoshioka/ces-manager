@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import axios from 'axios';
+import { Edit2, FileText, CheckCircle, Trash2, Plus, Copy } from 'lucide-react';
 
 import { API_BASE_URL } from '../../config';
 
@@ -118,10 +119,14 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
                         color: 'white',
                         borderRadius: '0.25rem',
                         border: 'none',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
                     }}
                 >
-                    新規作成 (v2)
+                    <Plus size={16} />
+                    新規作成
                 </button>
                 <button
                     onClick={handleClone}
@@ -131,9 +136,13 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
                         color: 'white',
                         borderRadius: '0.25rem',
                         border: 'none',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
                     }}
                 >
+                    <Copy size={16} />
                     現在の内容から作成
                 </button>
             </div>
@@ -162,15 +171,28 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
                                     backgroundColor: q.status === 'approved' ? '#dcfce7' : '#f3f4f6',
                                     color: q.status === 'approved' ? '#166534' : '#374151'
                                 }}>
-                                    {q.status}
+                                    {{
+                                        draft: '下書き',
+                                        sent: '送付済',
+                                        approved: '受注',
+                                        rejected: '失注'
+                                    }[q.status] || q.status}
                                 </span>
                             </td>
                             <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                                    <button onClick={() => onEdit(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer' }}>編集</button>
-                                    <button onClick={() => handlePdf(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer' }}>PDF</button>
-                                    <button onClick={() => handleApply(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer', color: '#dc2626' }}>反映</button>
-                                    <button onClick={() => handleDelete(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer', color: '#9ca3af' }}>削除</button>
+                                    <button onClick={() => onEdit(q.id)} title="編集" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+                                        <Edit2 size={18} color="#4b5563" />
+                                    </button>
+                                    <button onClick={() => handlePdf(q.id)} title="PDF" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+                                        <FileText size={18} color="#4b5563" />
+                                    </button>
+                                    <button onClick={() => handleApply(q.id)} title="反映" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+                                        <CheckCircle size={18} color="#dc2626" />
+                                    </button>
+                                    <button onClick={() => handleDelete(q.id)} title="削除" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+                                        <Trash2 size={18} color="#9ca3af" />
+                                    </button>
                                 </div>
                             </td>
                         </tr>

@@ -39,6 +39,7 @@ const QuotationEdit: React.FC<QuotationEditProps> = ({ quotationId, onClose, onS
     const [quotation, setQuotation] = useState<Quotation | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
     // Load data
     useEffect(() => {
@@ -65,7 +66,13 @@ const QuotationEdit: React.FC<QuotationEditProps> = ({ quotationId, onClose, onS
                 console.error(err);
                 alert('読み込みに失敗しました');
             })
-            .finally(() => setLoading(false));
+            .finally(() => {
+                setLoading(false);
+                // Scroll to top when data is loaded
+                if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollTop = 0;
+                }
+            });
     }, [quotationId]);
 
     const handleDetailChange = (index: number, field: keyof QuotationDetail, value: any) => {
@@ -130,7 +137,7 @@ const QuotationEdit: React.FC<QuotationEditProps> = ({ quotationId, onClose, onS
                 </div>
 
                 {/* Body */}
-                <div style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
+                <div ref={scrollContainerRef} style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
                     {/* Quotation Header Fields */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                         <div>
