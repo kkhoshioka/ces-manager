@@ -53,6 +53,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Export app for Vercel
+export default app;
+
+// Only listen if executed directly (not imported)
+if (process.env.NODE_ENV !== 'production' || process.argv[1].endsWith('index.ts')) {
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
