@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
 import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera } from 'lucide-react';
 import type { Repair } from '../types/repair';
 import { RepairService } from '../utils/repairService';
@@ -626,35 +627,12 @@ const Repairs: React.FC = () => {
         }
     };
 
-    const handleRowClick = async (project: Repair) => {
-        // Optimistic UI: Open immediately with loading state
-        setIsFormOpen(true);
+    const loadProjectDetails = async (id: number) => {
         setIsFormLoading(true);
-        setSelectedProjectId(project.id);
-
-        // Populate partial data from list view
-        setFormType((project.type as 'repair' | 'sales') || 'repair');
-        const noteParts = (project.notes || '').split('\n\n備考: ');
-        setFormState({
-            customerName: project.customer?.name || '',
-            machineModel: project.machineModel || '',
-            serialNumber: project.serialNumber || '',
-            hourMeter: project.hourMeter || '',
-            orderDate: project.orderDate ? new Date(project.orderDate).toISOString().split('T')[0] : '',
-            completionDate: project.completionDate ? new Date(project.completionDate).toISOString().split('T')[0] : '',
-            issueDescription: noteParts[0] || '',
-            notes: noteParts[1] || '',
-            status: (project.status as RepairStatus) || 'received'
-        });
-
-        // Clear details/photos initially or keep previous? Better to clear to avoid confusion
-        setDetails([]);
-        setPhotos([]);
-
         try {
             // Parallelize loading
             const [fullProject] = await Promise.all([
-                RepairService.getById(project.id),
+                RepairService.getById(id),
                 loadFormData()
             ]);
 
@@ -742,6 +720,34 @@ const Repairs: React.FC = () => {
         } finally {
             setIsFormLoading(false);
         }
+    };
+
+    const handleRowClick = async (project: Repair) => {
+        // Optimistic UI: Open immediately with loading state
+        setIsFormOpen(true);
+        setIsFormLoading(true);
+        setSelectedProjectId(project.id);
+
+        // Populate partial data from list view
+        setFormType((project.type as 'repair' | 'sales') || 'repair');
+        const noteParts = (project.notes || '').split('\n\n備考: ');
+        setFormState({
+            customerName: project.customer?.name || '',
+            machineModel: project.machineModel || '',
+            serialNumber: project.serialNumber || '',
+            hourMeter: project.hourMeter || '',
+            orderDate: project.orderDate ? new Date(project.orderDate).toISOString().split('T')[0] : '',
+            completionDate: project.completionDate ? new Date(project.completionDate).toISOString().split('T')[0] : '',
+            issueDescription: noteParts[0] || '',
+            notes: noteParts[1] || '',
+            status: (project.status as RepairStatus) || 'received'
+        });
+
+        // Clear details/photos initially or keep previous? Better to clear to avoid confusion
+        setDetails([]);
+        setPhotos([]);
+
+        await loadProjectDetails(project.id);
     };
 
     // Helper to render Detail Section
@@ -1671,11 +1677,11 @@ const Repairs: React.FC = () => {
                                         setShowQuotationEdit(true);
                                     }}
                                     onApply={async (id) => {
-                                        // Apply logic
+                                        if (!selectedProjectId) return;
                                         try {
-                                            await fetch(`${API_BASE_URL}/quotations/${id}/apply`, { method: 'POST' });
-                                            alert('反映しました。画面を更新してください。(自動リロードは保留)');
-                                            fetchProjectDetails(selectedProjectId); // Refresh details
+                                            await axios.post(`${API_BASE_URL}/quotations/${id}/apply`);
+                                            alert('反映しました。');
+                                            loadProjectDetails(selectedProjectId); // Refresh details
                                             setActiveTab('details');
                                         } catch (e) {
                                             console.error(e);
@@ -1686,9 +1692,28 @@ const Repairs: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </div >
+                </div>
             )
             }
+
+            {/* Quotation Edit Modal */}
+            {showQuotationEdit && editingQuotationId && (
+                <QuotationEdit
+                    quotationId={editingQuotationId}
+                    onClose={() => {
+                        setShowQuotationEdit(false);
+                        setEditingQuotationId(null);
+                    }}
+                    onSaveSuccess={() => {
+                        // Optional: Refresh list by forcing re-render or callback?
+                        // QuotationList fetches on mount, so closing and opening tab works.
+                        // Ideally pass a refresh trigger to QuotationList.
+                        // For now just close.
+                    }}
+                />
+            )}
+
+
             {/* Delete Confirmation Modal */}
             {
                 deleteConfirmation.isOpen && (

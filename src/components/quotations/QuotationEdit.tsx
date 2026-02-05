@@ -57,7 +57,7 @@ const QuotationEdit: React.FC<QuotationEditProps> = ({ quotationId, onClose, onS
             .then(res => {
                 const data = res.data;
                 // Add tempIds
-                data.details = data.details.map((d: any) => ({ ...d, tempId: uuidv4() }));
+                data.details = data.details.map((d: any) => ({ ...d, tempId: generateTempId() }));
                 setQuotation(data);
             })
             .catch(err => {
