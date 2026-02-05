@@ -79,10 +79,13 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
 
                 // Match Logic:
                 // 1. Line Type must be travel
-                // 2. Description must loosely match
+                // 2. Description must loosely match (trimmed)
                 // 3. Date must match (or both empty)
+                const currentDesc = (current.description || '').trim();
+                const otherDesc = (other.description || '').trim();
+
                 const isMatch = other.lineType === 'travel' &&
-                    (current.description || '') === (other.description || '') &&
+                    currentDesc === otherDesc &&
                     (current.date ? new Date(current.date).getTime() : 0) === (other.date ? new Date(other.date).getTime() : 0);
 
                 if (isMatch) {
@@ -813,12 +816,12 @@ export const generateQuotation = (project: Project) => {
                 style: 'detailTable',
                 table: {
                     headerRows: 1,
-                    // New: [Date, Content, Qty, Unit, Price, Amount]
-                    widths: [50, '*', 30, 25, 60, 60],
+                    // New: [Content, Qty, Unit, Price, Amount]
+                    // Removed Date column. Old widths: [50, '*', 30, 25, 60, 60]
+                    widths: ['*', 30, 25, 60, 60],
                     heights: 24,
                     body: [
                         [
-                            { text: '日付', style: 'tableHeaderMain' },
                             { text: '商品コード / 商品名', style: 'tableHeaderMain' },
                             { text: '数量', style: 'tableHeaderMain' },
                             { text: '単位', style: 'tableHeaderMain' },
@@ -831,7 +834,6 @@ export const generateQuotation = (project: Project) => {
                             const rowBorder = [true, true, true, true];
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
-                                { text: d.lineType === 'padding' ? '' : formatDate(d.date || null), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : '式', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
@@ -846,20 +848,19 @@ export const generateQuotation = (project: Project) => {
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            { text: '', border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [true, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Taxable (Footer 2)
                         [
-                            { text: '【合計 課税10.0% 税抜額】', colSpan: 4, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            {}, {}, {},
+                            { text: '【合計 課税10.0% 税抜額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            {}, {},
                             { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Tax (Footer 3)
                         [
-                            { text: '【合計 課税10.0% 消費税額】', colSpan: 4, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                            {}, {}, {},
+                            { text: '【合計 課税10.0% 消費税額】', colSpan: 3, fontSize: 9, border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            {}, {},
                             { text: '', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', fontSize: 9, border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ]
