@@ -875,7 +875,7 @@ const Repairs: React.FC = () => {
 
                             return (
                                 <tr key={detail.originalIndex} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    {(type === 'part' || (type === 'outsourcing' && (detail.description === '部品' || detail.description === '商品'))) && (
+                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -892,7 +892,7 @@ const Repairs: React.FC = () => {
                                             </select>
                                         </td>
                                     )}
-                                    {(type === 'part' || (type === 'outsourcing' && (detail.description === '部品' || detail.description === '商品'))) && (
+                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -917,7 +917,7 @@ const Repairs: React.FC = () => {
                                         </td>
                                     )}
 
-                                    {(type === 'part' || (type === 'outsourcing' && (detail.description === '部品' || detail.description === '商品'))) && (
+                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <input
                                                 type="text"
