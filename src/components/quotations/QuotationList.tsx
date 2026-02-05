@@ -3,6 +3,8 @@ import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import axios from 'axios';
 
+import { API_BASE_URL } from '../../config';
+
 // Interfaces (Should be shared types)
 interface Quotation {
     id: number;
@@ -30,7 +32,7 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
 
     const fetchQuotations = async () => {
         try {
-            const res = await axios.get<Quotation[]>(`/api/projects/${projectId}/quotations`);
+            const res = await axios.get<Quotation[]>(`${API_BASE_URL}/projects/${projectId}/quotations`);
             if (Array.isArray(res.data)) {
                 setQuotations(res.data);
             } else {
@@ -50,7 +52,7 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
         // Let's create new draft then open form
         if (!confirm('新しい見積を作成しますか？')) return;
         try {
-            const res = await axios.post(`/api/projects/${projectId}/quotations`, { cloneFromProject: false });
+            const res = await axios.post(`${API_BASE_URL}/projects/${projectId}/quotations`, { cloneFromProject: false });
             onEdit(res.data.id);
             fetchQuotations();
         } catch (err: any) {
@@ -63,7 +65,7 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
     const handleClone = async () => {
         if (!confirm('現在の案件詳細をコピーして見積を作成しますか？')) return;
         try {
-            const res = await axios.post(`/api/projects/${projectId}/quotations`, { cloneFromProject: true });
+            const res = await axios.post(`${API_BASE_URL}/projects/${projectId}/quotations`, { cloneFromProject: true });
             onEdit(res.data.id);
             fetchQuotations();
         } catch (err: any) {
@@ -76,7 +78,7 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
     const handleDelete = async (id: number) => {
         if (!confirm('この見積を削除してもよろしいですか？')) return;
         try {
-            await axios.delete(`/api/quotations/${id}`);
+            await axios.delete(`${API_BASE_URL}/quotations/${id}`);
             fetchQuotations();
         } catch (err) {
             console.error(err);
@@ -90,7 +92,7 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
     };
 
     const handlePdf = (id: number) => {
-        window.open(`/api/projects/${projectId}/pdf/quotation?quotationId=${id}`, '_blank');
+        window.open(`${API_BASE_URL}/projects/${projectId}/pdf/quotation?quotationId=${id}`, '_blank');
         // Note: Need to update backend PDF route to accept quotationId
     };
 

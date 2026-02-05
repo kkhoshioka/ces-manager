@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config';
 
 const generateTempId = () => Math.random().toString(36).substr(2, 9);
 
@@ -43,7 +44,7 @@ const QuotationEdit: React.FC<QuotationEditProps> = ({ quotationId, onClose, onS
     useEffect(() => {
         if (!quotationId) return;
         setLoading(true);
-        axios.get(`/api/quotations/${quotationId}`) // We need a direct GET api/quotations/:id route? 
+        axios.get(`${API_BASE_URL}/quotations/${quotationId}`) // We need a direct GET api/quotations/:id route? 
             // Logic check: Implementation plan says GET /api/projects/:id/quotations for list.
             // It didn't explicitly specify GET /api/quotations/:id details, but PUT is there.
             // Wait, I implemented `PUT /api/quotations/:id`. Initial GET is usually needed.
@@ -96,7 +97,7 @@ const QuotationEdit: React.FC<QuotationEditProps> = ({ quotationId, onClose, onS
         if (!quotation) return;
         setSaving(true);
         try {
-            await axios.put(`/api/quotations/${quotation.id}`, quotation);
+            await axios.put(`${API_BASE_URL}/quotations/${quotation.id}`, quotation);
             onSaveSuccess();
             onClose();
         } catch (err) {
