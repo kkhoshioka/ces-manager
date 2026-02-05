@@ -121,7 +121,7 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
                         cursor: 'pointer'
                     }}
                 >
-                    新規作成
+                    新規作成 (v2)
                 </button>
                 <button
                     onClick={handleClone}
