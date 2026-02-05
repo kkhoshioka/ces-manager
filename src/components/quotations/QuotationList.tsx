@@ -52,13 +52,22 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
         // Let's create new draft then open form
         if (!confirm('新しい見積を作成しますか？')) return;
         try {
-            const res = await axios.post(`${API_BASE_URL}/projects/${projectId}/quotations`, { cloneFromProject: false });
+            const url = `${API_BASE_URL}/projects/${projectId}/quotations`;
+            // alert(`Debug: Asking URL: ${url}`); // Temporary Debug
+            const res = await axios.post(url, { cloneFromProject: false });
             onEdit(res.data.id);
             fetchQuotations();
         } catch (err: any) {
             console.error(err);
-            const message = err.response?.data?.details || err.response?.data?.error || '作成に失敗しました';
-            alert(`作成に失敗しました: ${message}`);
+            let errMsg = '作成に失敗しました';
+            if (err.response) {
+                errMsg += ` (Status: ${err.response.status}, Data: ${JSON.stringify(err.response.data)})`;
+            } else if (err.request) {
+                errMsg += ` (Network Error - No Response: ${err.message})`;
+            } else {
+                errMsg += ` (Error: ${err.message})`;
+            }
+            alert(errMsg + `\nTrying to access: ${API_BASE_URL}/projects/${projectId}/quotations`);
         }
     };
 
