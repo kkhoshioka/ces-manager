@@ -51,43 +51,9 @@ const formatDate = (date: Date | string | null) => {
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
 const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
-    let travelTotal = 0;
-    let hasTravel = false;
-
-    const filteredDetails: ProjectDetail[] = [];
-
-    details.forEach(Detail => {
-        // Check for Travel items by lineType or Description convention
-        // lineType is preferred if available.
-        const isTravel = Detail.lineType === 'travel' ||
-            Detail.description.startsWith('【移動時間】') ||
-            Detail.description.startsWith('【移動距離】') ||
-            Detail.description === '移動時間' ||
-            Detail.description === '移動距離';
-
-        if (isTravel) {
-            hasTravel = true;
-            travelTotal += Number(Detail.quantity) * Number(Detail.unitPrice);
-        } else {
-            filteredDetails.push(Detail);
-        }
-    });
-
-    if (hasTravel) {
-        // Insert "Travel Expenses" at the position where travel items usually appear?
-        // Or just append? Standard practice is often near the end or just where it fits.
-        // We'll append it before "Other" or just at the end of the filtered list for simplicity,
-        // or effectively replacing the block of travel items.
-        // For now, let's append it as a single line.
-        filteredDetails.push({
-            description: '出張費',
-            quantity: 1,
-            unitPrice: travelTotal,
-            lineType: 'travel_grouped'
-        });
-    }
-
-    return filteredDetails;
+    // Previously grouped Travel Time/Distance into one "Travel Expenses" line.
+    // Disabling this to show individual rows as entered by the user (preserving location info).
+    return details;
 };
 
 export const generateInvoice = (project: Project) => {
