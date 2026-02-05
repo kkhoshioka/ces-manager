@@ -13,6 +13,7 @@ const __dirname = dirname(__filename);
 import 'dotenv/config';
 import { generateInvoice, generateDeliveryNote, generateQuotation } from './pdfService';
 import systemSettingsRouter from './routes/systemSettings';
+import quotationRouter from './routes/quotations';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import { stringify } from 'csv-stringify/sync';
@@ -113,6 +114,9 @@ app.delete('/api/customers/:id', async (req, res) => {
     }
 });
 
+
+app.use('/api', systemSettingsRouter);
+app.use('/api', quotationRouter);
 
 // --- Machines ---
 app.get('/api/machines', async (req, res) => {
@@ -1572,51 +1576,93 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
 app.get('/api/projects/:id/pdf', async (req, res) => {
     try {
         const { id } = req.params;
-        const { type } = req.query; // 'invoice' or 'delivery'
+        const { type } = req.query; // 'invoice', 'delivery', or 'quotation'
+        const quotationId = req.query.quotationId ? Number(req.query.quotationId) : null;
 
-        const project = await prisma.project.findUnique({
-            where: { id: Number(id) },
-            include: {
-                customer: true,
-                customerMachine: true,
-                details: {
-                    orderBy: {
-                        id: 'asc'
+        let pdfDoc;
+        let filename = `${type}_${id}.pdf`;
+
+        if (type === 'quotation' && quotationId) {
+            const quotation = await prisma.quotation.findUnique({
+                where: { id: quotationId },
+                include: { details: true, project: { include: { customer: true, customerMachine: true } } }
+            });
+
+            if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+
+            // Map Quotation to Project-like structure for PDF service
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const projectLike: any = {
+                id: quotation.quotationNumber || quotation.id, // Use string if needed, or number
+                customer: quotation.project.customer,
+                machineModel: quotation.project.machineModel || quotation.project.customerMachine?.machineModel,
+                serialNumber: quotation.project.serialNumber || quotation.project.customerMachine?.serialNumber,
+                notes: quotation.notes || quotation.project.notes, // Prefer quotation notes
+                details: quotation.details.map(d => ({
+                    description: d.description,
+                    quantity: Number(d.quantity),
+                    unitPrice: Number(d.unitPrice),
+                    lineType: d.lineType,
+                    // date: d.date, // QuotationDetail might have date?
+                    travelType: d.travelType,
+                    outsourcingDetailType: d.outsourcingDetailType
+                }))
+            };
+
+            pdfDoc = generateQuotation(projectLike);
+            filename = `quotation_${quotation.quotationNumber || quotation.id}.pdf`;
+
+        } else {
+            // Existing Logic for Project-based PDFs
+            const project = await prisma.project.findUnique({
+                where: { id: Number(id) },
+                include: {
+                    customer: true,
+                    customerMachine: true,
+                    details: {
+                        orderBy: {
+                            id: 'asc'
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        if (!project) {
-            return res.status(404).json({ error: 'Project not found' });
+            if (!project) {
+                return res.status(404).json({ error: 'Project not found' });
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const safeDetails = project.details.map((d: any) => ({
+                description: d.description,
+                quantity: Number(d.quantity),
+                unitPrice: Number(d.unitPrice),
+                lineType: d.lineType,
+                date: d.date,
+                outsourcingDetailType: d.outsourcingDetailType
+            }));
+
+            const pdfData = {
+                id: project.id,
+                customer: { name: project.customer?.name || '得意先不明' },
+                machineModel: project.machineModel || project.customerMachine?.machineModel || '',
+                serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+                details: safeDetails,
+                notes: project.notes || ''
+            };
+
+            if (type === 'delivery') {
+                pdfDoc = generateDeliveryNote(pdfData);
+            } else if (type === 'quotation') {
+                // Fallback if no quotationId provided (generate from project details?? or error?)
+                // Allow generating from project details for backward compatibility or direct button
+                pdfDoc = generateQuotation(pdfData);
+            } else {
+                pdfDoc = generateInvoice(pdfData);
+            }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const safeDetails = project.details.map((d: any) => ({
-            description: d.description,
-            quantity: Number(d.quantity),
-            unitPrice: Number(d.unitPrice),
-            lineType: d.lineType,
-            date: d.date,
-            outsourcingDetailType: d.outsourcingDetailType
-        }));
-
-        const pdfData = {
-            id: project.id,
-            customer: { name: project.customer?.name || '得意先不明' },
-            machineModel: project.machineModel || project.customerMachine?.machineModel || '',
-            serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
-            details: safeDetails,
-            notes: project.notes || ''
-        };
-
-        const pdfDoc = type === 'delivery'
-            ? generateDeliveryNote(pdfData)
-            : generateInvoice(pdfData);
-
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${type}_${project.id}.pdf"`);
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
 
         pdfDoc.pipe(res);
         pdfDoc.end();

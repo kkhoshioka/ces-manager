@@ -111,6 +111,7 @@ model Project {
   
   details           ProjectDetail[]
   photos            ProjectPhoto[]
+  quotations        Quotation[]
 }
 
 // 5. Project Details
@@ -273,3 +274,42 @@ model MonthlyBillStatus {
   @@unique([year, month, customerId])
 }
 
+
+// 10. Quotations (Estimates)
+model Quotation {
+  id                Int       @id @default(autoincrement())
+  projectId         Int
+  
+  quotationNumber   String?   // e.g. Q-20240206-001 (Optional, or auto-generated)
+  issueDate         DateTime  @default(now())
+  expirationDate    DateTime?
+  
+  totalAmount       Decimal   @default(0)
+  taxAmount         Decimal   @default(0)
+  
+  status            String    @default("draft") // draft, sent, approved, rejected
+  notes             String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  details           QuotationDetail[]
+}
+
+model QuotationDetail {
+  id              Int      @id @default(autoincrement())
+  quotationId     Int
+  
+  lineType        String   // labor, part, outsourcing, travel, etc.
+  description     String
+  quantity        Decimal  @default(1)
+  unitPrice       Decimal  @default(0)
+  unitCost        Decimal  @default(0) // Optional for quotation, but good to have
+  
+  date            DateTime? // Matches recent "date" addition
+  travelType      String?
+  outsourcingDetailType String?
+  
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}

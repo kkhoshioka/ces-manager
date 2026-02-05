@@ -15,6 +15,8 @@ import type { Customer, CustomerMachine } from '../types/customer';
 import type { ProjectPhoto, RepairStatus } from '../types/repair';
 import type { Supplier } from '../types/supplier';
 import type { ProductCategory } from '../types/inventory';
+import QuotationList from '../components/quotations/QuotationList';
+import QuotationEdit from '../components/quotations/QuotationEdit';
 
 // Status helper
 const getStatusStyle = (status: string) => {
@@ -47,6 +49,11 @@ const Repairs: React.FC = () => {
     const [projects, setProjects] = useState<Repair[]>([]); // Renamed from repairs to projects
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Quotation State
+    const [activeTab, setActiveTab] = useState<'details' | 'quotations'>('details');
+    const [showQuotationEdit, setShowQuotationEdit] = useState(false);
+    const [editingQuotationId, setEditingQuotationId] = useState<number | null>(null);
 
     // Form State
     const [formType, setFormType] = useState<'repair' | 'sales' | 'inspection' | 'maintenance'>('repair');
@@ -1272,356 +1279,414 @@ const Repairs: React.FC = () => {
                             </h2>
                             <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
                         </div>
-                        <form onSubmit={handleSubmit} className={styles.form}>
-                            {/* Summary Header */}
-                            <div className={styles.summaryHeader}>
-                                <div className={styles.formGrid}>
-                                    {/* Linked Type Selector */}
-                                    <div className="mb-2">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
-                                        <select
-                                            value={formType}
-                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                            onChange={(e) => setFormType(e.target.value as any)}
-                                            className="border rounded-md p-2 text-sm form-select"
-                                            style={{
-                                                width: '160px',
-                                                backgroundColor: (formType === 'sales' ? '#e0f2fe' :
-                                                    formType === 'inspection' ? '#f3e8ff' :
-                                                        formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
-                                                color: (formType === 'sales' ? '#0369a1' :
-                                                    formType === 'inspection' ? '#7e22ce' :
-                                                        formType === 'maintenance' ? '#c2410c' : '#854d0e'),
-                                                borderColor: (formType === 'sales' ? '#bae6fd' :
-                                                    formType === 'inspection' ? '#e9d5ff' :
-                                                        formType === 'maintenance' ? '#fed7aa' : '#fde047'),
-                                                fontWeight: 'bold',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
-                                            <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>点検案件</option>
-                                            <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
-                                            <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
-                                        </select>
-                                    </div>
 
-                                    <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-                                            <select
-                                                name="status"
-                                                value={formState.status}
-                                                onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
-                                                className="border rounded-md p-2 text-sm font-bold"
-                                                style={{
-                                                    width: '160px',
-                                                    backgroundColor: getStatusStyle(formState.status).bg,
-                                                    color: getStatusStyle(formState.status).color,
-                                                    borderColor: '#d1d5db'
-                                                }}
-                                            >
-                                                <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
-                                                <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
-                                                <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
-                                            </select>
-                                        </div>
-                                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
-                                            <div>
-                                                <Input
-                                                    type="date"
-                                                    label="受付日"
-                                                    name="orderDate"
-                                                    value={formState.orderDate}
-                                                    onChange={handleInputChange}
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <Input
-                                                    type="date"
-                                                    label="完了日"
-                                                    name="completionDate"
-                                                    value={formState.completionDate}
-                                                    onChange={handleInputChange}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Input
-                                            label="顧客名"
-                                            name="customerName"
-                                            value={formState.customerName}
-                                            onChange={handleInputChange}
-                                            required
-                                            list="customer-list"
-                                            autoComplete="off"
-                                        />
-                                        <datalist id="customer-list">
-                                            {customers.map(c => <option key={c.id} value={c.name} />)}
-                                        </datalist>
-                                    </div>
-
-                                    {/* Show Machine Info for Repairs/Inspection/Maintenance OR if data is present */}
-                                    {((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') || formState.machineModel) && (
-                                        <>
-                                            {/* Machine Select (Optional helper) */}
-                                            {availableMachines.length > 0 && (
-                                                <div className="mb-2">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">登録済機材から選択</label>
-                                                    <select
-                                                        className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                                                        onChange={(e) => {
-                                                            const mId = Number(e.target.value);
-                                                            const machine = allMachines.find(m => m.id === mId);
-                                                            if (machine) {
-                                                                setFormState(prev => ({
-                                                                    ...prev,
-                                                                    machineModel: machine.machineModel,
-                                                                    serialNumber: machine.serialNumber,
-                                                                    hourMeter: machine.hourMeter || ''
-                                                                }));
-                                                            }
-                                                        }}
-                                                        defaultValue=""
-                                                    >
-                                                        <option value="" disabled>機材を選択...</option>
-                                                        {availableMachines.map(m => (
-                                                            <option key={m.id} value={m.id}>
-                                                                {m.machineModel} / {m.serialNumber}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
-
-                                            <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
-                                            <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} required={formType !== 'sales'} />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <div style={{ width: '150px' }}>
-                                                    <Input
-                                                        label="アワーメーター"
-                                                        name="hourMeter"
-                                                        value={formState.hourMeter}
-                                                        onChange={handleInputChange}
-                                                        placeholder="1234.5"
-                                                    />
-                                                </div>
-                                                <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
-                                            </div>
-                                        </>
-                                    )}
-
-                                </div>
-                                <div className={styles.summaryStats}>
-                                    <div style={{ textAlign: 'right', fontSize: '1.05rem', color: '#64748b' }}>
-                                        <div>自社工賃: {totals.categoryTotals.labor.sales.toLocaleString()}</div>
-                                        <div>自社出張費: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
-                                        <div>部品・商品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
-                                        <div>外注費: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
-                                    </div>
-                                    <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: 'auto' }}>
-                                        <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>原価計: {totals.totalCost.toLocaleString()}円</div>
-                                        <div style={{ fontSize: '2rem', color: '#0f172a', lineHeight: '1.2' }}>請求計: {totals.totalSales.toLocaleString()}円</div>
-                                        <div style={{ fontSize: '1.2rem', color: '#10b981', marginTop: '0.5rem' }}>粗利額: {totals.grossProfit.toLocaleString()}円</div>
-                                        <div style={{ fontSize: '1.1rem' }}>粗利率: {Math.round(totals.profitRate)}%</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={styles.notesGrid}>
-                                {formType !== 'sales' && (
-                                    <Textarea label="症状・不具合内容" name="issueDescription" value={formState.issueDescription} onChange={handleInputChange} required />
-                                )}
-                                <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
-                            </div>
-
-                            {/* Photos Section */}
-                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#f8fafc' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>写真管理</h3>
-                                    <div>
-                                        <input
-                                            type="file"
-                                            id="photo-upload"
-                                            multiple
-                                            accept="image/*"
-                                            style={{ display: 'none' }}
-                                            onChange={handlePhotoUpload}
-                                        />
-                                        <label htmlFor="photo-upload">
-                                            <span style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '0.5rem',
-                                                padding: '0.5rem 1rem',
-                                                backgroundColor: 'white',
-                                                border: '1px solid #cbd5e1',
-                                                borderRadius: '0.375rem',
-                                                fontSize: '0.875rem',
-                                                color: '#334155',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                fontWeight: 500
-                                            }}>
-                                                <Camera size={16} /> 写真を追加
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {photos.length === 0 && pendingPhotos.length === 0 ? (
-                                    <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem', border: '2px dashed #e2e8f0', borderRadius: '0.5rem' }}>
-                                        登録された写真はありません
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
-                                        {/* Existing Server Photos */}
-                                        {photos.map(photo => (
-                                            <div key={photo.id} style={{ position: 'relative', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0', aspectRatio: '4/3' }}>
-                                                <img
-                                                    src={photo.filePath}
-                                                    alt={photo.fileName}
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                                                    onClick={() => setPreviewPhoto(photo.filePath)}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handlePhotoDelete(photo.id);
-                                                    }}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: '0.25rem',
-                                                        right: '0.25rem',
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                        border: 'none',
-                                                        borderRadius: '50%',
-                                                        padding: '0.25rem',
-                                                        cursor: 'pointer',
-                                                        color: '#ef4444',
-                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                                                    }}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-
-                                        {/* Pending Local Photos */}
-                                        {pendingPhotos.map((file, index) => (
-                                            <div key={`pending-${index}`} style={{ position: 'relative', borderRadius: '0.5rem', overflow: 'hidden', border: '2px dashed #3b82f6', aspectRatio: '4/3' }}>
-                                                <img
-                                                    src={URL.createObjectURL(file)}
-                                                    alt="pending"
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
-                                                />
-                                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                                                    <span style={{ background: 'rgba(0,0,0,0.5)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>未保存</span>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setPendingPhotos(prev => prev.filter((_, i) => i !== index));
-                                                    }}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: '0.25rem',
-                                                        right: '0.25rem',
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                        border: 'none',
-                                                        borderRadius: '50%',
-                                                        padding: '0.25rem',
-                                                        cursor: 'pointer',
-                                                        color: '#ef4444',
-                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                                                    }}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Lightbox Modal */}
-                            {previewPhoto && (
-                                <div
+                        {/* Tab Navigation */}
+                        {selectedProjectId && (
+                            <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', padding: '0 1rem' }}>
+                                <button
+                                    onClick={() => setActiveTab('details')}
                                     style={{
-                                        position: 'fixed',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                                        zIndex: 9999,
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
+                                        padding: '0.75rem 1rem',
+                                        borderBottom: activeTab === 'details' ? '2px solid #3b82f6' : 'transparent',
+                                        color: activeTab === 'details' ? '#3b82f6' : '#6b7280',
+                                        fontWeight: activeTab === 'details' ? 'bold' : 'normal',
                                         cursor: 'pointer'
                                     }}
-                                    onClick={() => setPreviewPhoto(null)}
                                 >
-                                    <button
+                                    案件詳細
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('quotations')}
+                                    style={{
+                                        padding: '0.75rem 1rem',
+                                        borderBottom: activeTab === 'quotations' ? '2px solid #3b82f6' : 'transparent',
+                                        color: activeTab === 'quotations' ? '#3b82f6' : '#6b7280',
+                                        fontWeight: activeTab === 'quotations' ? 'bold' : 'normal',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    見積履歴
+                                </button>
+                            </div>
+                        )}
+
+                        <div style={{ display: activeTab === 'details' ? 'block' : 'none' }}>
+                            <form onSubmit={handleSubmit} className={styles.form}>
+                                {/* Summary Header */}
+                                <div className={styles.summaryHeader}>
+                                    <div className={styles.formGrid}>
+                                        {/* Linked Type Selector */}
+                                        <div className="mb-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
+                                            <select
+                                                value={formType}
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                onChange={(e) => setFormType(e.target.value as any)}
+                                                className="border rounded-md p-2 text-sm form-select"
+                                                style={{
+                                                    width: '160px',
+                                                    backgroundColor: (formType === 'sales' ? '#e0f2fe' :
+                                                        formType === 'inspection' ? '#f3e8ff' :
+                                                            formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
+                                                    color: (formType === 'sales' ? '#0369a1' :
+                                                        formType === 'inspection' ? '#7e22ce' :
+                                                            formType === 'maintenance' ? '#c2410c' : '#854d0e'),
+                                                    borderColor: (formType === 'sales' ? '#bae6fd' :
+                                                        formType === 'inspection' ? '#e9d5ff' :
+                                                            formType === 'maintenance' ? '#fed7aa' : '#fde047'),
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
+                                                <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>点検案件</option>
+                                                <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
+                                                <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+                                                <select
+                                                    name="status"
+                                                    value={formState.status}
+                                                    onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
+                                                    className="border rounded-md p-2 text-sm font-bold"
+                                                    style={{
+                                                        width: '160px',
+                                                        backgroundColor: getStatusStyle(formState.status).bg,
+                                                        color: getStatusStyle(formState.status).color,
+                                                        borderColor: '#d1d5db'
+                                                    }}
+                                                >
+                                                    <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
+                                                    <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
+                                                    <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
+                                                <div>
+                                                    <Input
+                                                        type="date"
+                                                        label="受付日"
+                                                        name="orderDate"
+                                                        value={formState.orderDate}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Input
+                                                        type="date"
+                                                        label="完了日"
+                                                        name="completionDate"
+                                                        value={formState.completionDate}
+                                                        onChange={handleInputChange}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <Input
+                                                label="顧客名"
+                                                name="customerName"
+                                                value={formState.customerName}
+                                                onChange={handleInputChange}
+                                                required
+                                                list="customer-list"
+                                                autoComplete="off"
+                                            />
+                                            <datalist id="customer-list">
+                                                {customers.map(c => <option key={c.id} value={c.name} />)}
+                                            </datalist>
+                                        </div>
+
+                                        {/* Show Machine Info for Repairs/Inspection/Maintenance OR if data is present */}
+                                        {((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') || formState.machineModel) && (
+                                            <>
+                                                {/* Machine Select (Optional helper) */}
+                                                {availableMachines.length > 0 && (
+                                                    <div className="mb-2">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">登録済機材から選択</label>
+                                                        <select
+                                                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                                                            onChange={(e) => {
+                                                                const mId = Number(e.target.value);
+                                                                const machine = allMachines.find(m => m.id === mId);
+                                                                if (machine) {
+                                                                    setFormState(prev => ({
+                                                                        ...prev,
+                                                                        machineModel: machine.machineModel,
+                                                                        serialNumber: machine.serialNumber,
+                                                                        hourMeter: machine.hourMeter || ''
+                                                                    }));
+                                                                }
+                                                            }}
+                                                            defaultValue=""
+                                                        >
+                                                            <option value="" disabled>機材を選択...</option>
+                                                            {availableMachines.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.machineModel} / {m.serialNumber}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
+
+                                                <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
+                                                <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} required={formType !== 'sales'} />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <div style={{ width: '150px' }}>
+                                                        <Input
+                                                            label="アワーメーター"
+                                                            name="hourMeter"
+                                                            value={formState.hourMeter}
+                                                            onChange={handleInputChange}
+                                                            placeholder="1234.5"
+                                                        />
+                                                    </div>
+                                                    <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
+                                                </div>
+                                            </>
+                                        )}
+
+                                    </div>
+                                    <div className={styles.summaryStats}>
+                                        <div style={{ textAlign: 'right', fontSize: '1.05rem', color: '#64748b' }}>
+                                            <div>自社工賃: {totals.categoryTotals.labor.sales.toLocaleString()}</div>
+                                            <div>自社出張費: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
+                                            <div>部品・商品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
+                                            <div>外注費: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: 'auto' }}>
+                                            <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>原価計: {totals.totalCost.toLocaleString()}円</div>
+                                            <div style={{ fontSize: '2rem', color: '#0f172a', lineHeight: '1.2' }}>請求計: {totals.totalSales.toLocaleString()}円</div>
+                                            <div style={{ fontSize: '1.2rem', color: '#10b981', marginTop: '0.5rem' }}>粗利額: {totals.grossProfit.toLocaleString()}円</div>
+                                            <div style={{ fontSize: '1.1rem' }}>粗利率: {Math.round(totals.profitRate)}%</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.notesGrid}>
+                                    {formType !== 'sales' && (
+                                        <Textarea label="症状・不具合内容" name="issueDescription" value={formState.issueDescription} onChange={handleInputChange} required />
+                                    )}
+                                    <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
+                                </div>
+
+                                {/* Photos Section */}
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#f8fafc' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>写真管理</h3>
+                                        <div>
+                                            <input
+                                                type="file"
+                                                id="photo-upload"
+                                                multiple
+                                                accept="image/*"
+                                                style={{ display: 'none' }}
+                                                onChange={handlePhotoUpload}
+                                            />
+                                            <label htmlFor="photo-upload">
+                                                <span style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    padding: '0.5rem 1rem',
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #cbd5e1',
+                                                    borderRadius: '0.375rem',
+                                                    fontSize: '0.875rem',
+                                                    color: '#334155',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    fontWeight: 500
+                                                }}>
+                                                    <Camera size={16} /> 写真を追加
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {photos.length === 0 && pendingPhotos.length === 0 ? (
+                                        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem', border: '2px dashed #e2e8f0', borderRadius: '0.5rem' }}>
+                                            登録された写真はありません
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                                            {/* Existing Server Photos */}
+                                            {photos.map(photo => (
+                                                <div key={photo.id} style={{ position: 'relative', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0', aspectRatio: '4/3' }}>
+                                                    <img
+                                                        src={photo.filePath}
+                                                        alt={photo.fileName}
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                                                        onClick={() => setPreviewPhoto(photo.filePath)}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handlePhotoDelete(photo.id);
+                                                        }}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '0.25rem',
+                                                            right: '0.25rem',
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                            border: 'none',
+                                                            borderRadius: '50%',
+                                                            padding: '0.25rem',
+                                                            cursor: 'pointer',
+                                                            color: '#ef4444',
+                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                            {/* Pending Local Photos */}
+                                            {pendingPhotos.map((file, index) => (
+                                                <div key={`pending-${index}`} style={{ position: 'relative', borderRadius: '0.5rem', overflow: 'hidden', border: '2px dashed #3b82f6', aspectRatio: '4/3' }}>
+                                                    <img
+                                                        src={URL.createObjectURL(file)}
+                                                        alt="pending"
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                                                    />
+                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                                                        <span style={{ background: 'rgba(0,0,0,0.5)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>未保存</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPendingPhotos(prev => prev.filter((_, i) => i !== index));
+                                                        }}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '0.25rem',
+                                                            right: '0.25rem',
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                            border: 'none',
+                                                            borderRadius: '50%',
+                                                            padding: '0.25rem',
+                                                            cursor: 'pointer',
+                                                            color: '#ef4444',
+                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Lightbox Modal */}
+                                {previewPhoto && (
+                                    <div
                                         style={{
-                                            position: 'absolute',
-                                            top: '1rem',
-                                            right: '1rem',
-                                            background: 'none',
-                                            border: 'none',
-                                            color: 'white',
+                                            position: 'fixed',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                                            zIndex: 9999,
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
                                             cursor: 'pointer'
                                         }}
                                         onClick={() => setPreviewPhoto(null)}
                                     >
-                                        <X size={32} />
-                                    </button>
-                                    <img
-                                        src={previewPhoto}
-                                        alt="Preview"
-                                        style={{
-                                            maxWidth: '90vw',
-                                            maxHeight: '90vh',
-                                            objectFit: 'contain',
-                                            borderRadius: '4px',
-                                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                                        }}
-                                        onClick={(e) => e.stopPropagation()} // Prevent close when clicking image
-                                    />
-                                </div>
-                            )}
-
-                            {/* Details Sections */}
-                            <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
-                                {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false)}
-                                {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false)}
-                                {renderDetailTable('自社発注部品・商品', 'part', 'part', true)}
-
-                                {renderDetailTable('外注費 (工賃)', 'outsourcing', 'labor', true)}
-                                {renderDetailTable('外注費 (出張費)', 'outsourcing', 'travel', true)}
-                                {renderDetailTable('外注費 (部品)', 'outsourcing', 'part', true)}
-                                {renderDetailTable('その他', 'other', undefined, false)}
-                            </div>
-
-                            <div className={styles.formActions}>
-                                {selectedProjectId && (
-                                    <Button type="button" variant="ghost" onClick={() => handleDeleteProject(selectedProjectId)} style={{ color: '#ef4444', marginRight: 'auto' }}>
-                                        <Trash2 size={16} style={{ marginRight: '4px' }} /> 削除
-                                    </Button>
+                                        <button
+                                            style={{
+                                                position: 'absolute',
+                                                top: '1rem',
+                                                right: '1rem',
+                                                background: 'none',
+                                                border: 'none',
+                                                color: 'white',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => setPreviewPhoto(null)}
+                                        >
+                                            <X size={32} />
+                                        </button>
+                                        <img
+                                            src={previewPhoto}
+                                            alt="Preview"
+                                            style={{
+                                                maxWidth: '90vw',
+                                                maxHeight: '90vh',
+                                                objectFit: 'contain',
+                                                borderRadius: '4px',
+                                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                                            }}
+                                            onClick={(e) => e.stopPropagation()} // Prevent close when clicking image
+                                        />
+                                    </div>
                                 )}
-                                <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>キャンセル</Button>
-                                <Button type="submit" disabled={isSubmitting}>
-                                    {isSubmitting ? '保存中...' : (selectedProjectId ? '更新する' : '保存する')}
-                                </Button>
+
+                                {/* Details Sections */}
+                                <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
+                                    {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false)}
+                                    {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false)}
+                                    {renderDetailTable('自社発注部品・商品', 'part', 'part', true)}
+
+                                    {renderDetailTable('外注費 (工賃)', 'outsourcing', 'labor', true)}
+                                    {renderDetailTable('外注費 (出張費)', 'outsourcing', 'travel', true)}
+                                    {renderDetailTable('外注費 (部品)', 'outsourcing', 'part', true)}
+                                    {renderDetailTable('その他', 'other', undefined, false)}
+                                </div>
+
+                                <div className={styles.formActions}>
+                                    {selectedProjectId && (
+                                        <Button type="button" variant="ghost" onClick={() => handleDeleteProject(selectedProjectId)} style={{ color: '#ef4444', marginRight: 'auto' }}>
+                                            <Trash2 size={16} style={{ marginRight: '4px' }} /> 削除
+                                        </Button>
+                                    )}
+                                    <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>キャンセル</Button>
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? '保存中...' : (selectedProjectId ? '更新する' : '保存する')}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>{/* End Details Tab */}
+
+                        {/* Quotations Tab */}
+                        {selectedProjectId && activeTab === 'quotations' && (
+                            <div style={{ padding: '1rem', height: 'calc(90vh - 120px)', overflow: 'auto' }}>
+                                <QuotationList
+                                    projectId={selectedProjectId}
+                                    onEdit={(id) => {
+                                        setEditingQuotationId(id);
+                                        setShowQuotationEdit(true);
+                                    }}
+                                    onApply={async (id) => {
+                                        // Apply logic
+                                        try {
+                                            await fetch(`${API_BASE_URL}/quotations/${id}/apply`, { method: 'POST' });
+                                            alert('反映しました。画面を更新してください。(自動リロードは保留)');
+                                            fetchProjectDetails(selectedProjectId); // Refresh details
+                                            setActiveTab('details');
+                                        } catch (e) {
+                                            console.error(e);
+                                            alert('反映に失敗しました');
+                                        }
+                                    }}
+                                />
                             </div>
-                        </form>
+                        )}
                     </div>
-                </div>
+                </div >
             )
             }
             {/* Delete Confirmation Modal */}
