@@ -1,5 +1,7 @@
 {
-  "files": [],
+  "include": [
+    "api/_server/**/*"
+  ],
   "references": [
     {
       "path": "./tsconfig.app.json"
