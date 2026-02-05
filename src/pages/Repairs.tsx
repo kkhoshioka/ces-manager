@@ -205,7 +205,7 @@ const Repairs: React.FC = () => {
     const addDetail = (type: DetailItem['lineType'], subType: string = '') => {
         nextIdRef.current += 1;
 
-        if (type === 'travel' || (type === 'outsourcing' && subType === 'travel')) {
+        if (type === 'travel') {
             // Add Time and Distance rows
             const timeRow: DetailItem = {
                 lineType: type,
@@ -221,7 +221,7 @@ const Repairs: React.FC = () => {
                 amountCost: 0,
                 amountSales: type === 'travel' ? systemSettings.defaultTravelTimeRate : 0,
                 originalIndex: nextIdRef.current,
-                outsourcingDetailType: type === 'outsourcing' ? 'travel' : undefined
+                outsourcingDetailType: undefined
             };
             nextIdRef.current += 1;
 
@@ -239,7 +239,7 @@ const Repairs: React.FC = () => {
                 amountCost: 0,
                 amountSales: type === 'travel' ? systemSettings.defaultTravelDistanceRate * 10 : 0,
                 originalIndex: nextIdRef.current,
-                outsourcingDetailType: type === 'outsourcing' ? 'travel' : undefined
+                outsourcingDetailType: undefined
             };
             setDetails(prev => [...prev, timeRow, distanceRow]);
         } else {
@@ -792,7 +792,7 @@ const Repairs: React.FC = () => {
 
                             {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
                             {/* Travel Type has split columns */}
-                            {(type === 'travel' || (type === 'outsourcing' && subType === 'travel')) ? (
+                            {type === 'travel' ? (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'left', width: '35%' }}>移動場所・区間</th>
                                     <th style={{ padding: '0.5rem', textAlign: 'center', width: '20%' }}>項目</th>
@@ -930,7 +930,7 @@ const Repairs: React.FC = () => {
                                     )}
 
                                     {/* Description / Location Column */}
-                                    {(type === 'travel' || (type === 'outsourcing' && subType === 'travel')) ? (
+                                    {type === 'travel' ? (
                                         <>
                                             {/* Location Input Column */}
                                             <td style={{ padding: '0.25rem' }}>
@@ -1017,14 +1017,14 @@ const Repairs: React.FC = () => {
                                                 min="0"
                                                 step="0.1"
                                                 placeholder={
-                                                    (type === 'travel' || (type === 'outsourcing' && subType === 'travel')) && detail.travelType === 'distance' ? '10' : '1.0'
+                                                    type === 'travel' && detail.travelType === 'distance' ? '10' : '1.0'
                                                 }
                                             />
                                             {/* Unit Logic */}
                                             <span className={styles.currencyUnit}>
                                                 {type === 'labor' ? 'H' :
-                                                    ((type === 'travel' || (type === 'outsourcing' && subType === 'travel')) && detail.travelType === 'distance' ? 'km' :
-                                                        ((type === 'travel' || (type === 'outsourcing' && subType === 'travel')) ? 'H' : ''))}
+                                                    (type === 'travel' && detail.travelType === 'distance' ? 'km' :
+                                                        (type === 'travel' ? 'H' : ''))}
                                             </span>
                                         </div>
                                     </td>
