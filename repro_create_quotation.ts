@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // const API_URL = 'http://localhost:3000/api';
-const API_URL = 'https://ces-manager.vercel.app/api';
+// const API_URL = 'https://ces-manager.vercel.app/api';
+const API_URL = 'https://ces-manager.onrender.com/api';
 
 async function testQuotationCreation() {
     console.log(`Using API URL: ${API_URL}`);
