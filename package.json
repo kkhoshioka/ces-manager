@@ -10,7 +10,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && npx prisma migrate deploy",
     "debug-csv": "tsx verify_csv_export.ts"
   },
   "dependencies": {
