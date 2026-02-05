@@ -26,7 +26,7 @@ ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "paymentDate" TIMESTAMP(3);
 ALTER TABLE "ProjectDetail" ADD COLUMN IF NOT EXISTS "date" TIMESTAMP(3);
 
 -- CreateTable SystemSetting
-CREATE TABLE "SystemSetting" (
+CREATE TABLE IF NOT EXISTS "SystemSetting" (
     "id" SERIAL NOT NULL,
     "key" TEXT NOT NULL,
     "value" TEXT NOT NULL,
@@ -37,10 +37,10 @@ CREATE TABLE "SystemSetting" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "SystemSetting_key_key" ON "SystemSetting"("key");
+CREATE UNIQUE INDEX IF NOT EXISTS "SystemSetting_key_key" ON "SystemSetting"("key");
 
 -- CreateTable MonthlyBillStatus
-CREATE TABLE "MonthlyBillStatus" (
+CREATE TABLE IF NOT EXISTS "MonthlyBillStatus" (
     "id" SERIAL NOT NULL,
     "year" INTEGER NOT NULL,
     "month" INTEGER NOT NULL,
@@ -54,13 +54,18 @@ CREATE TABLE "MonthlyBillStatus" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "MonthlyBillStatus_year_month_customerId_key" ON "MonthlyBillStatus"("year", "month", "customerId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MonthlyBillStatus_year_month_customerId_key" ON "MonthlyBillStatus"("year", "month", "customerId");
 
 -- AddForeignKey
-ALTER TABLE "MonthlyBillStatus" ADD CONSTRAINT "MonthlyBillStatus_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'MonthlyBillStatus_customerId_fkey') THEN
+        ALTER TABLE "MonthlyBillStatus" ADD CONSTRAINT "MonthlyBillStatus_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- CreateTable Quotation
-CREATE TABLE "Quotation" (
+CREATE TABLE IF NOT EXISTS "Quotation" (
     "id" SERIAL NOT NULL,
     "projectId" INTEGER NOT NULL,
     "quotationNumber" TEXT,
@@ -77,10 +82,15 @@ CREATE TABLE "Quotation" (
 );
 
 -- AddForeignKey
-ALTER TABLE "Quotation" ADD CONSTRAINT "Quotation_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Quotation_projectId_fkey') THEN
+        ALTER TABLE "Quotation" ADD CONSTRAINT "Quotation_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- CreateTable QuotationDetail
-CREATE TABLE "QuotationDetail" (
+CREATE TABLE IF NOT EXISTS "QuotationDetail" (
     "id" SERIAL NOT NULL,
     "quotationId" INTEGER NOT NULL,
     "lineType" TEXT NOT NULL,
@@ -99,4 +109,9 @@ CREATE TABLE "QuotationDetail" (
 );
 
 -- AddForeignKey
-ALTER TABLE "QuotationDetail" ADD CONSTRAINT "QuotationDetail_quotationId_fkey" FOREIGN KEY ("quotationId") REFERENCES "Quotation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'QuotationDetail_quotationId_fkey') THEN
+        ALTER TABLE "QuotationDetail" ADD CONSTRAINT "QuotationDetail_quotationId_fkey" FOREIGN KEY ("quotationId") REFERENCES "Quotation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
