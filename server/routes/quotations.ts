@@ -16,7 +16,10 @@ router.get('/projects/:projectId/quotations', async (req, res) => {
         res.json(quotations);
     } catch (error) {
         console.error('Error fetching quotations:', error);
-        res.status(500).json({ error: 'Failed to fetch quotations' });
+        res.status(500).json({
+            error: 'Failed to fetch quotations',
+            details: error instanceof Error ? error.message : String(error)
+        });
     }
 });
 
@@ -88,7 +91,10 @@ router.post('/projects/:projectId/quotations', async (req, res) => {
         res.json(newQuotation);
     } catch (error) {
         console.error('Error creating quotation:', error);
-        res.status(500).json({ error: 'Failed to create quotation' });
+        res.status(500).json({
+            error: 'Failed to create quotation',
+            details: error instanceof Error ? error.message : String(error)
+        });
     }
 });
 
