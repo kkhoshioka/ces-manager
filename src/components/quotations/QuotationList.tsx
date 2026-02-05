@@ -53,9 +53,10 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
             const res = await axios.post(`/api/projects/${projectId}/quotations`, { cloneFromProject: false });
             onEdit(res.data.id);
             fetchQuotations();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert('作成に失敗しました');
+            const message = err.response?.data?.details || err.response?.data?.error || '作成に失敗しました';
+            alert(`作成に失敗しました: ${message}`);
         }
     };
 
@@ -65,9 +66,10 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
             const res = await axios.post(`/api/projects/${projectId}/quotations`, { cloneFromProject: true });
             onEdit(res.data.id);
             fetchQuotations();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert('作成に失敗しました');
+            const message = err.response?.data?.details || err.response?.data?.error || '作成に失敗しました';
+            alert(`作成に失敗しました: ${message}`);
         }
     };
 
