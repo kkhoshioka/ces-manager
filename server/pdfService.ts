@@ -21,6 +21,7 @@ const fonts = {
 const printer = new PdfPrinter(fonts);
 
 interface ProjectDetail {
+    id?: number; // Added for tracking
     description: string;
     quantity: number | string;
     unitPrice: number | string;
@@ -52,41 +53,55 @@ const formatDate = (date: Date | string | null) => {
 };
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
+// Helper: Group Travel Time/Distance into one "Travel Expenses" line
 const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
     const processed: ProjectDetail[] = [];
-    let skipNext = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const processedIds = new Set<number>();
 
     for (let i = 0; i < details.length; i++) {
-        if (skipNext) {
-            skipNext = false;
-            continue;
-        }
-
         const current = details[i];
-        const next = details[i + 1];
+        // If no ID, rely on index as fallback unique ID (though DB details should have IDs)
+        const currentId = current.id || (i * -1);
 
-        // Group Company Travel (Time + Distance) if adjacent and same location (and date)
-        const isTravelPair = current.lineType === 'travel' &&
-            next &&
-            next.lineType === 'travel' &&
-            (current.description || '') === (next.description || '') &&
-            (current.date ? new Date(current.date).getTime() : 0) === (next.date ? new Date(next.date).getTime() : 0);
+        if (processedIds.has(currentId)) continue;
 
-        if (isTravelPair) {
-            const amount1 = Number(current.quantity) * Number(current.unitPrice);
-            const amount2 = Number(next.quantity) * Number(next.unitPrice);
+        if (current.lineType === 'travel') {
+            let totalAmount = Number(current.quantity) * Number(current.unitPrice);
+            processedIds.add(currentId);
+
+            // Search for other travel items with same description and date
+            for (let j = i + 1; j < details.length; j++) {
+                const other = details[j];
+                const otherId = other.id || (j * -1);
+
+                if (processedIds.has(otherId)) continue;
+
+                // Match Logic:
+                // 1. Line Type must be travel
+                // 2. Description must loosely match
+                // 3. Date must match (or both empty)
+                const isMatch = other.lineType === 'travel' &&
+                    (current.description || '') === (other.description || '') &&
+                    (current.date ? new Date(current.date).getTime() : 0) === (other.date ? new Date(other.date).getTime() : 0);
+
+                if (isMatch) {
+                    totalAmount += Number(other.quantity) * Number(other.unitPrice);
+                    processedIds.add(otherId);
+                }
+            }
 
             processed.push({
                 ...current,
                 description: `${current.description} (出張費)`,
                 quantity: 1,
-                unitPrice: amount1 + amount2,
-                lineType: 'travel', // Keep as travel or useful type
-                date: current.date
+                unitPrice: totalAmount,
+                lineType: 'travel'
             });
-            skipNext = true;
+
         } else {
             processed.push(current);
+            processedIds.add(currentId);
         }
     }
 
