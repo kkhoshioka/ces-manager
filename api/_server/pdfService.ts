@@ -1,26 +1,34 @@
-// import PdfPrinter from 'pdfmake';
+import PdfPrinter from 'pdfmake';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Define font paths properly
-const notoSansRegular = path.join(__dirname, 'fonts/NotoSansJP-Regular.otf');
-const notoSansBold = path.join(__dirname, 'fonts/NotoSansJP-Bold.otf');
+// Define font paths properly (Works for Local, Vercel, Render)
+// Vercel/Render root is process.cwd(). Build creates api/_build/fonts.
+const fontDir = path.join(process.cwd(), 'api/_build/fonts');
+const notoSansRegular = path.join(fontDir, 'NotoSansJP-Regular.otf');
+const notoSansBold = path.join(fontDir, 'NotoSansJP-Bold.otf');
 
-/*
+const fonts = {
+    Roboto: {
+        normal: notoSansRegular,
+        bold: notoSansBold,
+        italics: notoSansRegular, // Fallback
+        bolditalics: notoSansBold // Fallback
+    }
+};
+
 let printer: PdfPrinter;
 try {
     printer = new PdfPrinter(fonts);
 } catch (e) {
     console.error('Failed to initialize PdfPrinter (Font issue?):', e);
-    // Fallback or let it fail later
+    // Fallback to default English fonts if Japanese fail (better than crash)
     printer = new PdfPrinter({ Roboto: { normal: 'Helvetica', bold: 'Helvetica-Bold', italics: 'Helvetica-Oblique', bolditalics: 'Helvetica-BoldOblique' } });
 }
-*/
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const printer: any = null;
+// const printer: any = null;
 
 interface ProjectDetail {
     id?: number; // Added for tracking

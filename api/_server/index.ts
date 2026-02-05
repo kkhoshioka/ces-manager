@@ -742,7 +742,11 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
 
     } catch (error) {
         console.error('PDF Generation Error:', error);
-        res.status(500).json({ error: 'Failed to generate PDF' });
+        res.status(500).json({
+            error: 'Failed to generate PDF',
+            details: error instanceof Error ? error.message : String(error),
+            stack: process.env.NODE_ENV !== 'production' ? (error instanceof Error ? error.stack : undefined) : undefined
+        });
     }
 });
 
