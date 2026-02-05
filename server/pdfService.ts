@@ -18,7 +18,14 @@ const fonts = {
     }
 };
 
-const printer = new PdfPrinter(fonts);
+let printer: PdfPrinter;
+try {
+    printer = new PdfPrinter(fonts);
+} catch (e) {
+    console.error('Failed to initialize PdfPrinter (Font issue?):', e);
+    // Fallback or let it fail later
+    printer = new PdfPrinter({ Roboto: { normal: 'Helvetica', bold: 'Helvetica-Bold', italics: 'Helvetica-Oblique', bolditalics: 'Helvetica-BoldOblique' } });
+}
 
 interface ProjectDetail {
     id?: number; // Added for tracking
