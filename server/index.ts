@@ -673,7 +673,11 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
             include: {
                 customer: true,
                 customerMachine: true,
-                details: true
+                details: {
+                    orderBy: {
+                        id: 'asc'
+                    }
+                }
             }
         });
 
@@ -1575,7 +1579,11 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
             include: {
                 customer: true,
                 customerMachine: true,
-                details: true
+                details: {
+                    orderBy: {
+                        id: 'asc'
+                    }
+                }
             }
         });
 

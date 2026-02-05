@@ -65,8 +65,14 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
         const current = details[i];
         const next = details[i + 1];
 
-        // Group Company Travel (Time + Distance) if adjacent and same location
-        if (current.lineType === 'travel' && next && next.lineType === 'travel' && current.description === next.description) {
+        // Group Company Travel (Time + Distance) if adjacent and same location (and date)
+        const isTravelPair = current.lineType === 'travel' &&
+            next &&
+            next.lineType === 'travel' &&
+            (current.description || '') === (next.description || '') &&
+            (current.date ? new Date(current.date).getTime() : 0) === (next.date ? new Date(next.date).getTime() : 0);
+
+        if (isTravelPair) {
             const amount1 = Number(current.quantity) * Number(current.unitPrice);
             const amount2 = Number(next.quantity) * Number(next.unitPrice);
 
