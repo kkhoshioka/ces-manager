@@ -23,7 +23,7 @@ ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "isPaymentReceived" BOOLEAN NOT N
 ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "paymentDate" TIMESTAMP(3);
 
 -- AlterTable ProjectDetail
-ALTER TABLE "ProjectDetail" ADD COLUMN "date" TIMESTAMP(3);
+ALTER TABLE "ProjectDetail" ADD COLUMN IF NOT EXISTS "date" TIMESTAMP(3);
 
 -- CreateTable SystemSetting
 CREATE TABLE "SystemSetting" (
