@@ -112,6 +112,22 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
                 lineType: current.lineType // Keep original line type (travel or outsourcing)
             });
 
+        } else if (current.lineType === 'labor') {
+            // Transform Labor to "1 set"
+            const totalAmount = Number(current.quantity) * Number(current.unitPrice);
+            processed.push({
+                ...current,
+                quantity: 1,
+                unitPrice: totalAmount,
+                // Unit '式' will be handled by the table generator based on context or hardcoded
+                // In generateQuotation it uses '式' hardcoded.
+                // In generateInvoice it might need to match.
+                // For safety, if generateInvoice relies on no unit, this is fine. 
+                // However, we want '1 set'.
+                // Ideally we should pass a unit field but interface doesn't have it.
+                // But since quantity is 1 and price is total, it effectively acts as a set.
+            });
+            processedIds.add(currentId);
         } else {
             processed.push(current);
             processedIds.add(currentId);
