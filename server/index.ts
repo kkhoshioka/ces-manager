@@ -1592,11 +1592,14 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const safeDetails = project.details.map((d: any) => ({
             description: d.description,
             quantity: Number(d.quantity),
             unitPrice: Number(d.unitPrice),
-            lineType: d.lineType
+            lineType: d.lineType,
+            date: d.date,
+            outsourcingDetailType: d.outsourcingDetailType
         }));
 
         const pdfData = {

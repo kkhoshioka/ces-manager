@@ -28,6 +28,7 @@ interface ProjectDetail {
     lineType?: string; // Added for grouping logic
     date?: string | Date; // Added Date
     travelType?: string;
+    outsourcingDetailType?: string;
 }
 
 interface Customer {
@@ -53,8 +54,6 @@ const formatDate = (date: Date | string | null) => {
 };
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
-// Helper: Group Travel Time/Distance into one "Travel Expenses" line
-// Helper: Group Travel Time/Distance into one "Travel Expenses" line
 const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
     const processed: ProjectDetail[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,28 +66,35 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
             .trim();
     };
 
+    const isTravelItem = (d: ProjectDetail) => {
+        return d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel');
+    };
+
     for (let i = 0; i < details.length; i++) {
         const current = details[i];
         const currentId = current.id || (i * -1);
 
         if (processedIds.has(currentId)) continue;
 
-        if (current.lineType === 'travel') {
+        if (isTravelItem(current)) {
             let totalAmount = Number(current.quantity) * Number(current.unitPrice);
             processedIds.add(currentId);
 
             const currentDesc = normalizeDescription(current.description);
+            const isOutsourcing = current.lineType === 'outsourcing';
 
-            // Search for other travel items with same description and date
+            // Search for other travel items with same description, date, and type (internal vs outsourcing)
             for (let j = i + 1; j < details.length; j++) {
                 const other = details[j];
                 const otherId = other.id || (j * -1);
 
                 if (processedIds.has(otherId)) continue;
+                if (!isTravelItem(other)) continue;
 
                 const otherDesc = normalizeDescription(other.description);
+                const otherIsOutsourcing = other.lineType === 'outsourcing';
 
-                const isMatch = other.lineType === 'travel' &&
+                const isMatch = isOutsourcing === otherIsOutsourcing &&
                     currentDesc === otherDesc &&
                     (current.date ? new Date(current.date).getTime() : 0) === (other.date ? new Date(other.date).getTime() : 0);
 
@@ -100,10 +106,10 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
 
             processed.push({
                 ...current,
-                description: `${currentDesc} (出張費)`,
+                description: `［出張費］${currentDesc}`,
                 quantity: 1,
                 unitPrice: totalAmount,
-                lineType: 'travel'
+                lineType: current.lineType // Keep original line type (travel or outsourcing)
             });
 
         } else {
