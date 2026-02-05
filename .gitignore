@@ -25,3 +25,8 @@ dist-ssr
 
 /src/generated/prisma
 verify_*.ts 
+
+# Generated TS artifacts
+*.tsbuildinfo
+api/_build
+# *.d.ts # Commented out to be safe, but ideally we ignore generated ones.

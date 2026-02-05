@@ -1,3 +1,2 @@
-import app from '../server/simple.js';
-
+import app from './_build/index.js';
 export default app;
