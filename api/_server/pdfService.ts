@@ -6,8 +6,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Define font paths properly (Works for Local, Vercel, Render)
-// Vercel/Render root is process.cwd(). Build creates api/_build/fonts.
-const fontDir = path.join(process.cwd(), 'api/_build/fonts');
+// Vercel/Render root is process.cwd(). Source is in api/_server/fonts.
+const fontDir = path.join(process.cwd(), 'api/_server/fonts');
 const notoSansRegular = path.join(fontDir, 'NotoSansJP-Regular.otf');
 const notoSansBold = path.join(fontDir, 'NotoSansJP-Bold.otf');
 

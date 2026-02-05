@@ -1,7 +1,7 @@
 {
     "functions": {
         "api/index.ts": {
-            "includeFiles": "api/_build/fonts/**"
+            "includeFiles": "api/_server/fonts/**"
         }
     },
     "rewrites": [
