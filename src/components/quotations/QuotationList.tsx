@@ -31,9 +31,15 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
     const fetchQuotations = async () => {
         try {
             const res = await axios.get<Quotation[]>(`/api/projects/${projectId}/quotations`);
-            setQuotations(res.data);
+            if (Array.isArray(res.data)) {
+                setQuotations(res.data);
+            } else {
+                console.error('API response is not an array:', res.data);
+                setQuotations([]);
+            }
         } catch (err) {
             console.error(err);
+            setQuotations([]);
         } finally {
             setLoading(false);
         }

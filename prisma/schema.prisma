@@ -312,4 +312,8 @@ model QuotationDetail {
   outsourcingDetailType String?
   
   quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  
+  remarks         String?
+  supplier        String?
+  supplierId      Int?
 }
