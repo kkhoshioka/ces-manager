@@ -66,21 +66,31 @@ if (process.env.NODE_ENV !== 'production' || process.argv[1].endsWith('index.ts'
 // Temporary Maintenance Route for Migration (since Shell is restricted)
 import { exec } from 'child_process';
 app.get('/api/maintenance/migrate', (req, res) => {
-    // Basic security check (optional but recommended, here just using simple secret param if needed, but keeping open for quick fix)
-    console.log('Triggering manual migration...');
-    exec('npx prisma migrate deploy', (error, stdout, stderr) => {
+    // action: 'deploy' | 'resolve'
+    const action = req.query.action || 'deploy';
+    let cmd = 'npx prisma migrate deploy';
+
+    if (action === 'resolve') {
+        const migrationName = '20260206120000_update_schema';
+        cmd = `npx prisma migrate resolve --rolled-back ${migrationName}`;
+    }
+
+    console.log(`Triggering manual maintenance: ${action} (${cmd})`);
+
+    exec(cmd, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Migration error: ${error.message}`);
+            console.error(`Maintenance error (${action}): ${error.message}`);
             return res.status(500).json({
-                error: 'Migration failed',
+                error: `Maintenance failed: ${action}`,
                 details: error.message,
                 stderr: stderr
             });
         }
-        console.log(`Migration Output: ${stdout}`);
+        console.log(`Maintenance Output: ${stdout}`);
         res.json({
             success: true,
-            message: 'Migration executed successfully',
+            action: action,
+            message: 'Command executed successfully',
             output: stdout
         });
     });
