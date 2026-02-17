@@ -335,6 +335,17 @@ const Repairs: React.FC = () => {
         });
     };
 
+    const handleLaborToggle = (index: number, type: 'time' | 'fixed') => {
+        setDetails(prevDetails => {
+            const newDetails = [...prevDetails];
+            const item = { ...newDetails[index] }; // Copy item
+            item.laborType = type;
+            item.description = type === 'fixed' ? '一式' : '時間';
+            newDetails[index] = item;
+            return newDetails;
+        });
+    };
+
     const totals = useMemo(() => {
         let totalCost = 0;
         let totalSales = 0;
@@ -829,7 +840,10 @@ const Repairs: React.FC = () => {
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '70px', whiteSpace: 'nowrap' }}>
-                                数量
+                                {(type === 'labor' || (type === 'outsourcing' && subType === 'labor'))
+                                    ? (sectionDetails.some(d => d.laborType === 'fixed') ? '数量' : '時間')
+                                    : '数量'
+                                }
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
@@ -1095,7 +1109,7 @@ const Repairs: React.FC = () => {
                                                                 type="radio"
                                                                 name={`laborType-${detail.originalIndex}`}
                                                                 checked={detail.laborType !== 'fixed'}
-                                                                onChange={() => handleDetailChange(detail.originalIndex, 'laborType' as any, 'time')}
+                                                                onChange={() => handleLaborToggle(detail.originalIndex, 'time')}
                                                             /> H
                                                         </label>
                                                         <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -1103,7 +1117,7 @@ const Repairs: React.FC = () => {
                                                                 type="radio"
                                                                 name={`laborType-${detail.originalIndex}`}
                                                                 checked={detail.laborType === 'fixed'}
-                                                                onChange={() => handleDetailChange(detail.originalIndex, 'laborType' as any, 'fixed')}
+                                                                onChange={() => handleLaborToggle(detail.originalIndex, 'fixed')}
                                                             /> 式
                                                         </label>
                                                     </div>
