@@ -829,7 +829,7 @@ const Repairs: React.FC = () => {
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '70px', whiteSpace: 'nowrap' }}>
-                                {(type === 'labor' || (type === 'outsourcing' && subType === 'labor')) ? '時間' : '数量'}
+                                数量
                             </th>
                             {(type !== 'labor' && type !== 'travel') && (
                                 <>
