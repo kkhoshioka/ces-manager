@@ -340,7 +340,7 @@ const Repairs: React.FC = () => {
             const newDetails = [...prevDetails];
             const item = { ...newDetails[index] }; // Copy item
             item.laborType = type;
-            item.description = type === 'fixed' ? '一式' : '時間';
+            // item.description updated removed as per request (use placeholder)
             newDetails[index] = item;
             return newDetails;
         });
@@ -379,6 +379,7 @@ const Repairs: React.FC = () => {
 
         return { totalCost, totalSales, grossProfit, profitRate, categoryTotals };
     }, [details]);
+
 
     const loadProjects = async () => {
         setIsLoadingList(true);
@@ -1064,7 +1065,11 @@ const Repairs: React.FC = () => {
                                                     className={styles.tableInput}
                                                     value={detail.description}
                                                     onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
-                                                    placeholder={type === 'labor' ? '作業内容（点検、清掃、部品交換など）' : '詳細内容'}
+                                                    placeholder={
+                                                        type === 'labor'
+                                                            ? (detail.laborType === 'fixed' ? '一式' : '時間')
+                                                            : '詳細内容'
+                                                    }
                                                 />
                                             </td>
                                         </>
