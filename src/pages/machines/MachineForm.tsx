@@ -28,6 +28,7 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
     const [nextInspectionDate, setNextInspectionDate] = useState(machine?.nextInspectionDate ? machine.nextInspectionDate.toString().split('T')[0] : '');
     const [hourMeter, setHourMeter] = useState(machine?.hourMeter || '');
     const [notes, setNotes] = useState(machine?.notes || '');
+    const [enableInspectionAlert, setEnableInspectionAlert] = useState(machine?.enableInspectionAlert !== false); // Default true if undefined
     const [productCategoryId, setProductCategoryId] = useState<string>(machine?.productCategoryId?.toString() || '');
     const [categories, setCategories] = useState<{ id: number; section: string; name: string; code: string | null }[]>([]);
 
@@ -76,7 +77,8 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
             nextInspectionDate: nextInspectionDate ? new Date(nextInspectionDate) : null,
             hourMeter: hourMeter || null,
             notes,
-            productCategoryId: productCategoryId ? Number(productCategoryId) : null
+            productCategoryId: productCategoryId ? Number(productCategoryId) : null,
+            enableInspectionAlert
         };
 
         try {

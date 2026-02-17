@@ -33,7 +33,8 @@ const MachineRegistry: React.FC = () => {
                 const getPriority = (m: CustomerMachine) => {
                     if (!m.nextInspectionDate) return 0;
                     const nextDate = new Date(m.nextInspectionDate);
-                    return nextDate <= oneMonthLater ? 2 : 1;
+                    if (nextDate <= oneMonthLater && m.enableInspectionAlert !== false) return 2;
+                    return 1;
                 };
                 return getPriority(b) - getPriority(a);
             });
@@ -145,7 +146,7 @@ const MachineRegistry: React.FC = () => {
                                     const now = new Date();
                                     const oneMonthLater = new Date();
                                     oneMonthLater.setMonth(now.getMonth() + 1);
-                                    if (nextDate <= oneMonthLater) {
+                                    if (nextDate <= oneMonthLater && machine.enableInspectionAlert !== false) {
                                         isAlert = true;
                                     }
                                 }

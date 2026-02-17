@@ -65,6 +65,7 @@ model CustomerMachine {
   deliveryDate      DateTime? // 納入日
   lastInspectionDate DateTime? // 前回年次点検日
   nextInspectionDate DateTime? // 年次点検期限 (Calculated)
+  enableInspectionAlert Boolean @default(true) // 年次点検アラート有効化
   notes        String?
   hourMeter    String?  // Current hour meter reading
   

@@ -26,6 +26,7 @@ export interface CustomerMachine {
     deliveryDate?: string | null;
     lastInspectionDate?: string | null;
     nextInspectionDate?: string | null;
+    enableInspectionAlert?: boolean;
     notes?: string | null;
     productCategoryId?: number | null;
     category?: {
