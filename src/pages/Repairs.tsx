@@ -789,8 +789,7 @@ const Repairs: React.FC = () => {
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
                     <span>{title}</span>
-                    <span>{title}</span>
-                    {type === 'outsourcing' ? (
+                    {type === 'outsourcing' && subType ? (
                         <div className="flex gap-2">
                             {subType === 'labor' && (
                                 <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'labor')}>
@@ -1710,9 +1709,9 @@ const Repairs: React.FC = () => {
                                     {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false)}
                                     {renderDetailTable('自社発注部品・商品', 'part', 'part', true)}
 
-                                    {renderDetailTable('外注費 (工賃)', 'outsourcing', 'labor', true)}
-                                    {renderDetailTable('外注費 (出張費)', 'outsourcing', 'travel', true)}
-                                    {renderDetailTable('外注費 (部品)', 'outsourcing', 'part', true)}
+                                    {/* Outsourcing Section - Consolidated */}
+                                    {renderDetailTable('外注費', 'outsourcing', undefined, true)}
+
                                     {renderDetailTable('その他', 'other', undefined, false)}
                                 </div>
 
