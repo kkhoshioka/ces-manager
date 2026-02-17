@@ -833,7 +833,7 @@ const Repairs: React.FC = () => {
                                     {(type === 'outsourcing' && subType === 'travel') && (
                                         <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>日付</th>
                                     )}
-                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: (type === 'outsourcing' && subType === 'travel') ? '40%' : (type === 'part' ? '25%' : (type === 'outsourcing' && subType === 'part' ? '25%' : '55%')) }}>
+                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: (type === 'outsourcing' && subType === 'travel') ? '40%' : (type === 'part' ? '25%' : (type === 'outsourcing' && subType === 'part' ? '25%' : (type === 'labor' ? '44%' : '55%'))) }}>
                                         {(type === 'part' || (type === 'outsourcing' && subType === 'part')) ? '内容・品名' : '内容'}
                                     </th>
                                 </>
@@ -857,7 +857,7 @@ const Repairs: React.FC = () => {
 
                             {/* Remarks Header for Labor */}
                             {type === 'labor' && (
-                                <th style={{ padding: '0.5rem', textAlign: 'left', minWidth: '150px' }}>備考</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%', minWidth: '150px' }}>備考</th>
                             )}
 
                             <th style={{ width: '40px' }}></th>
