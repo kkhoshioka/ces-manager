@@ -854,6 +854,12 @@ const Repairs: React.FC = () => {
                             )}
                             <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>請求単価</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>請求額</th>
+
+                            {/* Remarks Header for Labor */}
+                            {type === 'labor' && (
+                                <th style={{ padding: '0.5rem', textAlign: 'left', minWidth: '150px' }}>備考</th>
+                            )}
+
                             <th style={{ width: '40px' }}></th>
                         </tr>
                     </thead>
@@ -1151,7 +1157,21 @@ const Repairs: React.FC = () => {
                                         </div>
                                     </td>
                                     <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}円</td>
-                                    {/* Remarks column removed */}
+
+                                    {/* Remarks Column for Labor */}
+                                    {type === 'labor' && (
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <textarea
+                                                className={styles.tableInput}
+                                                style={{ minHeight: '38px', resize: 'vertical', fontSize: '0.9rem' }}
+                                                value={detail.remarks || ''}
+                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'remarks', e.target.value)}
+                                                placeholder="備考"
+                                                rows={1}
+                                            />
+                                        </td>
+                                    )}
+
                                     <td style={{ padding: '0.25rem', textAlign: 'center' }}>
                                         <button type="button" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
                                             <Trash2 size={16} />
