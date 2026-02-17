@@ -1429,7 +1429,6 @@ const Repairs: React.FC = () => {
                                                     }}
                                                 >
                                                     <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
-                                                    <option value="in_progress" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>作業中</option>
                                                     <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                                 </select>
                                             </div>
