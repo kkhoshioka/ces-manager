@@ -166,6 +166,7 @@ const Repairs: React.FC = () => {
         amountSales: number;
         originalIndex: number;
         outsourcingDetailType?: string | null;
+        laborType?: 'time' | 'fixed'; // time=H, fixed=一式
         date?: string; // Travel Date
     }
 
@@ -299,7 +300,8 @@ const Repairs: React.FC = () => {
                 amountCost: 0,
                 amountSales: sales,
                 originalIndex: nextIdRef.current,
-                outsourcingDetailType: type === 'outsourcing' ? (subType === '工賃' ? 'labor' : (subType === '部品' ? 'part' : (subType === '出張費' ? 'travel' : subType))) : undefined
+                outsourcingDetailType: type === 'outsourcing' ? (subType === '工賃' ? 'labor' : (subType === '部品' ? 'part' : (subType === '出張費' ? 'travel' : subType))) : undefined,
+                laborType: (type === 'labor' || (type === 'outsourcing' && subType === '工賃')) ? 'time' : undefined
             }]);
         }
     };
@@ -556,7 +558,8 @@ const Repairs: React.FC = () => {
                         productCategoryId: validCategoryId, // Pass to backend
                         amountCost: safeQty * safeCost,
                         amountSales: safeQty * safePrice,
-                        outsourcingDetailType: d.outsourcingDetailType
+                        outsourcingDetailType: d.outsourcingDetailType,
+                        laborType: d.laborType
                     };
                 })
             };
@@ -705,7 +708,8 @@ const Repairs: React.FC = () => {
                             unitCost: Number(d.unitCost),
                             productCategoryId: d.productCategoryId || (d.product ? d.product.categoryId : null), // Try to resolve category
                             section: d.category ? d.category.section : (d.product && d.product.productCategory ? d.product.productCategory.section : ''), // Helper for UI
-                            outsourcingDetailType: d.outsourcingDetailType
+                            outsourcingDetailType: d.outsourcingDetailType,
+                            laborType: d.laborType as 'time' | 'fixed' | undefined
                         } as DetailItem;
                     }));
                 } else {
@@ -1084,9 +1088,29 @@ const Repairs: React.FC = () => {
                                             />
                                             {/* Unit Logic */}
                                             <span className={styles.currencyUnit}>
-                                                {type === 'labor' ? 'H' :
-                                                    (type === 'travel' && detail.travelType === 'distance' ? 'km' :
-                                                        (type === 'travel' ? 'H' : ''))}
+                                                {(type === 'labor') ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.7rem', marginLeft: '4px' }}>
+                                                        <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                            <input
+                                                                type="radio"
+                                                                name={`laborType-${detail.originalIndex}`}
+                                                                checked={detail.laborType !== 'fixed'}
+                                                                onChange={() => handleDetailChange(detail.originalIndex, 'laborType' as any, 'time')}
+                                                            /> H
+                                                        </label>
+                                                        <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                            <input
+                                                                type="radio"
+                                                                name={`laborType-${detail.originalIndex}`}
+                                                                checked={detail.laborType === 'fixed'}
+                                                                onChange={() => handleDetailChange(detail.originalIndex, 'laborType' as any, 'fixed')}
+                                                            /> 式
+                                                        </label>
+                                                    </div>
+                                                ) : (
+                                                    type === 'travel' && detail.travelType === 'distance' ? 'km' :
+                                                        (type === 'travel' ? 'H' : '')
+                                                )}
                                             </span>
                                         </div>
                                     </td>

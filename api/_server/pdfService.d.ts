@@ -7,6 +7,7 @@ interface ProjectDetail {
     date?: string | Date;
     travelType?: string;
     outsourcingDetailType?: string;
+    laborType?: string;
 }
 interface Customer {
     name: string;

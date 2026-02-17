@@ -142,6 +142,7 @@ model ProjectDetail {
   outsourcingCost Decimal  @default(0)
   
   outsourcingDetailType String? // labor, part, travel, etc.
+  laborType       String?  // 'time' | 'fixed' (New)
   
   date            DateTime? // Date of the expense/work (New)
 
@@ -311,6 +312,7 @@ model QuotationDetail {
   date            DateTime? // Matches recent "date" addition
   travelType      String?
   outsourcingDetailType String?
+  laborType       String? // 'time' | 'fixed' (New)
   
   quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   
