@@ -39,11 +39,14 @@ const MachineDetail: React.FC = () => {
     if (loading) return <div className={styles.emptyState}>Loading...</div>;
     if (!machine) return <div className={styles.emptyState}>機材が見つかりません</div>;
 
-    const getStatusBadgeClass = (status: string) => {
+    const getStatusDisplay = (status: string) => {
         switch (status) {
-            case 'completed': return styles.statusCompleted;
-            case 'estimating': return styles.statusEstimating;
-            default: return styles.statusReceived;
+            case 'completed': return { class: styles.statusCompleted, label: '完了' };
+            case 'estimating': return { class: styles.statusEstimating, label: '見積中' };
+            case 'in_progress': return { class: styles.statusEstimating, label: '作業中' }; // Legacy
+            case 'delivered': return { class: styles.statusCompleted, label: '納品済' }; // Legacy
+            case 'received': return { class: styles.statusReceived, label: '仮登録' };
+            default: return { class: styles.statusReceived, label: status };
         }
     };
 
@@ -153,8 +156,8 @@ const MachineDetail: React.FC = () => {
                                             {format(new Date(record.createdAt), 'yyyy/MM/dd')}
                                         </td>
                                         <td>
-                                            <span className={`${styles.statusBadge} ${getStatusBadgeClass(record.status)}`}>
-                                                {record.status}
+                                            <span className={`${styles.statusBadge} ${getStatusDisplay(record.status).class}`}>
+                                                {getStatusDisplay(record.status).label}
                                             </span>
                                         </td>
                                         <td>

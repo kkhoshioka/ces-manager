@@ -1,6 +1,6 @@
 import type { Customer, CustomerMachine } from './customer';
 
-export type RepairStatus = 'received' | 'estimating' | 'diagnosing' | 'completed' | 'delivered';
+export type RepairStatus = 'received' | 'estimating' | 'diagnosing' | 'completed';
 
 export interface ProjectDetail {
     id: number;

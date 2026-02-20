@@ -24,8 +24,9 @@ const getStatusStyle = (status: string) => {
     switch (status) {
         case 'received': return { bg: '#e2e8f0', color: '#1e293b', label: '仮登録' };
         case 'estimating': return { bg: '#fef08a', color: '#854d0e', label: '見積中' };
+        case 'in_progress': return { bg: '#dbeafe', color: '#1e40af', label: '作業中' }; // Legacy
         case 'completed': return { bg: '#dcfce7', color: '#166534', label: '完了' };
-        case 'delivered': return { bg: '#f3f4f6', color: '#4b5563', label: '納品済' };
+        case 'delivered': return { bg: '#f3f4f6', color: '#4b5563', label: '納品済' }; // Legacy
         default: return { bg: '#f3f4f6', color: '#4b5563', label: status };
     }
 };
@@ -1223,8 +1224,9 @@ const Repairs: React.FC = () => {
                 const orderMap: Record<string, number> = {
                     'received': 1,
                     'estimating': 2,
-                    'completed': 3,
-                    'delivered': 4
+                    'in_progress': 3, // Legacy
+                    'completed': 4,
+                    'delivered': 5 // Legacy
                 };
                 const aVal = orderMap[a.status] || 99;
                 const bVal = orderMap[b.status] || 99;
@@ -1279,7 +1281,6 @@ const Repairs: React.FC = () => {
                         <option value="received">仮登録</option>
                         <option value="estimating">見積中</option>
                         <option value="completed">完了</option>
-                        <option value="delivered">納品済</option>
                     </select>
                 </div>
             </div>
@@ -1494,7 +1495,6 @@ const Repairs: React.FC = () => {
                                                     <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
                                                     <option value="estimating" style={{ backgroundColor: '#fef08a', color: '#854d0e' }}>見積中</option>
                                                     <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
-                                                    <option value="delivered" style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>納品済</option>
                                                 </select>
                                             </div>
                                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
