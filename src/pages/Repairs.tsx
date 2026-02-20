@@ -1222,8 +1222,8 @@ const Repairs: React.FC = () => {
         result.sort((a, b) => {
             if (sortField === 'status') {
                 const orderMap: Record<string, number> = {
-                    'received': 1,
-                    'estimating': 2,
+                    'estimating': 1,
+                    'received': 2,
                     'in_progress': 3, // Legacy
                     'completed': 4,
                     'delivered': 5 // Legacy
