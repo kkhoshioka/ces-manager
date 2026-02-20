@@ -23,8 +23,9 @@ import QuotationEdit from '../components/quotations/QuotationEdit';
 const getStatusStyle = (status: string) => {
     switch (status) {
         case 'received': return { bg: '#e2e8f0', color: '#1e293b', label: '仮登録' };
-        case 'in_progress': return { bg: '#dbeafe', color: '#1e40af', label: '作業中' };
+        case 'estimating': return { bg: '#fef08a', color: '#854d0e', label: '見積中' };
         case 'completed': return { bg: '#dcfce7', color: '#166534', label: '完了' };
+        case 'delivered': return { bg: '#f3f4f6', color: '#4b5563', label: '納品済' };
         default: return { bg: '#f3f4f6', color: '#4b5563', label: status };
     }
 };
@@ -50,6 +51,9 @@ const Repairs: React.FC = () => {
     const [projects, setProjects] = useState<Repair[]>([]); // Renamed from repairs to projects
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [sortField, setSortField] = useState<'createdAt' | 'status'>('createdAt');
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
     // Quotation State
     const [activeTab, setActiveTab] = useState<'details' | 'quotations'>('details');
@@ -1198,7 +1202,42 @@ const Repairs: React.FC = () => {
         );
     };
 
+    const handleSort = (field: 'createdAt' | 'status') => {
+        if (sortField === field) {
+            setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+        } else {
+            setSortField(field);
+            setSortOrder('desc');
+        }
+    };
 
+    const displayProjects = useMemo(() => {
+        let result = [...projects];
+
+        if (statusFilter !== 'all') {
+            result = result.filter(p => p.status === statusFilter);
+        }
+
+        result.sort((a, b) => {
+            if (sortField === 'status') {
+                const orderMap: Record<string, number> = {
+                    'received': 1,
+                    'estimating': 2,
+                    'completed': 3,
+                    'delivered': 4
+                };
+                const aVal = orderMap[a.status] || 99;
+                const bVal = orderMap[b.status] || 99;
+                return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+            } else {
+                const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return sortOrder === 'asc' ? aDate - bDate : bDate - aDate;
+            }
+        });
+
+        return result;
+    }, [projects, statusFilter, sortField, sortOrder]);
 
     return (
         <div className={styles.container}>
@@ -1218,8 +1257,8 @@ const Repairs: React.FC = () => {
             </div>
 
             {/* Controls */}
-            <div className={styles.controls}>
-                <div className={styles.searchWrapper}>
+            <div className={styles.controls} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div className={styles.searchWrapper} style={{ flex: 1 }}>
                     <Search className={styles.searchIcon} size={18} />
                     <input
                         type="text"
@@ -1229,6 +1268,20 @@ const Repairs: React.FC = () => {
                         onChange={handleSearch}
                     />
                 </div>
+                <div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="border rounded-md p-2 text-sm"
+                        style={{ borderColor: '#d1d5db', cursor: 'pointer' }}
+                    >
+                        <option value="all">すべてのステータス</option>
+                        <option value="received">仮登録</option>
+                        <option value="estimating">見積中</option>
+                        <option value="completed">完了</option>
+                        <option value="delivered">納品済</option>
+                    </select>
+                </div>
             </div>
 
             {/* Table */}
@@ -1237,8 +1290,18 @@ const Repairs: React.FC = () => {
                     <thead>
                         <tr>
                             <th style={{ width: '80px' }}>タイプ</th>
-                            <th>ステータス</th>
-                            <th>受付/販売日</th>
+                            <th
+                                style={{ cursor: 'pointer', userSelect: 'none' }}
+                                onClick={() => handleSort('status')}
+                            >
+                                ステータス {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th
+                                style={{ cursor: 'pointer', userSelect: 'none' }}
+                                onClick={() => handleSort('createdAt')}
+                            >
+                                受付/販売日 {sortField === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
                             <th>顧客名</th>
                             <th>機種 / シリアル (件名)</th>
                             <th>内容</th>
@@ -1252,12 +1315,12 @@ const Repairs: React.FC = () => {
                                     <LoadingSpinner />
                                 </td>
                             </tr>
-                        ) : projects.length === 0 ? (
+                        ) : displayProjects.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className={styles.emptyState}>データがありません</td>
                             </tr>
                         ) : (
-                            projects.map(project => (
+                            displayProjects.map(project => (
                                 <tr key={project.id} onClick={() => handleRowClick(project)} style={{ cursor: 'pointer' }}>
                                     <td>
                                         <span style={{
@@ -1429,7 +1492,9 @@ const Repairs: React.FC = () => {
                                                     }}
                                                 >
                                                     <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
+                                                    <option value="estimating" style={{ backgroundColor: '#fef08a', color: '#854d0e' }}>見積中</option>
                                                     <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
+                                                    <option value="delivered" style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>納品済</option>
                                                 </select>
                                             </div>
                                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>

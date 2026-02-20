@@ -42,7 +42,7 @@ const MachineDetail: React.FC = () => {
     const getStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'completed': return styles.statusCompleted;
-            case 'in_progress': return styles.statusInProgress;
+            case 'estimating': return styles.statusEstimating;
             default: return styles.statusReceived;
         }
     };
