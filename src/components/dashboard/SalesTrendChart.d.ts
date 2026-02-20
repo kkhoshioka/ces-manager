@@ -4,6 +4,8 @@ interface TrendData {
     sales: number;
     cost: number;
     profit: number;
+    operatingExpenses?: number;
+    ordinaryProfit?: number;
 }
 interface SalesTrendChartProps {
     data: TrendData[];

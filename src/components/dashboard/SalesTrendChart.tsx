@@ -16,6 +16,8 @@ interface TrendData {
     sales: number;
     cost: number;
     profit: number;
+    operatingExpenses?: number;
+    ordinaryProfit?: number;
 }
 
 interface SalesTrendChartProps {
@@ -66,6 +68,9 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({ data }) => {
                     <Legend />
                     <Bar dataKey="sales" name="売上高" barSize={20} fill="#3b82f6" />
                     <Line type="monotone" dataKey="profit" name="粗利益" stroke="#16a34a" strokeWidth={2} />
+                    {data.some(d => d.ordinaryProfit !== undefined) && (
+                        <Line type="monotone" dataKey="ordinaryProfit" name="経常利益" stroke="#0d9488" strokeWidth={2} strokeDasharray="5 5" />
+                    )}
                 </ComposedChart>
             </ResponsiveContainer>
         </div>

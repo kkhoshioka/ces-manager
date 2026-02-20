@@ -37,6 +37,7 @@ interface DashboardData {
     totalInternalCost: number;
     totalConfirmedInternalCost: number;
     totalWipInternalCost: number;
+    totalOperatingExpenses: number;
     categories: Record<string, CategoryData>;
 }
 
@@ -282,6 +283,29 @@ const Dashboard: React.FC = () => {
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '4px', marginTop: '4px' }}>
                                                 <span>実質利益見込:</span>
+                                                <span style={{ fontWeight: 600, color: '#15803d' }}>{formatCurrency(data.totalProfit - data.totalInternalCost)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Ordinary Profit Card */}
+                                <div className={`${styles.card}`} style={{ borderLeft: '4px solid #14b8a6' }}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#ccfbf1', color: '#0d9488' }}>
+                                            <Activity size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>経常利益 (見込)</span>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value}>{formatCurrency(data.totalProfit - data.totalInternalCost - (data.totalOperatingExpenses || 0))}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>営業費 (全社):</span>
+                                                <span style={{ fontWeight: 600, color: '#ef4444' }}>-{formatCurrency(data.totalOperatingExpenses || 0)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>実質利益:</span>
                                                 <span style={{ fontWeight: 600, color: '#15803d' }}>{formatCurrency(data.totalProfit - data.totalInternalCost)}</span>
                                             </div>
                                         </div>

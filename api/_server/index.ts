@@ -1045,6 +1045,15 @@ app.get('/api/dashboard/sales', async (req, res) => {
             ? new Date(Number(year), Number(month), 0, 23, 59, 59)
             : new Date(Number(year), 11, 31, 23, 59, 59);
 
+        // Fetch Operating Expenses for the given year/month
+        const monthlyExpenses = await prisma.monthlyExpense.findMany({
+            where: {
+                year: Number(year),
+                ...(month ? { month: Number(month) } : {})
+            }
+        });
+        const totalOperatingExpenses = monthlyExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+
         const projects = await prisma.project.findMany({
             where: {
                 OR: [
@@ -1088,6 +1097,9 @@ app.get('/api/dashboard/sales', async (req, res) => {
             totalInternalCost: 0,
             totalConfirmedInternalCost: 0,
             totalWipInternalCost: 0,
+
+            // New: Operating Expenses
+            totalOperatingExpenses: totalOperatingExpenses,
 
             categories: {} as Record<string, {
                 sales: number; confirmedSales: number; wipSales: number;
@@ -1244,8 +1256,23 @@ app.get('/api/dashboard/trend', async (req, res) => {
             month,
             sales: 0,
             cost: 0,
-            profit: 0
+            profit: 0,
+            operatingExpenses: 0,
+            ordinaryProfit: 0
         }));
+
+        // Fetch Operating Expenses for the year
+        const monthlyExpenses = await prisma.monthlyExpense.findMany({
+            where: { year: targetYear }
+        });
+
+        // Add Operating Expenses per month
+        monthlyExpenses.forEach(exp => {
+            const mIdx = exp.month - 1;
+            if (mIdx >= 0 && mIdx < 12) {
+                trendData[mIdx].operatingExpenses += Number(exp.amount);
+            }
+        });
 
         projects.forEach(project => {
             // Determine which month this project belongs to
@@ -1263,12 +1290,17 @@ app.get('/api/dashboard/trend', async (req, res) => {
 
                 const lineSales = qty * price;
                 const lineCost = qty * cost;
-                const lineProfit = lineSales - lineCost;
+                const lineProfit = lineSales - lineCost; // Note: This is a simplified profit calculation in Trend Data
 
                 trendData[projectMonth - 1].sales += lineSales;
                 trendData[projectMonth - 1].cost += lineCost;
                 trendData[projectMonth - 1].profit += lineProfit;
             });
+        });
+
+        // Calculate Ordinary Profit (assuming profit here is gross or real, subtract operating expenses)
+        trendData.forEach(monthData => {
+            monthData.ordinaryProfit = monthData.profit - monthData.operatingExpenses;
         });
 
         res.json(trendData);
