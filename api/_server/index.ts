@@ -1844,7 +1844,9 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
             const pdfDoc = generateInvoice(pdfData);
             pdfDoc.end();
 
-            archive.append(pdfDoc as any, { name: `Invoice_${project.id}.pdf` });
+            // 単体発行時のファイル名（請求書-{顧客名} (YYYYMM).pdf）に合わせる。同一顧客で複数案件がある場合の重複を避けるためIDを付与
+            const filenameDate = `${year}${String(month).padStart(2, '0')}`;
+            archive.append(pdfDoc as any, { name: `請求書-${project.customer.name} (${filenameDate})_${project.id}.pdf` });
         }
 
         await archive.finalize();
