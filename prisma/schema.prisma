@@ -101,6 +101,7 @@ model Project {
   notes             String?
   // Status check fields
   isInvoiceIssued   Boolean   @default(false)
+  isDeliveryNoteIssued Boolean @default(false) // New: Track if delivery note is issued
   isPaymentReceived Boolean   @default(false)
   paymentDate       DateTime?
 

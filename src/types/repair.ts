@@ -47,6 +47,11 @@ export interface Repair {
     totalAmount: number;
     notes?: string | null;
 
+    // Status flags
+    isInvoiceIssued?: boolean;
+    isDeliveryNoteIssued?: boolean;
+    isPaymentReceived?: boolean;
+
     createdAt: string;
     updatedAt: string;
 

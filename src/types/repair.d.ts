@@ -39,6 +39,9 @@ export interface Repair {
     status: RepairStatus;
     totalAmount: number;
     notes?: string | null;
+    isInvoiceIssued?: boolean;
+    isDeliveryNoteIssued?: boolean;
+    isPaymentReceived?: boolean;
     createdAt: string;
     updatedAt: string;
     customer?: Customer;

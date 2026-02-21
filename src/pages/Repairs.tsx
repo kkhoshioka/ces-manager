@@ -1367,11 +1367,24 @@ const Repairs: React.FC = () => {
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
-                                                onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/delivery`, '_blank')}
-                                                title="納品書PDF"
-                                                style={{ color: '#059669', fontWeight: 'bold', border: '1px solid #a7f3d0', background: '#f0fdf4', fontSize: '0.8rem', padding: '0.2rem 0.5rem', height: 'auto' }}
+                                                onClick={() => {
+                                                    window.open(`${API_BASE_URL}/projects/${project.id}/pdf/delivery`, '_blank');
+                                                    // Update local state to reflect issued status immediately
+                                                    setProjects(projects.map(p => p.id === project.id ? { ...p, isDeliveryNoteIssued: true } : p));
+                                                }}
+                                                title={project.isDeliveryNoteIssued ? "納品書(発行済)PDF" : "納品書PDF"}
+                                                style={{
+                                                    color: project.isDeliveryNoteIssued ? '#166534' : '#059669',
+                                                    fontWeight: 'bold',
+                                                    border: project.isDeliveryNoteIssued ? '1px solid #86efac' : '1px solid #a7f3d0',
+                                                    background: project.isDeliveryNoteIssued ? '#dcfce7' : '#f0fdf4',
+                                                    fontSize: '0.8rem',
+                                                    padding: '0.2rem 0.5rem',
+                                                    height: 'auto'
+                                                }}
                                             >
-                                                <FileText size={14} style={{ marginRight: '4px' }} /> 納品書
+                                                <FileText size={14} style={{ marginRight: '4px' }} />
+                                                {project.isDeliveryNoteIssued ? '納品書(済)' : '納品書'}
                                             </Button>
                                             <Button variant="ghost" size="sm" onClick={(e) => handleDeleteProject(project.id, e)} title="削除" style={{ color: '#ef4444' }}>
                                                 <Trash2 size={16} />

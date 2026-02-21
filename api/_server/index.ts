@@ -1731,6 +1731,11 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
 
             if (type === 'delivery') {
                 pdfDoc = generateDeliveryNote(pdfData);
+                // 納品書発行フラグを更新
+                await prisma.project.update({
+                    where: { id: Number(id) },
+                    data: { isDeliveryNoteIssued: true }
+                });
             } else if (type === 'quotation') {
                 // Fallback if no quotationId provided (generate from project details?? or error?)
                 // Allow generating from project details for backward compatibility or direct button
