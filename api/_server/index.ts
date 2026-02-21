@@ -1844,7 +1844,7 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
             const pdfDoc = generateInvoice(pdfData);
             pdfDoc.end();
 
-            archive.append(pdfDoc as any, { name: `${project.customer.name}_${project.id}.pdf` });
+            archive.append(pdfDoc as any, { name: `Invoice_${project.id}.pdf` });
         }
 
         await archive.finalize();
