@@ -373,20 +373,32 @@ export const generateInvoice = (project: Project) => {
                             { text: '備考', style: 'tableHeaderMain' }
                         ],
                         // Data Rows with Zebra Striping
-                        ...processedDetails.map((d: ProjectDetail, index: number) => {
-                            const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
-                            const rowBorder = [true, true, true, true];
-                            const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
-                            return [
-                                { text: d.lineType === 'padding' ? '' : billingDate, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
-                            ];
-                        }),
+                        ...(() => {
+                            let isFirstDatePrinted = false;
+                            return processedDetails.map((d: ProjectDetail, index: number) => {
+                                const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
+                                const rowBorder = [true, true, true, true];
+                                const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
+
+                                let dateStr = '';
+                                if (d.lineType !== 'padding') {
+                                    if (!isFirstDatePrinted) {
+                                        dateStr = billingDate;
+                                        isFirstDatePrinted = true;
+                                    }
+                                }
+
+                                return [
+                                    { text: dateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
+                                ];
+                            });
+                        })(),
 
                         // Consumption Tax Row (Footer 1)
                         [

@@ -171,41 +171,6 @@ const MonthlyInvoicing = () => {
         }
     };
 
-    const handleDownloadInvoice = async (projectId: number, customerName: string, e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation(); // Stop row toggle
-        if (downloadingId === projectId) return;
-
-        setDownloadingId(projectId);
-        try {
-            const res = await fetch(`${API_BASE_URL}/projects/${projectId}/pdf?type=invoice`, {
-                headers: {
-                    'Authorization': `Bearer ${session?.access_token}`
-                }
-            });
-            if (!res.ok) throw new Error('Failed to download');
-
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-
-            // Fix for blank page: use <a> tag simulation
-            const a = document.createElement('a');
-            a.href = url;
-            const filenameDate = `${year}${String(month).padStart(2, '0')}`;
-            a.download = `請求書-${customerName} (${filenameDate})_${projectId}.pdf`; // Added projectId to distinguish single project invoice
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            setTimeout(() => window.URL.revokeObjectURL(url), 100);
-        } catch (e) {
-            alert('請求書のダウンロードに失敗しました。ログイン状態を確認してください。');
-        } finally {
-            setDownloadingId(null);
-        }
-    };
-
     // Group data by closing date
     const groupedData = useMemo(() => {
         let filtered = data;
@@ -381,7 +346,6 @@ const MonthlyInvoicing = () => {
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>日付</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>件名</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>個別請求書 (単一案件)</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -390,24 +354,6 @@ const MonthlyInvoicing = () => {
                                                                             <td style={{ padding: '0.5rem' }}>{format(new Date(p.date), 'MM/dd')}</td>
                                                                             <td style={{ padding: '0.5rem' }}>{p.title}</td>
                                                                             <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(p.amount)}</td>
-                                                                            <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                                                                <a
-                                                                                    href="#"
-                                                                                    onClick={(e) => handleDownloadInvoice(p.id, item.customerName, e)}
-                                                                                    style={{
-                                                                                        display: 'inline-flex',
-                                                                                        alignItems: 'center',
-                                                                                        gap: '4px',
-                                                                                        textDecoration: 'none',
-                                                                                        color: downloadingId === p.id ? '#94a3b8' : '#2563eb',
-                                                                                        fontSize: '0.8rem',
-                                                                                        cursor: downloadingId === p.id ? 'wait' : 'pointer',
-                                                                                        pointerEvents: downloadingId === p.id ? 'none' : 'auto'
-                                                                                    }}
-                                                                                >
-                                                                                    {downloadingId === p.id ? '処理中...' : <><Printer size={14} /> 発行</>}
-                                                                                </a>
-                                                                            </td>
                                                                         </tr>
                                                                     ))}
                                                                 </tbody>
