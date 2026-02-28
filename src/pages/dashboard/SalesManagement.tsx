@@ -98,8 +98,8 @@ const SalesManagement = () => {
         }
     };
 
-    const handleBatchUpdate = async (customerId: number, field: 'isInvoiceIssued' | 'isPaymentReceived', value: boolean) => {
-        if (!confirm(`${value ? '全て完了' : '全て未完了'}にしますか？`)) return;
+    const handleBatchUpdate = async (customerId: number, field: 'isInvoiceIssued' | 'isPaymentReceived', value: boolean, skipConfirm: boolean = false) => {
+        if (!skipConfirm && !confirm(`${value ? '全て完了' : '全て未完了'}にしますか？`)) return;
 
         const customer = data.find(c => c.customerId === customerId);
         if (!customer) return;
@@ -173,6 +173,10 @@ const SalesManagement = () => {
             document.body.removeChild(a);
 
             setTimeout(() => window.URL.revokeObjectURL(url), 100);
+
+            // Automatically check "Invoice Issued" for all projects of this customer
+            await handleBatchUpdate(customerId, 'isInvoiceIssued', true, true);
+
         } catch (e) {
             alert('請求書のダウンロードに失敗しました。');
         } finally {

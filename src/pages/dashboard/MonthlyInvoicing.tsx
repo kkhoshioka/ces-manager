@@ -164,6 +164,24 @@ const MonthlyInvoicing = () => {
             document.body.removeChild(a);
 
             setTimeout(() => window.URL.revokeObjectURL(url), 100);
+
+            // Automatically check "Invoice Issued" for all projects of this customer
+            const customerData = data.find(d => d.customerId === customerId);
+            if (customerData) {
+                const promises = customerData.projects.map(p =>
+                    fetch(`${API_BASE_URL}/projects/${p.id}/status`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session?.access_token}`
+                        },
+                        body: JSON.stringify({ isInvoiceIssued: true })
+                    })
+                );
+                await Promise.all(promises);
+                fetchReport(); // Refresh data to reflect the status update
+            }
+
         } catch (e) {
             alert('請求書のダウンロードに失敗しました。');
         } finally {
