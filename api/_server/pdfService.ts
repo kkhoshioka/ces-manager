@@ -374,27 +374,40 @@ export const generateInvoice = (project: Project) => {
                         ],
                         // Data Rows with Zebra Striping
                         ...(() => {
-                            let isFirstDatePrinted = false;
+                            let isNewProject = true;
                             return processedDetails.map((d: ProjectDetail, index: number) => {
                                 const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
                                 const rowBorder = [true, true, true, true];
                                 const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
 
-                                let dateStr = '';
-                                if (d.lineType !== 'padding') {
-                                    if (!isFirstDatePrinted) {
-                                        dateStr = billingDate;
-                                        isFirstDatePrinted = true;
+                                if (d.lineType === 'padding') {
+                                    if (d.description && d.description.startsWith('【案件')) {
+                                        isNewProject = true;
                                     }
+                                    return [
+                                        { text: '', fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: d.description || '\u00A0', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
+                                    ];
+                                }
+
+                                let dateStr = '';
+                                if (isNewProject) {
+                                    dateStr = billingDate;
+                                    isNewProject = false;
                                 }
 
                                 return [
                                     { text: dateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
                                 ];
                             });
