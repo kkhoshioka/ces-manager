@@ -375,6 +375,8 @@ export const generateInvoice = (project: Project) => {
                         // Data Rows with Zebra Striping
                         ...(() => {
                             let isNewProject = true;
+                            let currentProjectDateStr = billingDate;
+
                             return processedDetails.map((d: ProjectDetail, index: number) => {
                                 const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
                                 const rowBorder = [true, true, true, true];
@@ -383,6 +385,9 @@ export const generateInvoice = (project: Project) => {
                                 if (d.lineType === 'padding') {
                                     if (d.description && d.description.startsWith('【案件')) {
                                         isNewProject = true;
+                                        if (d.date) {
+                                            currentProjectDateStr = formatDate(d.date);
+                                        }
                                     }
                                     return [
                                         { text: '', fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
@@ -397,7 +402,7 @@ export const generateInvoice = (project: Project) => {
 
                                 let dateStr = '';
                                 if (isNewProject) {
-                                    dateStr = billingDate;
+                                    dateStr = currentProjectDateStr;
                                     isNewProject = false;
                                 }
 

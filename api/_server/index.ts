@@ -1866,11 +1866,13 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                 // Add Project Header Row
                 const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
                 const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+                const projectDate = project.completionDate || project.createdAt;
                 combinedDetails.push({
                     description: `【案件: ${machineName} S/N: ${serial}】`,
                     quantity: '',
                     unitPrice: '',
-                    lineType: 'padding' // Using padding to avoid calculation, but displaying text
+                    lineType: 'padding', // Using padding to avoid calculation, but displaying text
+                    date: projectDate
                 });
 
                 // Add details for this project
@@ -1964,11 +1966,13 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
 
             const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
             const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+            const projectDate = project.completionDate || project.createdAt;
             combinedDetails.push({
                 description: `【案件: ${machineName} S/N: ${serial}】`,
                 quantity: '',
                 unitPrice: '',
-                lineType: 'padding'
+                lineType: 'padding',
+                date: projectDate
             });
 
             const safeDetails = project.details.map((d: any) => ({
