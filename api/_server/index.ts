@@ -1801,6 +1801,10 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                 customer: true,
                 customerMachine: true,
                 details: true
+            },
+            orderBy: {
+                // Ensure projects are ordered nicely
+                createdAt: 'asc'
             }
         });
 
@@ -1828,30 +1832,74 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
 
         archive.pipe(res);
 
-        for (const project of projects) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const safeDetails = project.details.map((d: any) => ({
-                description: d.description,
-                quantity: Number(d.quantity),
-                unitPrice: Number(d.unitPrice),
-                lineType: d.lineType
-            }));
+        // Group projects by customer
+        const projectsByCustomer = projects.reduce((acc, project) => {
+            const custId = project.customerId;
+            if (!acc[custId]) {
+                acc[custId] = {
+                    customer: project.customer,
+                    projects: []
+                };
+            }
+            acc[custId].projects.push(project);
+            return acc;
+        }, {} as Record<number, { customer: any, projects: any[] }>);
 
+        for (const custId in projectsByCustomer) {
+            const { customer, projects: custProjects } = projectsByCustomer[custId];
+
+            const combinedDetails: any[] = [];
+            let isFirstProject = true;
+
+            for (const project of custProjects) {
+                // Add a blank row between projects if not the first one
+                if (!isFirstProject) {
+                    combinedDetails.push({
+                        description: '\u00A0',
+                        quantity: '',
+                        unitPrice: '',
+                        lineType: 'padding'
+                    });
+                }
+                isFirstProject = false;
+
+                // Add Project Header Row
+                const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
+                const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+                combinedDetails.push({
+                    description: `【案件: ${machineName} S/N: ${serial}】`,
+                    quantity: '',
+                    unitPrice: '',
+                    lineType: 'padding' // Using padding to avoid calculation, but displaying text
+                });
+
+                // Add details for this project
+                const safeDetails = project.details.map((d: any) => ({
+                    description: d.description,
+                    quantity: Number(d.quantity),
+                    unitPrice: Number(d.unitPrice),
+                    lineType: d.lineType
+                }));
+                combinedDetails.push(...safeDetails);
+            }
+
+            // Create a pseudo-project for the PDF generation
             const pdfData = {
-                id: project.id,
-                customer: { name: project.customer.name },
-                machineModel: project.machineModel || project.customerMachine?.machineModel || '',
-                serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
-                details: safeDetails,
-                notes: project.notes || ''
+                id: custProjects.map(p => p.id).join(', '), // List IDs or just leave blank. Let's use first project ID for No. or just rely on customer.
+                customer: { name: customer.name },
+                machineModel: '複数案件合算',
+                serialNumber: '-',
+                details: combinedDetails,
+                notes: '' // Could combine notes if needed
             };
 
-            const pdfDoc = generateInvoice(pdfData);
+            // Override the ID display to show something like YYYYMM-CUSTID
+            const customId = `${year}${String(month).padStart(2, '0')}-${customer.id}`;
+            const pdfDoc = generateInvoice({ ...pdfData, id: customId });
             pdfDoc.end();
 
-            // 単体発行時のファイル名（請求書-{顧客名} (YYYYMM).pdf）に合わせる。同一顧客で複数案件がある場合の重複を避けるためIDを付与
             const filenameDate = `${year}${String(month).padStart(2, '0')}`;
-            archive.append(pdfDoc as any, { name: `請求書-${project.customer.name} (${filenameDate})_${project.id}.pdf` });
+            archive.append(pdfDoc as any, { name: `請求書-${customer.name} (${filenameDate}).pdf` });
         }
 
         await archive.finalize();
@@ -1861,6 +1909,102 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
         if (!res.headersSent) {
             res.status(500).json({ error: 'Failed to generate batch PDF' });
         }
+    }
+});
+
+app.get('/api/invoices/customer-pdf', async (req, res) => {
+    try {
+        const { year, month, customerId } = req.query;
+
+        if (!year || !month || !customerId) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const startDate = new Date(Number(year), Number(month) - 1, 1);
+        const endDate = new Date(Number(year), Number(month), 0, 23, 59, 59);
+
+        const projects = await prisma.project.findMany({
+            where: {
+                customerId: Number(customerId),
+                OR: [
+                    { completionDate: { gte: startDate, lte: endDate } },
+                    { createdAt: { gte: startDate, lte: endDate } }
+                ]
+            },
+            include: {
+                customer: true,
+                customerMachine: true,
+                details: {
+                    orderBy: { id: 'asc' }
+                }
+            },
+            orderBy: {
+                createdAt: 'asc'
+            }
+        });
+
+        if (projects.length === 0) {
+            return res.status(404).json({ error: 'No projects found for this customer in this period' });
+        }
+
+        const customer = projects[0].customer;
+        const combinedDetails: any[] = [];
+        let isFirstProject = true;
+
+        for (const project of projects) {
+            if (!isFirstProject) {
+                combinedDetails.push({
+                    description: '\u00A0',
+                    quantity: '',
+                    unitPrice: '',
+                    lineType: 'padding'
+                });
+            }
+            isFirstProject = false;
+
+            const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
+            const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+            combinedDetails.push({
+                description: `【案件: ${machineName} S/N: ${serial}】`,
+                quantity: '',
+                unitPrice: '',
+                lineType: 'padding'
+            });
+
+            const safeDetails = project.details.map((d: any) => ({
+                description: d.description,
+                quantity: Number(d.quantity),
+                unitPrice: Number(d.unitPrice),
+                lineType: d.lineType
+            }));
+            combinedDetails.push(...safeDetails);
+        }
+
+        const customId = `${year}${String(month).padStart(2, '0')}-${customer.id}`;
+        const pdfData = {
+            id: customId,
+            customer: { name: customer.name },
+            machineModel: '複数案件合算',
+            serialNumber: '-',
+            details: combinedDetails,
+            notes: ''
+        };
+
+        const pdfDoc = generateInvoice(pdfData);
+
+        const filenameDate = `${year}${String(month).padStart(2, '0')}`;
+        const filename = `請求書-${customer.name} (${filenameDate}).pdf`;
+
+        res.setHeader('Content-Type', 'application/pdf');
+        // Encode filename for content-disposition to handle Japanese characters
+        res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(filename)}`);
+
+        pdfDoc.pipe(res);
+        pdfDoc.end();
+
+    } catch (error) {
+        console.error('Customer PDF Error:', error);
+        res.status(500).json({ error: 'Failed to generate customer PDF' });
     }
 });
 

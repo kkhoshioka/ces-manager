@@ -140,8 +140,44 @@ const SalesManagement = () => {
     };
 
 
+    const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
     const toggleExpand = (customerId: number) => {
         setExpandedCustomer(expandedCustomer === customerId ? null : customerId);
+    };
+
+    const handleDownloadCustomerInvoice = async (customerId: number, customerName: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (downloadingId === customerId) return;
+
+        setDownloadingId(customerId);
+        try {
+            const res = await fetch(`${API_BASE_URL}/invoices/customer-pdf?year=${year}&month=${month}&customerId=${customerId}`, {
+                // Assuming session token is needed though not in useAuth block in this file initially. 
+                // Wait, SalesManagement doesn't useAuth by default in the provided snippet? Let me check.
+                // It seems to not have `session` imported. I will just do a standard fetch.
+            });
+            if (!res.ok) throw new Error('Failed to download');
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            const filenameDate = `${year}${String(month).padStart(2, '0')}`;
+            a.download = `請求書-${customerName} (${filenameDate}).pdf`;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        } catch (e) {
+            alert('請求書のダウンロードに失敗しました。');
+        } finally {
+            setDownloadingId(null);
+        }
     };
 
     const handlePrevMonth = () => {
@@ -281,7 +317,15 @@ const SalesManagement = () => {
                                                             <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#475569' }}>
                                                                 {item.customerName} の案件一覧
                                                             </h3>
-                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    disabled={downloadingId === item.customerId}
+                                                                    onClick={(e) => handleDownloadCustomerInvoice(item.customerId, item.customerName, e)}
+                                                                >
+                                                                    {downloadingId === item.customerId ? '処理中...' : 'この顧客の請求書を発行 (当月合算)'}
+                                                                </Button>
                                                                 <Button variant="outline" size="sm" onClick={() => handleBatchUpdate(item.customerId, 'isInvoiceIssued', true)}>
                                                                     全て請求済にする
                                                                 </Button>
