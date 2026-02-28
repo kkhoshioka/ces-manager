@@ -1852,37 +1852,43 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
             let isFirstProject = true;
 
             for (const project of custProjects) {
-                // Add a blank row between projects if not the first one
-                if (!isFirstProject) {
+                // Filter out 0-amount details
+                const safeDetails = project.details
+                    .filter((d: any) => (Number(d.quantity || 0) * Number(d.unitPrice || 0)) !== 0)
+                    .map((d: any) => ({
+                        description: d.description,
+                        quantity: Number(d.quantity),
+                        unitPrice: Number(d.unitPrice),
+                        lineType: d.lineType
+                    }));
+
+                if (safeDetails.length > 0) {
+                    // Add a blank row between projects if not the first one
+                    if (!isFirstProject) {
+                        combinedDetails.push({
+                            description: '\u00A0',
+                            quantity: '',
+                            unitPrice: '',
+                            lineType: 'padding'
+                        });
+                    }
+                    isFirstProject = false;
+
+                    const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
+                    const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+                    const projectDate = project.completionDate || project.createdAt;
+
+                    // Add Project Header Row
                     combinedDetails.push({
-                        description: '\u00A0',
+                        description: `【案件: ${machineName} S/N: ${serial}】`,
                         quantity: '',
                         unitPrice: '',
-                        lineType: 'padding'
+                        lineType: 'padding',
+                        date: projectDate
                     });
+
+                    combinedDetails.push(...safeDetails);
                 }
-                isFirstProject = false;
-
-                // Add Project Header Row
-                const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
-                const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
-                const projectDate = project.completionDate || project.createdAt;
-                combinedDetails.push({
-                    description: `【案件: ${machineName} S/N: ${serial}】`,
-                    quantity: '',
-                    unitPrice: '',
-                    lineType: 'padding', // Using padding to avoid calculation, but displaying text
-                    date: projectDate
-                });
-
-                // Add details for this project
-                const safeDetails = project.details.map((d: any) => ({
-                    description: d.description,
-                    quantity: Number(d.quantity),
-                    unitPrice: Number(d.unitPrice),
-                    lineType: d.lineType
-                }));
-                combinedDetails.push(...safeDetails);
             }
 
             // Create a pseudo-project for the PDF generation
@@ -1954,34 +1960,40 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
         let isFirstProject = true;
 
         for (const project of projects) {
-            if (!isFirstProject) {
+            const safeDetails = project.details
+                .filter((d: any) => (Number(d.quantity || 0) * Number(d.unitPrice || 0)) !== 0)
+                .map((d: any) => ({
+                    description: d.description,
+                    quantity: Number(d.quantity),
+                    unitPrice: Number(d.unitPrice),
+                    lineType: d.lineType
+                }));
+
+            if (safeDetails.length > 0) {
+                if (!isFirstProject) {
+                    combinedDetails.push({
+                        description: '\u00A0',
+                        quantity: '',
+                        unitPrice: '',
+                        lineType: 'padding'
+                    });
+                }
+                isFirstProject = false;
+
+                const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
+                const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+                const projectDate = project.completionDate || project.createdAt;
+
                 combinedDetails.push({
-                    description: '\u00A0',
+                    description: `【案件: ${machineName} S/N: ${serial}】`,
                     quantity: '',
                     unitPrice: '',
-                    lineType: 'padding'
+                    lineType: 'padding',
+                    date: projectDate
                 });
+
+                combinedDetails.push(...safeDetails);
             }
-            isFirstProject = false;
-
-            const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
-            const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
-            const projectDate = project.completionDate || project.createdAt;
-            combinedDetails.push({
-                description: `【案件: ${machineName} S/N: ${serial}】`,
-                quantity: '',
-                unitPrice: '',
-                lineType: 'padding',
-                date: projectDate
-            });
-
-            const safeDetails = project.details.map((d: any) => ({
-                description: d.description,
-                quantity: Number(d.quantity),
-                unitPrice: Number(d.unitPrice),
-                lineType: d.lineType
-            }));
-            combinedDetails.push(...safeDetails);
         }
 
         const customId = `${year}${String(month).padStart(2, '0')}-${customer.id}`;

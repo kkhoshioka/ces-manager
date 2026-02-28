@@ -87,6 +87,15 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
 
         if (processedIds.has(currentId)) continue;
 
+        // Skip items where the total amount is 0 yen (except padding lines used for layout/headers)
+        if (current.lineType !== 'padding') {
+            const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
+            if (amount === 0) {
+                processedIds.add(currentId);
+                continue;
+            }
+        }
+
         if (isTravelItem(current)) {
             let totalAmount = Number(current.quantity) * Number(current.unitPrice);
             processedIds.add(currentId);
