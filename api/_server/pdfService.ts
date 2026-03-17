@@ -831,10 +831,8 @@ export const generateQuotation = (project: Project) => {
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             // Add customerContactName if it exists, otherwise omit this line
                             ...(project.customerContactName ? [{ text: `${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
-                            { text: '\n' },
-                            { text: subjectLine, fontSize: 9 }, // Updated Subject
-                            { text: '\n\n' },
-                            { text: '毎度ありがとうございます。', fontSize: 9 },
+                            { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 8 : 12, 0, 0] }, // Updated Subject with dynamic margin
+                            { text: '毎度ありがとうございます。', fontSize: 9, margin: [0, 8, 0, 0] },
                             { text: '下記の通り御見積申し上げます。', fontSize: 9 },
                             { text: 'ご検討の程、宜しくお願い致します。', fontSize: 9 }
                         ]
