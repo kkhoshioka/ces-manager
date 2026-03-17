@@ -1090,9 +1090,7 @@ const Repairs: React.FC = () => {
                                                     value={detail.description}
                                                     onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
                                                     placeholder={
-                                                        type === 'labor'
-                                                            ? (detail.laborType === 'fixed' ? '一式' : '時間')
-                                                            : '詳細内容'
+                                                        type === 'labor' ? '作業内容' : '詳細内容'
                                                     }
                                                 />
                                             </td>
