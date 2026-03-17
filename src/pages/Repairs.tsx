@@ -1809,7 +1809,7 @@ const Repairs: React.FC = () => {
                                 <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
                                     {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false)}
                                     {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false)}
-                                    {renderDetailTable('自社発注部品・商品', 'part', 'part', true)}
+                                    {renderDetailTable('発注部品・商品', 'part', 'part', true)}
 
                                     {/* Outsourcing Section - Consolidated */}
                                     {renderDetailTable('外注費', 'outsourcing', undefined, true)}
