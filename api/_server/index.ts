@@ -1882,7 +1882,7 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
 
                     // Add Project Header Row
                     combinedDetails.push({
-                        description: `【案件: ${machineName} S/N: ${serial}】`,
+                        description: `【案件: ${machineName} #${serial}】`,
                         quantity: '',
                         unitPrice: '',
                         lineType: 'padding',
@@ -1987,7 +1987,7 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
                 const projectDate = project.completionDate || project.createdAt;
 
                 combinedDetails.push({
-                    description: `【案件: ${machineName} S/N: ${serial}】`,
+                    description: `【案件: ${machineName} #${serial}】`,
                     quantity: '',
                     unitPrice: '',
                     lineType: 'padding',

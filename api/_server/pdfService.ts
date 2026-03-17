@@ -66,7 +66,7 @@ const formatDate = (date: Date | string | null) => {
 };
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
-const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
+const processProjectDetails = (details: ProjectDetail[], options?: { includeZeroAmount?: boolean }): ProjectDetail[] => {
     const processed: ProjectDetail[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processedIds = new Set<number>();
@@ -91,7 +91,7 @@ const processProjectDetails = (details: ProjectDetail[]): ProjectDetail[] => {
         // Skip items where the total amount is 0 yen (except padding lines used for layout/headers)
         if (current.lineType !== 'padding') {
             const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
-            if (amount === 0) {
+            if (amount === 0 && !options?.includeZeroAmount) {
                 processedIds.add(currentId);
                 continue;
             }
@@ -621,7 +621,7 @@ export const generateDeliveryNote = (project: Project) => {
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
-                            { text: `件名: ${project.machineModel} (${project.serialNumber}) 修理完了品`, fontSize: 9 },
+                            { text: `件名: ${project.machineModel} #${project.serialNumber} 修理完了品`, fontSize: 9 },
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り納品いたしました。', fontSize: 9 }
@@ -714,7 +714,7 @@ export const generateDeliveryNote = (project: Project) => {
 
 export const generateQuotation = (project: Project) => {
     // Process details to group travel expenses
-    let processedDetails = processProjectDetails(project.details);
+    let processedDetails = processProjectDetails(project.details, { includeZeroAmount: true });
 
     // Pad with empty rows
     const MIN_ROWS = 13; // Increased from 10
@@ -740,7 +740,7 @@ export const generateQuotation = (project: Project) => {
     const now = new Date();
     // Use the first line of notes as the issue summary for the subject
     const issueSummary = (project.notes || '').split('\n')[0];
-    const subjectLine = `件名: ${project.machineModel} / ${project.serialNumber} / ${issueSummary}`;
+    const subjectLine = `件名: ${project.machineModel} #${project.serialNumber}　${issueSummary}`;
 
     // UI Colors
     const PRIMARY_COLOR = '#5B9BD5'; // Water/Light Blue
@@ -911,10 +911,10 @@ export const generateQuotation = (project: Project) => {
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                             ];
                         }),
 
