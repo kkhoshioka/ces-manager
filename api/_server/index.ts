@@ -758,6 +758,13 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
             pdfDoc.end();
         } else if (type === 'delivery') {
             const pdfDoc = generateDeliveryNote(projectForPdf);
+            
+            // 納品書発行フラグを更新
+            await prisma.project.update({
+                where: { id: Number(id) },
+                data: { isDeliveryNoteIssued: true }
+            });
+
             const filename = `Delivery_${project.id}.pdf`;
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
