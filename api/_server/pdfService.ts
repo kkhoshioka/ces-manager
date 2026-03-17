@@ -673,18 +673,32 @@ export const generateDeliveryNote = (project: Project) => {
                             { text: '備考', style: 'tableHeaderMain' }
                         ],
                         // Data Rows with Zebra Striping
-                        ...processedDetails.map((d: ProjectDetail, index: number) => {
-                            const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
-                            const rowBorder = [true, true, true, true];
-                            const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
-                            return [
-                                { text: d.lineType === 'padding' ? '' : (d.date ? formatDate(d.date) : formatDate(noteDate)), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
-                                { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
-                            ];
-                        })
+                        ...(() => {
+                            let lastPrintedDateStr = '';
+                            
+                            return processedDetails.map((d: ProjectDetail, index: number) => {
+                                const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
+                                const rowBorder = [true, true, true, true];
+                                const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
+                                
+                                let displayDateStr = '';
+                                if (d.lineType !== 'padding') {
+                                    const currentDateStr = d.date ? formatDate(d.date) : formatDate(noteDate);
+                                    if (currentDateStr !== lastPrintedDateStr) {
+                                        displayDateStr = currentDateStr;
+                                        lastPrintedDateStr = currentDateStr;
+                                    }
+                                }
+                                
+                                return [
+                                    { text: displayDateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
+                                    { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
+                                ];
+                            });
+                        })()
                     ]
                 },
                 layout: 'noBorders' // Use cell borders
