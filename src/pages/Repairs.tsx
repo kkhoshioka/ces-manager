@@ -1554,6 +1554,17 @@ const Repairs: React.FC = () => {
                                             </datalist>
                                         </div>
 
+                                        <div>
+                                            <Input
+                                                label="担当者名"
+                                                name="customerContactName"
+                                                value={formState.customerContactName}
+                                                onChange={handleInputChange}
+                                                placeholder="例: 山田"
+                                                autoComplete="off"
+                                            />
+                                        </div>
+
                                         {/* Show Machine Info for Repairs/Inspection/Maintenance OR if data is present */}
                                         {((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') || formState.machineModel) && (
                                             <>
