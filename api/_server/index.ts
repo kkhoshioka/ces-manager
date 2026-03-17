@@ -424,6 +424,7 @@ app.post('/api/projects', async (req, res) => {
             data: {
                 ...data,
                 hourMeter,
+                customerContactName: data.customerContactName || null,
                 customer: { connect: { id: Number(customerId) } },
                 ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
                 ...(details && { details: { create: details } })
@@ -515,6 +516,7 @@ app.put('/api/projects/:id', async (req, res) => {
                 where: { id: Number(id) },
                 data: {
                     ...data,
+                    customerContactName: data.customerContactName || null,
                     customer: { connect: { id: cid } },
                     ...(cmid ? { customerMachine: { connect: { id: cmid } } } : { customerMachine: { disconnect: true } })
                 }

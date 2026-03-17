@@ -17,6 +17,7 @@ interface Project {
     customer: Customer;
     machineModel: string;
     serialNumber: string;
+    customerContactName?: string | null;
     details: ProjectDetail[];
     notes?: string;
 }

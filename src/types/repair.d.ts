@@ -34,6 +34,7 @@ export interface Repair {
     machineModel?: string | null;
     serialNumber?: string | null;
     hourMeter?: string | null;
+    customerContactName?: string | null;
     orderDate?: string | null;
     completionDate?: string | null;
     status: RepairStatus;

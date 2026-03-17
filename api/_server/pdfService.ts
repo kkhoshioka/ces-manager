@@ -51,6 +51,7 @@ interface Project {
     customer: Customer;
     machineModel: string;
     serialNumber: string;
+    customerContactName?: string | null;
     details: ProjectDetail[];
     notes?: string;
 }
@@ -828,6 +829,8 @@ export const generateQuotation = (project: Project) => {
                         width: 280,
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            // Add customerContactName if it exists, otherwise omit this line
+                            ...(project.customerContactName ? [{ text: `${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
                             { text: '\n' },
                             { text: subjectLine, fontSize: 9 }, // Updated Subject
                             { text: '\n\n' },

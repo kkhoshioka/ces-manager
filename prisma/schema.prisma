@@ -87,6 +87,8 @@ model Project {
   customerId        Int
   customerMachineId Int?
   
+  customerContactName String? // New: 顧客担当者名
+  
   type              String    @default("repair") // 'repair' or 'sales'
   
   // Snapshot fields

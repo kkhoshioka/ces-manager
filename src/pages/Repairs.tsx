@@ -65,6 +65,7 @@ const Repairs: React.FC = () => {
     const [formType, setFormType] = useState<'repair' | 'sales' | 'inspection' | 'maintenance'>('repair');
     const [formState, setFormState] = useState<{
         customerName: string;
+        customerContactName: string; // New field
         machineModel: string;
         serialNumber: string;
         hourMeter: string;
@@ -75,6 +76,7 @@ const Repairs: React.FC = () => {
         status: RepairStatus;
     }>({
         customerName: '',
+        customerContactName: '',
         machineModel: '',
         serialNumber: '',
         hourMeter: '',
@@ -523,6 +525,7 @@ const Repairs: React.FC = () => {
 
             const projectData = {
                 type: formType, // Include type
+                customerContactName: formState.customerContactName, // New field Added
                 customerId: customer.id,
                 customerMachineId: customerMachineId,
                 machineModel: formState.machineModel,
@@ -617,6 +620,7 @@ const Repairs: React.FC = () => {
     const resetForm = () => {
         setFormState({
             customerName: '',
+            customerContactName: '',
             machineModel: '',
             serialNumber: '',
             hourMeter: '',
@@ -668,6 +672,7 @@ const Repairs: React.FC = () => {
                 setFormState(prev => ({
                     ...prev,
                     customerName: fullProject.customer?.name || prev.customerName,
+                    customerContactName: fullProject.customerContactName || prev.customerContactName,
                     machineModel: fullProject.machineModel || prev.machineModel,
                     serialNumber: fullProject.serialNumber || prev.serialNumber,
                     hourMeter: fullProject.hourMeter || prev.hourMeter,
@@ -754,6 +759,7 @@ const Repairs: React.FC = () => {
         const noteParts = (project.notes || '').split('\n\n備考: ');
         setFormState({
             customerName: project.customer?.name || '',
+            customerContactName: project.customerContactName || '',
             machineModel: project.machineModel || '',
             serialNumber: project.serialNumber || '',
             hourMeter: project.hourMeter || '',

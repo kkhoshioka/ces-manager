@@ -22,6 +22,7 @@ interface Project {
     isInvoiceIssued: boolean;
     isPaymentReceived: boolean;
     paymentDate?: string;
+    customerContactName?: string | null;
 }
 
 interface CustomerStat {
