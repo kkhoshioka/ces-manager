@@ -130,7 +130,8 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
                 description: `［出張費］${currentDesc}`,
                 quantity: 1,
                 unitPrice: totalAmount,
-                lineType: current.lineType // Keep original line type (travel or outsourcing)
+                lineType: current.lineType, // Keep original line type (travel or outsourcing)
+                date: current.date
             });
 
         } else if (current.lineType === 'labor') {
@@ -144,6 +145,7 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
                     ...current,
                     quantity: 1,
                     unitPrice: totalAmount,
+                    date: current.date
                     // laborType is 'fixed' or undefined
                 });
             }
@@ -621,7 +623,7 @@ export const generateDeliveryNote = (project: Project) => {
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
-                            { text: `件名: ${project.machineModel} #${project.serialNumber} 修理完了品`, fontSize: 9 },
+                            { text: `件名: ${project.machineModel} #${project.serialNumber}`, fontSize: 9 },
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り納品いたしました。', fontSize: 9 }
@@ -673,7 +675,7 @@ export const generateDeliveryNote = (project: Project) => {
                             const rowBorder = [true, true, true, true];
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
-                                { text: d.lineType === 'padding' ? '' : formatDate(d.date || null), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
+                                { text: d.lineType === 'padding' ? '' : (d.date ? formatDate(d.date) : ''), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
