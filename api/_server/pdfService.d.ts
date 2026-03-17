@@ -20,6 +20,8 @@ interface Project {
     customerContactName?: string | null;
     details: ProjectDetail[];
     notes?: string;
+    createdAt?: Date | string | null;
+    completionDate?: Date | string | null;
 }
 export declare const generateInvoice: (project: Project) => PDFKit.PDFDocument;
 export declare const generateDeliveryNote: (project: Project) => PDFKit.PDFDocument;

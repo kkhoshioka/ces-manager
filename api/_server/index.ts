@@ -1728,7 +1728,9 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
                 machineModel: project.machineModel || project.customerMachine?.machineModel || '',
                 serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
                 details: safeDetails,
-                notes: project.notes || ''
+                notes: project.notes || '',
+                createdAt: project.createdAt,
+                completionDate: project.completionDate
             };
 
             if (type === 'delivery') {

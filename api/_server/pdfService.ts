@@ -54,6 +54,8 @@ interface Project {
     customerContactName?: string | null;
     details: ProjectDetail[];
     notes?: string;
+    createdAt?: Date | string | null;
+    completionDate?: Date | string | null;
 }
 
 const formatCurrency = (amount: number | string) => {
@@ -533,7 +535,8 @@ export const generateDeliveryNote = (project: Project) => {
     }
 
     const now = new Date();
-    const deliveryDate = formatDate(now);
+    const noteDate = project.completionDate ? new Date(project.completionDate) : (project.createdAt ? new Date(project.createdAt) : now);
+    const deliveryDate = formatDate(noteDate);
 
     // UI Colors (Shared)
     const PRIMARY_COLOR = '#5B9BD5';
@@ -592,7 +595,7 @@ export const generateDeliveryNote = (project: Project) => {
                                         {
                                             columns: [
                                                 { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
+                                                { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
                                             ]
                                         }
                                     ],
@@ -675,7 +678,7 @@ export const generateDeliveryNote = (project: Project) => {
                             const rowBorder = [true, true, true, true];
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
-                                { text: d.lineType === 'padding' ? '' : (d.date ? formatDate(d.date) : ''), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
+                                { text: d.lineType === 'padding' ? '' : (d.date ? formatDate(d.date) : formatDate(noteDate)), fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
