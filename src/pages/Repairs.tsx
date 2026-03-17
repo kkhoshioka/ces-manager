@@ -492,14 +492,22 @@ const Repairs: React.FC = () => {
                         });
                     }
                 } else {
-                    // Not found, create new
-                    machine = await customerService.createMachine({
-                        customerId: customer.id,
-                        machineModel: formState.machineModel,
-                        serialNumber: formState.serialNumber || ''
-                    });
+                    // Not found, prompt user to register
+                    const shouldRegister = window.confirm(`入力された機種（${formState.machineModel}）とシリアル（${formState.serialNumber || 'なし'}）は機材台帳に登録されていません。\n機材台帳に新しく登録しますか？`);
+                    if (shouldRegister) {
+                        machine = await customerService.createMachine({
+                            customerId: customer.id,
+                            machineModel: formState.machineModel,
+                            serialNumber: formState.serialNumber || ''
+                        });
+                    } else {
+                        machine = undefined;
+                    }
                 }
-                customerMachineId = machine.id;
+                
+                if (machine) {
+                    customerMachineId = machine.id;
+                }
             }
 
             // Supplier Auto-Registration Logic
