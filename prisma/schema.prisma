@@ -101,6 +101,18 @@ model Project {
   status            String    @default("received") // received, diagnosing, in_progress, completed, delivered
   totalAmount       Decimal   @default(0)
   notes             String?
+  
+  // Rental specific fields
+  rentalStartDate   DateTime?
+  rentalEndDate     DateTime?
+  actualReturnDate  DateTime?
+  rentalStatus      String?   // reserved, rented, returned, cancelled
+  
+  // New Rental fields
+  deliveryLocation  String?
+  outboundHourMeter String?
+  inboundHourMeter  String?
+
   // Status check fields
   isInvoiceIssued   Boolean   @default(false)
   isDeliveryNoteIssued Boolean @default(false) // New: Track if delivery note is issued
@@ -147,6 +159,11 @@ model ProjectDetail {
   outsourcingDetailType String? // labor, part, travel, etc.
   laborType       String?  // 'time' | 'fixed' (New)
   
+  // Rental specific fields
+  machineModel    String?
+  serialNumber    String?
+  rentalBillingType String? // 'daily' | 'monthly'
+
   date            DateTime? // Date of the expense/work (New)
 
   createdAt       DateTime @default(now())

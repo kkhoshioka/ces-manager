@@ -423,6 +423,10 @@ app.post('/api/projects', async (req, res) => {
         const project = await prisma.project.create({
             data: {
                 ...data,
+                rentalStartDate: data.rentalStartDate ? new Date(data.rentalStartDate) : null,
+                rentalEndDate: data.rentalEndDate ? new Date(data.rentalEndDate) : null,
+                actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : null,
+                rentalStatus: data.rentalStatus || null,
                 hourMeter,
                 customerContactName: data.customerContactName || null,
                 customer: { connect: { id: Number(customerId) } },
@@ -516,6 +520,10 @@ app.put('/api/projects/:id', async (req, res) => {
                 where: { id: Number(id) },
                 data: {
                     ...data,
+                    rentalStartDate: data.rentalStartDate ? new Date(data.rentalStartDate) : null,
+                    rentalEndDate: data.rentalEndDate ? new Date(data.rentalEndDate) : null,
+                    actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : null,
+                    rentalStatus: data.rentalStatus || null,
                     customerContactName: data.customerContactName || null,
                     customer: { connect: { id: cid } },
                     ...(cmid ? { customerMachine: { connect: { id: cmid } } } : { customerMachine: { disconnect: true } })
@@ -556,7 +564,11 @@ app.put('/api/projects/:id', async (req, res) => {
                         productCategoryId: detail.productCategoryId ? Number(detail.productCategoryId) : null,
                         projectId: Number(id),
                         outsourcingDetailType: detail.outsourcingDetailType || null,
-                        date: detail.date ? new Date(detail.date) : null
+                        date: detail.date ? new Date(detail.date) : null,
+                        machineModel: detail.machineModel || null,
+                        serialNumber: detail.serialNumber || null,
+                        rentalBillingType: detail.rentalBillingType || null,
+                        laborType: detail.laborType || null
                     };
                     return safeDetail;
                 });

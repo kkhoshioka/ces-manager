@@ -19,6 +19,9 @@ export interface ProjectDetail {
     outsourcingCost: number;
     outsourcingDetailType?: string | null;
     laborType?: string | null;
+    machineModel?: string | null;
+    serialNumber?: string | null;
+    rentalBillingType?: string | null;
 }
 
 export interface ProjectPhoto {
@@ -34,7 +37,7 @@ export interface Repair {
     id: number;
     customerId: number;
     customerMachineId?: number | null;
-    type?: 'repair' | 'sales' | 'inspection' | 'maintenance'; // Added project type
+    type?: 'repair' | 'sales' | 'inspection' | 'maintenance' | 'rental'; // Added rental project type
 
     // Snapshot fields
     machineModel?: string | null;
@@ -47,6 +50,13 @@ export interface Repair {
     status: RepairStatus;
     totalAmount: number;
     notes?: string | null;
+
+    // Rental fields
+    rentalStartDate?: string | null;
+    rentalEndDate?: string | null;
+    actualReturnDate?: string | null;
+    rentalStatus?: string | null;
+
 
     // Status flags
     isInvoiceIssued?: boolean;
@@ -70,7 +80,13 @@ export type NewRepair = {
     hourMeter?: string;
     issueDescription?: string; // Mapped to notes or description in details? Let's use notes for now or create a detail.
     notes?: string;
-    type?: 'repair' | 'sales';
+    type?: 'repair' | 'sales' | 'rental';
     status?: RepairStatus;
+    
+    // Rental fields for creation
+    rentalStartDate?: string | null;
+    rentalEndDate?: string | null;
+    actualReturnDate?: string | null;
+    rentalStatus?: string | null;
     details?: Omit<ProjectDetail, 'id' | 'projectId' | 'amountCost' | 'amountSales' | 'outsourcingCost'>[];
 };
