@@ -344,4 +344,14 @@ model QuotationDetail {
   remarks         String?
   supplier        String?
   supplierId      Int?
+  
+  // Rental fields
+  machineModel           String?
+  serialNumber           String?
+  rentalBillingType      String?
+  rentalStartDate        DateTime?
+  rentalEndDate          DateTime?
+  rentalBasicFee         Decimal   @default(0)
+  rentalCompensationFee  Decimal   @default(0)
+  rentalCompensationDays Decimal   @default(0)
 }

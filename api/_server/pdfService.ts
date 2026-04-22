@@ -31,15 +31,24 @@ try {
 // const printer: any = null;
 
 interface ProjectDetail {
-    id?: number; // Added for tracking
+    id?: number;
     description: string;
     quantity: number | string;
     unitPrice: number | string;
-    lineType?: string; // Added for grouping logic
-    date?: string | Date; // Added Date
+    lineType?: string;
+    date?: string | Date;
     travelType?: string;
     outsourcingDetailType?: string;
-    laborType?: string; // Added laborType
+    laborType?: string;
+    // Rental fields
+    machineModel?: string | null;
+    serialNumber?: string | null;
+    rentalStartDate?: string | Date | null;
+    rentalEndDate?: string | Date | null;
+    rentalBillingType?: string | null;
+    rentalBasicFee?: number | string;
+    rentalCompensationDays?: number | string;
+    rentalCompensationFee?: number | string;
 }
 
 interface Customer {
@@ -70,7 +79,6 @@ const formatDate = (date: Date | string | null) => {
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
 const processProjectDetails = (details: ProjectDetail[], options?: { includeZeroAmount?: boolean }): ProjectDetail[] => {
     const processed: ProjectDetail[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processedIds = new Set<number>();
 
     const normalizeDescription = (desc: string) => {
@@ -86,19 +94,54 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
 
     for (let i = 0; i < details.length; i++) {
         const current = details[i];
-        const currentId = current.id || (i * -1);
+        const currentId = current.id || (i * -100); // Scale to avoid overlap with expanded lines
 
         if (processedIds.has(currentId)) continue;
 
-        // Skip items where the total amount is 0 yen (except padding lines used for layout/headers)
-        if (current.lineType !== 'padding') {
-            const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
-            if (amount === 0 && !options?.includeZeroAmount) {
-                processedIds.add(currentId);
-                continue;
+        // --- Rental Item Expansion ---
+        if (current.machineModel) {
+            const startDate = current.rentalStartDate ? formatDate(current.rentalStartDate) : '';
+            const endDate = current.rentalEndDate ? formatDate(current.rentalEndDate) : '';
+            const periodStr = (startDate || endDate) ? ` (${startDate}～${endDate})` : '';
+            const billingTypeStr = current.rentalBillingType === 'monthly' ? ' [月極]' : '';
+            
+            // 1. Main Rental Line
+            processed.push({
+                ...current,
+                description: `${current.machineModel}${current.serialNumber ? ` (${current.serialNumber})` : ''}${periodStr}${billingTypeStr}`,
+                quantity: current.rentalBillingType === 'monthly' ? 1 : current.quantity,
+                unitPrice: current.unitPrice,
+                date: current.rentalStartDate || current.date
+            });
+
+            // 2. Basic Fee (if exists)
+            if (Number(current.rentalBasicFee) > 0) {
+                processed.push({
+                    description: '　基本料',
+                    quantity: 1,
+                    unitPrice: current.rentalBasicFee || 0,
+                    lineType: 'padding_fee', // Treat as child of the above
+                    date: current.rentalStartDate || current.date
+                });
             }
+
+            // 3. Compensation Fee (if exists)
+            if (Number(current.rentalCompensationFee) > 0) {
+                const compDays = Number(current.rentalCompensationDays) || Number(current.quantity) || 1;
+                processed.push({
+                    description: `　補償料${compDays > 1 ? ` (${compDays}日間)` : ''}`,
+                    quantity: compDays,
+                    unitPrice: current.rentalCompensationFee || 0,
+                    lineType: 'padding_fee',
+                    date: current.rentalStartDate || current.date
+                });
+            }
+
+            processedIds.add(currentId);
+            continue;
         }
 
+        // --- Existing Travel/Labor Logic ---
         if (isTravelItem(current)) {
             let totalAmount = Number(current.quantity) * Number(current.unitPrice);
             processedIds.add(currentId);
@@ -106,10 +149,9 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
             const currentDesc = normalizeDescription(current.description);
             const isOutsourcing = current.lineType === 'outsourcing';
 
-            // Search for other travel items with same description, date, and type (internal vs outsourcing)
             for (let j = i + 1; j < details.length; j++) {
                 const other = details[j];
-                const otherId = other.id || (j * -1);
+                const otherId = other.id || (j * -100);
 
                 if (processedIds.has(otherId)) continue;
                 if (!isTravelItem(other)) continue;
@@ -132,27 +174,32 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
                 description: `［出張費］${currentDesc}`,
                 quantity: 1,
                 unitPrice: totalAmount,
-                lineType: current.lineType, // Keep original line type (travel or outsourcing)
+                lineType: current.lineType,
                 date: current.date
             });
 
         } else if (current.lineType === 'labor') {
             if (current.laborType === 'time') {
-                // Keep as is: Quantity remains hours, Unit Price remains hourly rate
                 processed.push(current);
             } else {
-                // Transform Labor to "1 set" (Fixed)
                 const totalAmount = Number(current.quantity) * Number(current.unitPrice);
                 processed.push({
                     ...current,
                     quantity: 1,
                     unitPrice: totalAmount,
                     date: current.date
-                    // laborType is 'fixed' or undefined
                 });
             }
             processedIds.add(currentId);
         } else {
+            // Standard item (Part, etc)
+            // Skip 0 yen items if requested
+            const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
+            if (amount === 0 && current.lineType !== 'padding' && !options?.includeZeroAmount) {
+                processedIds.add(currentId);
+                continue;
+            }
+            
             processed.push(current);
             processedIds.add(currentId);
         }

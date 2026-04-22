@@ -56,16 +56,17 @@ router.post('/projects/:projectId/quotations', async (req, res) => {
             if (project && project.details) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 initialDetails = project.details.map((d: any) => ({
-                    lineType: d.lineType,
-                    description: d.description,
-                    quantity: d.quantity,
-                    unitPrice: d.unitPrice,
-                    unitCost: d.unitCost,
-                    date: d.date,
-                    travelType: d.travelType,
-                    outsourcingDetailType: d.outsourcingDetailType,
                     remarks: d.remarks,
-                    supplierId: d.supplierId
+                    supplierId: d.supplierId,
+                    // Rental fields
+                    machineModel: d.machineModel,
+                    serialNumber: d.serialNumber,
+                    rentalBillingType: d.rentalBillingType,
+                    rentalStartDate: d.rentalStartDate,
+                    rentalEndDate: d.rentalEndDate,
+                    rentalBasicFee: d.rentalBasicFee,
+                    rentalCompensationFee: d.rentalCompensationFee,
+                    rentalCompensationDays: d.rentalCompensationDays
                     // Notes: Ignoring IDs to create new ones
                 }));
             }
@@ -137,7 +138,15 @@ router.put('/quotations/:id', async (req, res) => {
                         date: d.date ? new Date(d.date) : null,
                         travelType: d.travelType,
                         outsourcingDetailType: d.outsourcingDetailType,
-                        remarks: d.remarks
+                        remarks: d.remarks,
+                        machineModel: d.machineModel,
+                        serialNumber: d.serialNumber,
+                        rentalBillingType: d.rentalBillingType,
+                        rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate) : null,
+                        rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate) : null,
+                        rentalBasicFee: Number(d.rentalBasicFee || 0),
+                        rentalCompensationFee: Number(d.rentalCompensationFee || 0),
+                        rentalCompensationDays: Number(d.rentalCompensationDays || 0)
                     }))
                 });
             }
@@ -202,14 +211,14 @@ router.post('/quotations/:id/apply', async (req, res) => {
                         date: d.date,
                         travelType: d.travelType,
                         outsourcingDetailType: d.outsourcingDetailType,
-                        // Supplier info might be missing in quotation if we didn't add it to model explicitly or if it's just raw text.
-                        // Impl plan schema for QuotationDetail didn't strongly bind SupplierId, but we should check if we want to.
-                        // Current schema for QuotationDetail has no supplierId. 
-                        // If we want to preserve Supplier, we should have added it. 
-                        // For now, it will be lost or need to be re-entered if not in QuotationDetail.
-                        // Wait, looking at my schema update... I didn't add supplierId to QuotationDetail.
-                        // I should probably add it if I want to persist it.
-                        // For now, proceeding without supplierId link (it will be null).
+                        machineModel: d.machineModel,
+                        serialNumber: d.serialNumber,
+                        rentalBillingType: d.rentalBillingType,
+                        rentalStartDate: d.rentalStartDate,
+                        rentalEndDate: d.rentalEndDate,
+                        rentalBasicFee: d.rentalBasicFee,
+                        rentalCompensationFee: d.rentalCompensationFee,
+                        rentalCompensationDays: d.rentalCompensationDays
                     }))
                 });
             }

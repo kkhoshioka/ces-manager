@@ -1707,9 +1707,17 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
                     quantity: Number(d.quantity),
                     unitPrice: Number(d.unitPrice),
                     lineType: d.lineType,
-                    // date: d.date, // QuotationDetail might have date?
                     travelType: d.travelType,
-                    outsourcingDetailType: d.outsourcingDetailType
+                    outsourcingDetailType: d.outsourcingDetailType,
+                    // Rental fields (QuotationDetail needs these if we added them, but let's check schema)
+                    machineModel: (d as any).machineModel,
+                    serialNumber: (d as any).serialNumber,
+                    rentalStartDate: (d as any).rentalStartDate,
+                    rentalEndDate: (d as any).rentalEndDate,
+                    rentalBillingType: (d as any).rentalBillingType,
+                    rentalBasicFee: (d as any).rentalBasicFee,
+                    rentalCompensationFee: (d as any).rentalCompensationFee,
+                    rentalCompensationDays: (d as any).rentalCompensationDays
                 }))
             };
 
@@ -1737,12 +1745,22 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const safeDetails = project.details.map((d: any) => ({
+                id: d.id,
                 description: d.description,
                 quantity: Number(d.quantity),
                 unitPrice: Number(d.unitPrice),
                 lineType: d.lineType,
                 date: d.date,
-                outsourcingDetailType: d.outsourcingDetailType
+                outsourcingDetailType: d.outsourcingDetailType,
+                laborType: d.laborType,
+                machineModel: d.machineModel,
+                serialNumber: d.serialNumber,
+                rentalStartDate: d.rentalStartDate,
+                rentalEndDate: d.rentalEndDate,
+                rentalBillingType: d.rentalBillingType,
+                rentalBasicFee: d.rentalBasicFee,
+                rentalCompensationFee: d.rentalCompensationFee,
+                rentalCompensationDays: d.rentalCompensationDays
             }));
 
             const pdfData = {

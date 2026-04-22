@@ -8,6 +8,14 @@ interface ProjectDetail {
     travelType?: string;
     outsourcingDetailType?: string;
     laborType?: string;
+    machineModel?: string | null;
+    serialNumber?: string | null;
+    rentalStartDate?: string | Date | null;
+    rentalEndDate?: string | Date | null;
+    rentalBillingType?: string | null;
+    rentalBasicFee?: number | string;
+    rentalCompensationDays?: number | string;
+    rentalCompensationFee?: number | string;
 }
 interface Customer {
     name: string;
