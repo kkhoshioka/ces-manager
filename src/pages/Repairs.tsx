@@ -1319,22 +1319,23 @@ const Repairs: React.FC = () => {
                         <Plus size={16} /> 追加
                     </Button>
                 </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
-                    <thead>
+                <div style={{ overflowX: 'auto', width: '100%', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', minWidth: '1300px', tableLayout: 'fixed' }}>
+                        <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>開始日</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>終了日</th>
-                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>機種名</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>シリアル</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '6%' }}>日/月</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '3%' }}>日</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>レンタル料</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>基本料</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '3%' }}>補日</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>補償料</th>
-                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>原価単価</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '4%' }}>操作</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '140px' }}>開始日</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '140px' }}>終了日</th>
+                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'left', width: '150px' }}>仕入先</th>}
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '150px' }}>機種名</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '120px' }}>シリアル</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '80px' }}>日/月</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '70px' }}>請求日数</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>レンタル料</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>基本料</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '70px' }}>補償日数</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>補償料</th>
+                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>原価単価</th>}
+                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1488,12 +1489,13 @@ const Repairs: React.FC = () => {
                     <tfoot>
                         <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
                             <td colSpan={isWRental ? 8 : 7} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
-                            <td colSpan={isWRental ? 4 : 4} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
+                            <td colSpan={isWRental ? 5 : 5} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                             {isWRental && <td style={{ padding: '0.5rem', textAlign: 'right', color: '#ef4444' }}>{subtotalCost.toLocaleString()}円 (原価)</td>}
                             <td></td>
                         </tr>
                     </tfoot>
                 </table>
+                </div>
             </div>
         );
     };
