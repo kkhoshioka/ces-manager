@@ -192,6 +192,7 @@ const Repairs: React.FC = () => {
         rentalEndDate?: string;
         rentalBasicFee?: number;
         rentalCompensationFee?: number;
+        rentalCompensationDays?: number;
     }
 
     const [details, setDetails] = useState<DetailItem[]>([]);
@@ -384,7 +385,7 @@ const Repairs: React.FC = () => {
 
         details.forEach(d => {
             const cost = d.quantity * d.unitCost;
-            const sales = (d.quantity * d.unitPrice) + (Number(d.rentalBasicFee) || 0) + (d.quantity * (Number(d.rentalCompensationFee) || 0));
+            const sales = (d.quantity * d.unitPrice) + (Number(d.rentalBasicFee) || 0) + ((Number(d.rentalCompensationDays) || 0) * (Number(d.rentalCompensationFee) || 0));
 
             totalCost += cost;
             totalSales += sales;
@@ -603,7 +604,7 @@ const Repairs: React.FC = () => {
                         unitPrice: safePrice,
                         unitCost: safeCost,
                         amountCost: safeQty * safeCost,
-                        amountSales: (safeQty * safePrice) + (Number(d.rentalBasicFee) || 0) + (safeQty * (Number(d.rentalCompensationFee) || 0)),
+                        amountSales: (safeQty * safePrice) + (Number(d.rentalBasicFee) || 0) + ((Number(d.rentalCompensationDays) || 0) * (Number(d.rentalCompensationFee) || 0)),
                         outsourcingDetailType: d.outsourcingDetailType,
                         laborType: d.laborType,
                         machineModel: d.machineModel,
@@ -612,7 +613,8 @@ const Repairs: React.FC = () => {
                         rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate) : null,
                         rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate) : null,
                         rentalBasicFee: Number(d.rentalBasicFee) || 0,
-                        rentalCompensationFee: Number(d.rentalCompensationFee) || 0
+                        rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
+                        rentalCompensationDays: Number(d.rentalCompensationDays) || 0
                     };
                 })
             };
@@ -780,7 +782,8 @@ const Repairs: React.FC = () => {
                             rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate).toISOString().split('T')[0] : '',
                             rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : '',
                             rentalBasicFee: Number(d.rentalBasicFee) || 0,
-                            rentalCompensationFee: Number(d.rentalCompensationFee) || 0
+                            rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
+                            rentalCompensationDays: Number(d.rentalCompensationDays) || 0
                         } as DetailItem;
                     }));
                 } else {
@@ -1304,7 +1307,7 @@ const Repairs: React.FC = () => {
             .filter(d => d.lineType === type);
 
         const subtotalCost = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitCost), 0);
-        const subtotalSales = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitPrice) + (Number(d.rentalBasicFee) || 0) + (d.quantity * (Number(d.rentalCompensationFee) || 0)), 0);
+        const subtotalSales = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitPrice) + (Number(d.rentalBasicFee) || 0) + ((Number(d.rentalCompensationDays) || 0) * (Number(d.rentalCompensationFee) || 0)), 0);
 
         const isWRental = type === 'outsourcing';
 
@@ -1319,16 +1322,18 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>開始日</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>終了日</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>機種名</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>シリアル</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '7%' }}>日/月</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '7%' }}>請求数</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>レンタル料</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>基本料</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>補償料</th>
-                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>原価単価</th>}
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>開始日</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>終了日</th>
+                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>機種名</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>シリアル</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '6%' }}>日/月</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '3%' }}>日</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>レンタル料</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>基本料</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '3%' }}>補日</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>補償料</th>
+                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>原価単価</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '4%' }}>操作</th>
                         </tr>
                     </thead>
@@ -1340,6 +1345,7 @@ const Repairs: React.FC = () => {
                                         type="date"
                                         value={detail.rentalStartDate || ''}
                                         onChange={(e) => handleDetailChange(detail.originalIndex, 'rentalStartDate', e.target.value)}
+                                        style={{ padding: '0.2rem', fontSize: '0.8rem' }}
                                     />
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
@@ -1347,14 +1353,27 @@ const Repairs: React.FC = () => {
                                         type="date"
                                         value={detail.rentalEndDate || ''}
                                         onChange={(e) => handleDetailChange(detail.originalIndex, 'rentalEndDate', e.target.value)}
+                                        style={{ padding: '0.2rem', fontSize: '0.8rem' }}
                                     />
                                 </td>
+                                {isWRental && (
+                                    <td style={{ padding: '0.5rem' }}>
+                                        <Input
+                                            type="text"
+                                            value={detail.supplier || ''}
+                                            onChange={(e) => handleDetailChange(detail.originalIndex, 'supplier', e.target.value)}
+                                            placeholder="仕入先"
+                                            style={{ padding: '0.2rem', fontSize: '0.8rem' }}
+                                        />
+                                    </td>
+                                )}
                                 <td style={{ padding: '0.5rem' }}>
                                     <Input
                                         type="text"
                                         value={detail.machineModel || ''}
                                         onChange={(e) => handleDetailChange(detail.originalIndex, 'machineModel', e.target.value)}
                                         placeholder="機種名"
+                                        style={{ padding: '0.2rem', fontSize: '0.8rem' }}
                                     />
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
@@ -1363,6 +1382,7 @@ const Repairs: React.FC = () => {
                                         value={detail.serialNumber || ''}
                                         onChange={(e) => handleDetailChange(detail.originalIndex, 'serialNumber', e.target.value)}
                                         placeholder="シリアル"
+                                        style={{ padding: '0.2rem', fontSize: '0.8rem' }}
                                     />
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
@@ -1396,13 +1416,13 @@ const Repairs: React.FC = () => {
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
                                     {detail.rentalBillingType === 'monthly' ? (
-                                        <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.9rem' }}>1式</div>
+                                        <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>-</div>
                                     ) : (
                                         <Input
                                             type="number"
                                             value={detail.quantity}
                                             onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', e.target.value)}
-                                            style={{ textAlign: 'right' }}
+                                            style={{ textAlign: 'right', padding: '0.2rem' }}
                                             min={1}
                                         />
                                     )}
@@ -1420,6 +1440,19 @@ const Repairs: React.FC = () => {
                                         onChange={(val) => handleDetailChange(detail.originalIndex, 'rentalBasicFee', val)}
                                         className="w-full text-right"
                                     />
+                                </td>
+                                <td style={{ padding: '0.5rem' }}>
+                                    {detail.rentalBillingType === 'monthly' ? (
+                                        <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>-</div>
+                                    ) : (
+                                        <Input
+                                            type="number"
+                                            value={detail.rentalCompensationDays || detail.quantity}
+                                            onChange={(e) => handleDetailChange(detail.originalIndex, 'rentalCompensationDays', e.target.value)}
+                                            style={{ textAlign: 'right', padding: '0.2rem' }}
+                                            min={0}
+                                        />
+                                    )}
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
                                     <CurrencyInput
@@ -1454,8 +1487,8 @@ const Repairs: React.FC = () => {
                     </tbody>
                     <tfoot>
                         <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
-                            <td colSpan={6} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
-                            <td colSpan={3} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
+                            <td colSpan={isWRental ? 8 : 7} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
+                            <td colSpan={isWRental ? 4 : 4} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                             {isWRental && <td style={{ padding: '0.5rem', textAlign: 'right', color: '#ef4444' }}>{subtotalCost.toLocaleString()}円 (原価)</td>}
                             <td></td>
                         </tr>

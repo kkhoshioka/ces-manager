@@ -559,7 +559,7 @@ app.put('/api/projects/:id', async (req, res) => {
                         unitCost: Number(detail.unitCost) || 0,
                         unitPrice: Number(detail.unitPrice) || 0,
                         amountCost: (Number(detail.quantity) || 0) * (Number(detail.unitCost) || 0),
-                        amountSales: ((Number(detail.quantity) || 0) * (Number(detail.unitPrice) || 0)) + (Number(detail.rentalBasicFee) || 0) + ((Number(detail.quantity) || 0) * (Number(detail.rentalCompensationFee) || 0)),
+                        amountSales: ((Number(detail.quantity) || 0) * (Number(detail.unitPrice) || 0)) + (Number(detail.rentalBasicFee) || 0) + ((Number(detail.rentalCompensationDays) || 0) * (Number(detail.rentalCompensationFee) || 0)),
                         productId: detail.productId ? Number(detail.productId) : null,
                         productCategoryId: detail.productCategoryId ? Number(detail.productCategoryId) : null,
                         projectId: Number(id),
@@ -572,6 +572,7 @@ app.put('/api/projects/:id', async (req, res) => {
                         rentalEndDate: detail.rentalEndDate ? new Date(detail.rentalEndDate) : null,
                         rentalBasicFee: Number(detail.rentalBasicFee) || 0,
                         rentalCompensationFee: Number(detail.rentalCompensationFee) || 0,
+                        rentalCompensationDays: Number(detail.rentalCompensationDays) || 0,
                         laborType: detail.laborType || null
                     };
                     return safeDetail;
