@@ -727,6 +727,49 @@ app.delete('/api/photos/:id', async (req, res) => {
 });
 
 
+// Helper to sync MonthlyBillStatus based on project's issued status
+async function syncMonthlyBillStatus(customerId: number, date: Date | null) {
+    if (!date) return;
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    // Get all projects for this customer in this month
+    const projects = await prisma.project.findMany({
+        where: {
+            customerId,
+            OR: [
+                { completionDate: { gte: startDate, lte: endDate } },
+                { createdAt: { gte: startDate, lte: endDate } }
+            ]
+        }
+    });
+
+    if (projects.length === 0) return;
+
+    const allIssued = projects.every(p => p.isInvoiceIssued);
+
+    if (allIssued) {
+        await prisma.monthlyBillStatus.upsert({
+            where: {
+                year_month_customerId: { year, month, customerId }
+            },
+            create: { year, month, customerId, status: 'issued', issuedAt: new Date() },
+            update: { status: 'issued', issuedAt: new Date() }
+        });
+    } else {
+        // If not all issued, ensure it is set to draft
+        await prisma.monthlyBillStatus.upsert({
+            where: {
+                year_month_customerId: { year, month, customerId }
+            },
+            create: { year, month, customerId, status: 'draft' },
+            update: { status: 'draft', issuedAt: null }
+        });
+    }
+}
+
 // Import PDF Service
 
 
@@ -767,6 +810,19 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
 
         if (type === 'invoice') {
             const pdfDoc = generateInvoice(projectForPdf);
+            
+            // 請求書発行フラグを更新
+            await prisma.project.update({
+                where: { id: Number(id) },
+                data: { isInvoiceIssued: true }
+            });
+
+            // 顧客の月次請求ステータスを同期
+            const billingDate = project.completionDate || project.createdAt;
+            if (billingDate) {
+                await syncMonthlyBillStatus(project.customerId, new Date(billingDate));
+            }
+
             const filename = `Invoice_${project.id}.pdf`;
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -1787,6 +1843,17 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
                 pdfDoc = generateQuotation(pdfData);
             } else {
                 pdfDoc = generateInvoice(pdfData);
+                // 請求書発行フラグを更新
+                await prisma.project.update({
+                    where: { id: Number(id) },
+                    data: { isInvoiceIssued: true }
+                });
+
+                // 顧客の月次請求ステータスを同期
+                const billingDate = project.completionDate || project.createdAt;
+                if (billingDate) {
+                    await syncMonthlyBillStatus(project.customerId, new Date(billingDate));
+                }
             }
         }
 

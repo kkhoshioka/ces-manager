@@ -79,6 +79,8 @@ const Repairs: React.FC = () => {
         rentalEndDate: string;
         actualReturnDate: string;
         rentalStatus: string;
+        isInvoiceIssued: boolean;
+        isDeliveryNoteIssued: boolean;
     }>({
         customerName: '',
         customerContactName: '',
@@ -93,7 +95,9 @@ const Repairs: React.FC = () => {
         rentalStartDate: '',
         rentalEndDate: '',
         actualReturnDate: '',
-        rentalStatus: 'reserved'
+        rentalStatus: 'reserved',
+        isInvoiceIssued: false,
+        isDeliveryNoteIssued: false
     });
 
     // System Settings
@@ -667,7 +671,9 @@ const Repairs: React.FC = () => {
             rentalEndDate: '',
             actualReturnDate: '',
             status: 'received',
-            rentalStatus: 'reserved'
+            rentalStatus: 'reserved',
+            isInvoiceIssued: false,
+            isDeliveryNoteIssued: false
         });
         setDetails([]);
         setPendingPhotos([]); // Clear pending
@@ -724,7 +730,9 @@ const Repairs: React.FC = () => {
                     rentalEndDate: fullProject.rentalEndDate ? new Date(fullProject.rentalEndDate).toISOString().split('T')[0] : prev.rentalEndDate,
                     issueDescription: fullIssue,
                     notes: fullExtraNotes,
-                    status: (fullProject.status as RepairStatus) || prev.status
+                    status: (fullProject.status as RepairStatus) || prev.status,
+                    isInvoiceIssued: !!fullProject.isInvoiceIssued,
+                    isDeliveryNoteIssued: !!fullProject.isDeliveryNoteIssued
                 }));
 
                 if (fullProject.details) {
@@ -823,7 +831,9 @@ const Repairs: React.FC = () => {
             issueDescription: noteParts[0] || '',
             notes: noteParts[1] || '',
             status: (project.status as RepairStatus) || 'received',
-            rentalStatus: project.rentalStatus || 'reserved'
+            rentalStatus: project.rentalStatus || 'reserved',
+            isInvoiceIssued: !!project.isInvoiceIssued,
+            isDeliveryNoteIssued: !!project.isDeliveryNoteIssued
         });
 
         // Clear details/photos initially or keep previous? Better to clear to avoid confusion
@@ -1647,6 +1657,27 @@ const Repairs: React.FC = () => {
                                                 <FileText size={14} style={{ marginRight: '4px' }} />
                                                 {project.isDeliveryNoteIssued ? '納品書(済)' : '納品書'}
                                             </Button>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => {
+                                                    window.open(`${API_BASE_URL}/projects/${project.id}/pdf/invoice`, '_blank');
+                                                    setProjects(projects.map(p => p.id === project.id ? { ...p, isInvoiceIssued: true } : p));
+                                                }}
+                                                title={project.isInvoiceIssued ? "請求書(発行済)PDF" : "請求書PDF"}
+                                                style={{
+                                                    color: project.isInvoiceIssued ? '#1e40af' : '#2563eb',
+                                                    fontWeight: 'bold',
+                                                    border: project.isInvoiceIssued ? '1px solid #93c5fd' : '1px solid #bfdbfe',
+                                                    background: project.isInvoiceIssued ? '#dbeafe' : '#eff6ff',
+                                                    fontSize: '0.8rem',
+                                                    padding: '0.2rem 0.5rem',
+                                                    height: 'auto'
+                                                }}
+                                            >
+                                                <FileText size={14} style={{ marginRight: '4px' }} />
+                                                {project.isInvoiceIssued ? '請求書(済)' : '請求書'}
+                                            </Button>
                                             <Button variant="ghost" size="sm" onClick={(e) => handleDeleteProject(project.id, e)} title="削除" style={{ color: '#ef4444' }}>
                                                 <Trash2 size={16} />
                                             </Button>
@@ -2083,9 +2114,29 @@ const Repairs: React.FC = () => {
 
                                 <div className={styles.formActions}>
                                     {selectedProjectId && (
-                                        <Button type="button" variant="ghost" onClick={() => handleDeleteProject(selectedProjectId)} style={{ color: '#ef4444', marginRight: 'auto' }}>
-                                            <Trash2 size={16} style={{ marginRight: '4px' }} /> 削除
-                                        </Button>
+                                        <>
+                                            <Button type="button" variant="ghost" onClick={() => handleDeleteProject(selectedProjectId)} style={{ color: '#ef4444', marginRight: 'auto' }}>
+                                                <Trash2 size={16} style={{ marginRight: '4px' }} /> 削除
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    window.open(`${API_BASE_URL}/projects/${selectedProjectId}/pdf/invoice`, '_blank');
+                                                    setFormState(prev => ({ ...prev, isInvoiceIssued: true }));
+                                                    loadProjects(); // Refresh the list in background
+                                                }}
+                                                icon={<FileText size={18} />}
+                                                style={{ 
+                                                    color: formState.isInvoiceIssued ? '#1e40af' : '#2563eb', 
+                                                    fontWeight: 'bold',
+                                                    background: formState.isInvoiceIssued ? '#dbeafe' : undefined,
+                                                    border: formState.isInvoiceIssued ? '1px solid #93c5fd' : undefined
+                                                }}
+                                            >
+                                                {formState.isInvoiceIssued ? '請求書発行(済)' : '請求書発行'}
+                                            </Button>
+                                        </>
                                     )}
                                     <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>キャンセル</Button>
                                     <Button type="submit" disabled={isSubmitting}>
