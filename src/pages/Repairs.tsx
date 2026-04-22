@@ -1329,10 +1329,10 @@ const Repairs: React.FC = () => {
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: '150px' }}>機種名</th>
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: '120px' }}>シリアル</th>
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: '80px' }}>日/月</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '70px' }}>請求日数</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '90px' }}>請求日数</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>レンタル料</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>基本料</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '70px' }}>補償日数</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '90px' }}>補償日数</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>補償料</th>
                             {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>原価単価</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>操作</th>
@@ -1443,17 +1443,13 @@ const Repairs: React.FC = () => {
                                     />
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
-                                    {detail.rentalBillingType === 'monthly' ? (
-                                        <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>-</div>
-                                    ) : (
-                                        <Input
-                                            type="number"
-                                            value={detail.rentalCompensationDays || detail.quantity}
-                                            onChange={(e) => handleDetailChange(detail.originalIndex, 'rentalCompensationDays', e.target.value)}
-                                            style={{ textAlign: 'right', padding: '0.2rem' }}
-                                            min={0}
-                                        />
-                                    )}
+                                    <Input
+                                        type="number"
+                                        value={detail.rentalCompensationDays || detail.quantity}
+                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'rentalCompensationDays', e.target.value)}
+                                        style={{ textAlign: 'right', padding: '0.2rem' }}
+                                        min={0}
+                                    />
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
                                     <CurrencyInput
