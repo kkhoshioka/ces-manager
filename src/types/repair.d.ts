@@ -1,5 +1,5 @@
 import type { Customer, CustomerMachine } from './customer';
-export type RepairStatus = 'received' | 'estimating' | 'diagnosing' | 'completed';
+export type RepairStatus = 'received' | 'estimating' | 'diagnosing' | 'completed' | 'on_rental';
 export interface ProjectDetail {
     id: number;
     projectId: number;

@@ -25,6 +25,7 @@ const getStatusStyle = (status: string) => {
         case 'received': return { bg: '#e2e8f0', color: '#1e293b', label: '仮登録' };
         case 'estimating': return { bg: '#fef08a', color: '#854d0e', label: '見積中' };
         case 'in_progress': return { bg: '#dbeafe', color: '#1e40af', label: '作業中' }; // Legacy
+        case 'on_rental': return { bg: '#d1fae5', color: '#065f46', label: '貸出中' };
         case 'completed': return { bg: '#dcfce7', color: '#166534', label: '完了' };
         case 'delivered': return { bg: '#f3f4f6', color: '#4b5563', label: '納品済' }; // Legacy
         default: return { bg: '#f3f4f6', color: '#4b5563', label: status };
@@ -1720,6 +1721,7 @@ const Repairs: React.FC = () => {
                                                 >
                                                     <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
                                                     <option value="estimating" style={{ backgroundColor: '#fef08a', color: '#854d0e' }}>見積中</option>
+                                                    {formType === 'rental' && <option value="on_rental" style={{ backgroundColor: '#d1fae5', color: '#065f46' }}>貸出中</option>}
                                                     <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                                 </select>
                                             </div>
