@@ -568,6 +568,8 @@ app.put('/api/projects/:id', async (req, res) => {
                         machineModel: detail.machineModel || null,
                         serialNumber: detail.serialNumber || null,
                         rentalBillingType: detail.rentalBillingType || null,
+                        rentalStartDate: detail.rentalStartDate ? new Date(detail.rentalStartDate) : null,
+                        rentalEndDate: detail.rentalEndDate ? new Date(detail.rentalEndDate) : null,
                         laborType: detail.laborType || null
                     };
                     return safeDetail;

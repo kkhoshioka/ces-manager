@@ -187,6 +187,8 @@ const Repairs: React.FC = () => {
         machineModel?: string;
         serialNumber?: string;
         rentalBillingType?: 'daily' | 'monthly';
+        rentalStartDate?: string;
+        rentalEndDate?: string;
     }
 
     const [details, setDetails] = useState<DetailItem[]>([]);
@@ -604,7 +606,9 @@ const Repairs: React.FC = () => {
                         laborType: d.laborType,
                         machineModel: d.machineModel,
                         serialNumber: d.serialNumber,
-                        rentalBillingType: d.rentalBillingType
+                        rentalBillingType: d.rentalBillingType,
+                        rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate) : null,
+                        rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate) : null
                     };
                 })
             };
@@ -675,6 +679,9 @@ const Repairs: React.FC = () => {
         // Pre-add a detail line for convenience
         if (type === 'sales') {
             addDetail('part'); // Sales usually implies parts/products
+        } else if (type === 'rental') {
+            // Rental starts with no details as per user request
+            setDetails([]);
         } else {
             addDetail('labor');
         }
@@ -765,7 +772,9 @@ const Repairs: React.FC = () => {
                             laborType: d.laborType as 'time' | 'fixed' | undefined,
                             machineModel: d.machineModel || '',
                             serialNumber: d.serialNumber || '',
-                            rentalBillingType: d.rentalBillingType as 'daily' | 'monthly' | undefined
+                            rentalBillingType: d.rentalBillingType as 'daily' | 'monthly' | undefined,
+                            rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate).toISOString().split('T')[0] : '',
+                            rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : ''
                         } as DetailItem;
                     }));
                 } else {
@@ -1304,11 +1313,11 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>部門</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>種別</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>開始日</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>終了日</th>
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>機種名</th>
                             <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>シリアル番号</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>日/月</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>日/月</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>請求数(日)</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '10%' }}>請求単価</th>
                             {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '10%' }}>原価単価</th>}
@@ -1320,18 +1329,16 @@ const Repairs: React.FC = () => {
                             <tr key={`rental-${detail.originalIndex}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                 <td style={{ padding: '0.5rem' }}>
                                     <Input
-                                        type="text"
-                                        value={detail.section || ''}
-                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'section', e.target.value)}
-                                        placeholder="部門"
+                                        type="date"
+                                        value={detail.rentalStartDate || ''}
+                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'rentalStartDate', e.target.value)}
                                     />
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
                                     <Input
-                                        type="text"
-                                        value={detail.description || ''}
-                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
-                                        placeholder="種別"
+                                        type="date"
+                                        value={detail.rentalEndDate || ''}
+                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'rentalEndDate', e.target.value)}
                                     />
                                 </td>
                                 <td style={{ padding: '0.5rem' }}>
@@ -1669,27 +1676,30 @@ const Repairs: React.FC = () => {
                                             <select
                                                 value={formType}
                                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                onChange={(e) => setFormType(e.target.value as any)}
-                                                className="border rounded-md p-2 text-sm form-select"
+                                                disabled={formType === 'rental'}
+                                                className={`border rounded-md p-2 text-sm form-select ${formType === 'rental' ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
                                                 style={{
                                                     width: '160px',
                                                     backgroundColor: (formType === 'sales' ? '#e0f2fe' :
                                                         formType === 'inspection' ? '#f3e8ff' :
-                                                            formType === 'maintenance' ? '#ffedd5' : '#fef9c3'),
+                                                            formType === 'maintenance' ? '#ffedd5' :
+                                                                formType === 'rental' ? '#d1fae5' : '#fef9c3'),
                                                     color: (formType === 'sales' ? '#0369a1' :
                                                         formType === 'inspection' ? '#7e22ce' :
-                                                            formType === 'maintenance' ? '#c2410c' : '#854d0e'),
+                                                            formType === 'maintenance' ? '#c2410c' :
+                                                                formType === 'rental' ? '#047857' : '#854d0e'),
                                                     borderColor: (formType === 'sales' ? '#bae6fd' :
                                                         formType === 'inspection' ? '#e9d5ff' :
-                                                            formType === 'maintenance' ? '#fed7aa' : '#fde047'),
-                                                    fontWeight: 'bold',
-                                                    cursor: 'pointer'
+                                                            formType === 'maintenance' ? '#fed7aa' :
+                                                                formType === 'rental' ? '#047857' : '#fde047'),
+                                                    fontWeight: 'bold'
                                                 }}
                                             >
                                                 <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
                                                 <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>点検案件</option>
                                                 <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
                                                 <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
+                                                {formType === 'rental' && <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>}
                                             </select>
                                         </div>
 
@@ -1724,16 +1734,7 @@ const Repairs: React.FC = () => {
                                                         required
                                                     />
                                                 </div>
-                                                {formType === 'rental' ? (
-                                                    <>
-                                                        <div>
-                                                            <Input type="date" label="レンタル開始日" name="rentalStartDate" value={formState.rentalStartDate} onChange={handleInputChange} required />
-                                                        </div>
-                                                        <div>
-                                                            <Input type="date" label="レンタル終了日" name="rentalEndDate" value={formState.rentalEndDate} onChange={handleInputChange} />
-                                                        </div>
-                                                    </>
-                                                ) : (
+                                                {formType !== 'rental' && (
                                                     <div>
                                                         <Input
                                                             type="date"

@@ -163,6 +163,8 @@ model ProjectDetail {
   machineModel    String?
   serialNumber    String?
   rentalBillingType String? // 'daily' | 'monthly'
+  rentalStartDate DateTime?
+  rentalEndDate   DateTime?
 
   date            DateTime? // Date of the expense/work (New)
 
