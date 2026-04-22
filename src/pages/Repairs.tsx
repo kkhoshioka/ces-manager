@@ -190,6 +190,8 @@ const Repairs: React.FC = () => {
         rentalBillingType?: 'daily' | 'monthly';
         rentalStartDate?: string;
         rentalEndDate?: string;
+        rentalBasicFee?: number;
+        rentalCompensationFee?: number;
     }
 
     const [details, setDetails] = useState<DetailItem[]>([]);
@@ -382,7 +384,7 @@ const Repairs: React.FC = () => {
 
         details.forEach(d => {
             const cost = d.quantity * d.unitCost;
-            const sales = d.quantity * d.unitPrice;
+            const sales = (d.quantity * d.unitPrice) + (Number(d.rentalBasicFee) || 0) + (d.quantity * (Number(d.rentalCompensationFee) || 0));
 
             totalCost += cost;
             totalSales += sales;
@@ -600,16 +602,17 @@ const Repairs: React.FC = () => {
                         quantity: safeQty,
                         unitPrice: safePrice,
                         unitCost: safeCost,
-                        productCategoryId: validCategoryId, // Pass to backend
                         amountCost: safeQty * safeCost,
-                        amountSales: safeQty * safePrice,
+                        amountSales: (safeQty * safePrice) + (Number(d.rentalBasicFee) || 0) + (safeQty * (Number(d.rentalCompensationFee) || 0)),
                         outsourcingDetailType: d.outsourcingDetailType,
                         laborType: d.laborType,
                         machineModel: d.machineModel,
                         serialNumber: d.serialNumber,
                         rentalBillingType: d.rentalBillingType,
                         rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate) : null,
-                        rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate) : null
+                        rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate) : null,
+                        rentalBasicFee: Number(d.rentalBasicFee) || 0,
+                        rentalCompensationFee: Number(d.rentalCompensationFee) || 0
                     };
                 })
             };
@@ -775,7 +778,9 @@ const Repairs: React.FC = () => {
                             serialNumber: d.serialNumber || '',
                             rentalBillingType: d.rentalBillingType as 'daily' | 'monthly' | undefined,
                             rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate).toISOString().split('T')[0] : '',
-                            rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : ''
+                            rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : '',
+                            rentalBasicFee: Number(d.rentalBasicFee) || 0,
+                            rentalCompensationFee: Number(d.rentalCompensationFee) || 0
                         } as DetailItem;
                     }));
                 } else {
@@ -1299,7 +1304,7 @@ const Repairs: React.FC = () => {
             .filter(d => d.lineType === type);
 
         const subtotalCost = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitCost), 0);
-        const subtotalSales = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitPrice), 0);
+        const subtotalSales = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitPrice) + (Number(d.rentalBasicFee) || 0) + (d.quantity * (Number(d.rentalCompensationFee) || 0)), 0);
 
         const isWRental = type === 'outsourcing';
 
@@ -1314,15 +1319,17 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>開始日</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>終了日</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>機種名</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>シリアル番号</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '8%' }}>日/月</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '8%' }}>請求数(日)</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '10%' }}>請求単価</th>
-                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '10%' }}>原価単価</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '5%' }}>操作</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>開始日</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>終了日</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>機種名</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>シリアル</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'left', width: '7%' }}>日/月</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '7%' }}>請求数</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>レンタル料</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>基本料</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>補償料</th>
+                            {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '9%' }}>原価単価</th>}
+                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '4%' }}>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1407,6 +1414,20 @@ const Repairs: React.FC = () => {
                                         className="w-full text-right"
                                     />
                                 </td>
+                                <td style={{ padding: '0.5rem' }}>
+                                    <CurrencyInput
+                                        value={detail.rentalBasicFee || 0}
+                                        onChange={(val) => handleDetailChange(detail.originalIndex, 'rentalBasicFee', val)}
+                                        className="w-full text-right"
+                                    />
+                                </td>
+                                <td style={{ padding: '0.5rem' }}>
+                                    <CurrencyInput
+                                        value={detail.rentalCompensationFee || 0}
+                                        onChange={(val) => handleDetailChange(detail.originalIndex, 'rentalCompensationFee', val)}
+                                        className="w-full text-right"
+                                    />
+                                </td>
                                 {isWRental && (
                                     <td style={{ padding: '0.5rem' }}>
                                         <CurrencyInput
@@ -1433,8 +1454,8 @@ const Repairs: React.FC = () => {
                     </tbody>
                     <tfoot>
                         <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
-                            <td colSpan={5} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
-                            <td colSpan={2} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
+                            <td colSpan={6} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
+                            <td colSpan={3} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                             {isWRental && <td style={{ padding: '0.5rem', textAlign: 'right', color: '#ef4444' }}>{subtotalCost.toLocaleString()}円 (原価)</td>}
                             <td></td>
                         </tr>

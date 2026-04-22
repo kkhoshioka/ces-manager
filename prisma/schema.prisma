@@ -165,6 +165,8 @@ model ProjectDetail {
   rentalBillingType String? // 'daily' | 'monthly'
   rentalStartDate DateTime?
   rentalEndDate   DateTime?
+  rentalBasicFee  Decimal  @default(0)
+  rentalCompensationFee Decimal @default(0)
 
   date            DateTime? // Date of the expense/work (New)
 
