@@ -1016,7 +1016,7 @@ const Repairs: React.FC = () => {
                                                 type="text"
                                                 className={styles.tableInput}
                                                 value={detail.productCode || ''}
-                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'productCode' as any, e.target.value)}
+                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'productCode', e.target.value)}
                                                 placeholder="品番"
                                             />
                                         </td>
@@ -1109,7 +1109,7 @@ const Repairs: React.FC = () => {
                                                         type="date"
                                                         className={styles.tableInput}
                                                         value={detail.date || ''}
-                                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'date' as any, e.target.value)}
+                                                        onChange={(e) => handleDetailChange(detail.originalIndex, 'date', e.target.value)}
                                                     />
                                                 </td>
                                             )}

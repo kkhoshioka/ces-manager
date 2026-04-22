@@ -484,9 +484,9 @@ app.put('/api/projects/:id', async (req, res) => {
         // Validation: Check for Foreign Keys availability
         if (details && Array.isArray(details)) {
             const categoryIds = details
-                .map((d: any) => d.productCategoryId)
-                .filter((id: any) => id != null)
-                .map((id: any) => Number(id))
+                .map((d: Record<string, any>) => d.productCategoryId)
+                .filter((cid: string | number | null) => cid != null)
+                .map((cid: string | number) => Number(cid))
                 .filter((id: number) => !isNaN(id));
 
             if (categoryIds.length > 0) {
@@ -548,7 +548,7 @@ app.put('/api/projects/:id', async (req, res) => {
                 });
                 console.log('[DEBUG] Old details deleted');
 
-                const newDetailsData = details.map((detail: any) => {
+                const newDetailsData = details.map((detail: Record<string, any>) => {
                     const safeDetail = {
                         lineType: detail.lineType || 'part',
                         description: detail.description || '',
@@ -574,9 +574,8 @@ app.put('/api/projects/:id', async (req, res) => {
                 });
 
                 console.log('[DEBUG] Details mapped. Creating...');
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 await tx.projectDetail.createMany({
-                    data: newDetailsData as any
+                    data: newDetailsData
                 });
                 console.log('[DEBUG] Details created');
             }
