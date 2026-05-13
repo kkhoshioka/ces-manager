@@ -1687,7 +1687,7 @@ const Repairs: React.FC = () => {
                                                     if (project.status === 'received') {
                                                         if (window.confirm('ステータスが「仮登録」です。請求書を発行するために「完了」に変更してもよろしいですか？')) {
                                                             try {
-                                                                await RepairService.updateProject(project.id, { status: 'completed' });
+                                                                await RepairService.update(project.id, { status: 'completed' });
                                                                 setProjects(projects.map(p => p.id === project.id ? { ...p, status: 'completed' } : p));
                                                             } catch (error) {
                                                                 console.error('Failed to update status', error);
@@ -2231,7 +2231,7 @@ const Repairs: React.FC = () => {
                                                     if (formState.status === 'received') {
                                                         if (window.confirm('ステータスが「仮登録」です。請求書を発行するために「完了」に変更してもよろしいですか？')) {
                                                             try {
-                                                                await RepairService.updateProject(selectedProjectId!, { status: 'completed' });
+                                                                await RepairService.update(selectedProjectId!, { status: 'completed' });
                                                                 setFormState(prev => ({ ...prev, status: 'completed' }));
                                                             } catch (error) {
                                                                 console.error('Failed to update status', error);
