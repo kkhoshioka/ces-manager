@@ -534,25 +534,29 @@ app.put('/api/projects/:id', async (req, res) => {
         // Transaction to ensure atomicity
         const project = await prisma.$transaction(async (tx) => {
             // 1. Update main project fields
-            // Ensure numeric IDs are valid
-            const cid = Number(customerId);
-            const cmid = customerMachineId ? Number(customerMachineId) : null;
+            const projectUpdateData: any = { ...data };
 
-            if (isNaN(cid)) throw new Error("Invalid Customer ID");
-            if (customerMachineId && isNaN(cmid!)) throw new Error("Invalid Customer Machine ID");
+            // Handle relation fields only if they are provided
+            if (customerId !== undefined) {
+                const cid = Number(customerId);
+                if (isNaN(cid)) throw new Error("Invalid Customer ID");
+                projectUpdateData.customer = { connect: { id: cid } };
+            }
+
+            if (customerMachineId !== undefined) {
+                const cmid = customerMachineId ? Number(customerMachineId) : null;
+                if (customerMachineId && isNaN(cmid!)) throw new Error("Invalid Customer Machine ID");
+                projectUpdateData.customerMachine = cmid ? { connect: { id: cmid } } : { disconnect: true };
+            }
+
+            // Handle date fields if provided
+            if (data.rentalStartDate !== undefined) projectUpdateData.rentalStartDate = data.rentalStartDate ? new Date(data.rentalStartDate) : null;
+            if (data.rentalEndDate !== undefined) projectUpdateData.rentalEndDate = data.rentalEndDate ? new Date(data.rentalEndDate) : null;
+            if (data.actualReturnDate !== undefined) projectUpdateData.actualReturnDate = data.actualReturnDate ? new Date(data.actualReturnDate) : null;
 
             await tx.project.update({
                 where: { id: Number(id) },
-                data: {
-                    ...data,
-                    rentalStartDate: data.rentalStartDate ? new Date(data.rentalStartDate) : null,
-                    rentalEndDate: data.rentalEndDate ? new Date(data.rentalEndDate) : null,
-                    actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : null,
-                    rentalStatus: data.rentalStatus || null,
-                    customerContactName: data.customerContactName || null,
-                    customer: { connect: { id: cid } },
-                    ...(cmid ? { customerMachine: { connect: { id: cmid } } } : { customerMachine: { disconnect: true } })
-                }
+                data: projectUpdateData
             });
             console.log('[DEBUG] Main project fields updated');
 
