@@ -103,7 +103,7 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
             const startDate = current.rentalStartDate ? formatDate(current.rentalStartDate) : '';
             const endDate = current.rentalEndDate ? formatDate(current.rentalEndDate) : '';
             const periodStr = (startDate || endDate) ? ` (${startDate}～${endDate})` : '';
-            const billingTypeStr = current.rentalBillingType === 'monthly' ? ' [月極]' : '';
+            const billingTypeStr = current.rentalBillingType === 'monthly' ? ' [レンタル][月極]' : ' [レンタル]';
             
             // 1. Main Rental Line
             processed.push({
