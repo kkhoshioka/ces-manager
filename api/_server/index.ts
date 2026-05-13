@@ -96,9 +96,15 @@ app.get('/api/maintenance/migrate', (req, res) => {
     });
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+// Health check / Keep-alive for Supabase
+app.get('/api/health', async (req, res) => {
+    try {
+        // Execute a lightweight query to keep Supabase active and prevent pausing
+        await prisma.$queryRaw`SELECT 1`;
+        res.json({ status: 'ok', database: 'connected' });
+    } catch (error) {
+        res.status(500).json({ status: 'error', error: 'Database connection failed' });
+    }
 });
 
 // Serve uploads
