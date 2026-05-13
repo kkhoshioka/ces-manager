@@ -1683,7 +1683,21 @@ const Repairs: React.FC = () => {
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
-                                                onClick={() => {
+                                                onClick={async () => {
+                                                    if (project.status === 'received') {
+                                                        if (window.confirm('ステータスが「仮登録」です。請求書を発行するために「完了」に変更してもよろしいですか？')) {
+                                                            try {
+                                                                await RepairService.updateProject(project.id, { status: 'completed' });
+                                                                setProjects(projects.map(p => p.id === project.id ? { ...p, status: 'completed' } : p));
+                                                            } catch (error) {
+                                                                console.error('Failed to update status', error);
+                                                                alert('ステータスの更新に失敗しました。');
+                                                                return;
+                                                            }
+                                                        } else {
+                                                            return;
+                                                        }
+                                                    }
                                                     window.open(`${API_BASE_URL}/projects/${project.id}/pdf/invoice`, '_blank');
                                                     setProjects(projects.map(p => p.id === project.id ? { ...p, isInvoiceIssued: true } : p));
                                                 }}
@@ -2213,7 +2227,21 @@ const Repairs: React.FC = () => {
                                             <Button
                                                 type="button"
                                                 variant="secondary"
-                                                onClick={() => {
+                                                onClick={async () => {
+                                                    if (formState.status === 'received') {
+                                                        if (window.confirm('ステータスが「仮登録」です。請求書を発行するために「完了」に変更してもよろしいですか？')) {
+                                                            try {
+                                                                await RepairService.updateProject(selectedProjectId!, { status: 'completed' });
+                                                                setFormState(prev => ({ ...prev, status: 'completed' }));
+                                                            } catch (error) {
+                                                                console.error('Failed to update status', error);
+                                                                alert('ステータスの更新に失敗しました。');
+                                                                return;
+                                                            }
+                                                        } else {
+                                                            return;
+                                                        }
+                                                    }
                                                     window.open(`${API_BASE_URL}/projects/${selectedProjectId}/pdf/invoice`, '_blank');
                                                     setFormState(prev => ({ ...prev, isInvoiceIssued: true }));
                                                     loadProjects(); // Refresh the list in background
