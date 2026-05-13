@@ -147,13 +147,13 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
                 </button>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <thead>
                     <tr style={{ backgroundColor: '#f3f4f6' }}>
-                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>見積番号</th>
-                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>発行日</th>
-                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'right' }}>金額(税抜)</th>
-                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'center' }}>ステータス</th>
+                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'left', width: '150px' }}>見積番号</th>
+                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'left', width: '120px' }}>発行日</th>
+                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'right', width: '120px' }}>金額(税抜)</th>
+                        <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'center', width: '100px' }}>ステータス</th>
                         <th style={{ padding: '0.75rem', borderBottom: '2px solid #e5e7eb', textAlign: 'center' }}>操作</th>
                     </tr>
                 </thead>
@@ -180,18 +180,18 @@ const QuotationList: React.FC<QuotationListProps> = ({ projectId, onEdit, onAppl
                                 </span>
                             </td>
                             <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                                    <button onClick={() => onEdit(q.id)} title="編集" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
-                                        <Edit2 size={18} color="#4b5563" />
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <button onClick={() => onEdit(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer', border: '1px solid #d1d5db', background: 'white', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#4b5563' }}>
+                                        <Edit2 size={14} color="#4b5563" /> 編集
                                     </button>
-                                    <button onClick={() => handlePdf(q.id)} title="PDF" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
-                                        <FileText size={18} color="#4b5563" />
+                                    <button onClick={() => handlePdf(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer', border: '1px solid #d1d5db', background: 'white', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#4b5563' }}>
+                                        <FileText size={14} color="#4b5563" /> PDF
                                     </button>
-                                    <button onClick={() => handleApply(q.id)} title="反映" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
-                                        <CheckCircle size={18} color="#dc2626" />
+                                    <button onClick={() => handleApply(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer', border: '1px solid #d1d5db', background: '#fef2f2', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#dc2626' }}>
+                                        <CheckCircle size={14} color="#dc2626" /> 実績に反映
                                     </button>
-                                    <button onClick={() => handleDelete(q.id)} title="削除" style={{ padding: '0.25rem', cursor: 'pointer', border: 'none', background: 'transparent' }}>
-                                        <Trash2 size={18} color="#9ca3af" />
+                                    <button onClick={() => handleDelete(q.id)} style={{ padding: '0.25rem 0.5rem', cursor: 'pointer', border: '1px solid #d1d5db', background: 'white', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#9ca3af' }}>
+                                        <Trash2 size={14} color="#9ca3af" /> 削除
                                     </button>
                                 </div>
                             </td>

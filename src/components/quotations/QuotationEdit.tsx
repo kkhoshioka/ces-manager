@@ -124,7 +124,7 @@ const QuotationEdit: React.FC<QuotationEditProps> = ({ quotationId, onClose, onS
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 50
+            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
         }}>
             <div style={{
                 backgroundColor: 'white', width: '90%', height: '90%', borderRadius: '0.5rem',
