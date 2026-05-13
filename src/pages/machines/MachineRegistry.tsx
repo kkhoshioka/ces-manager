@@ -90,8 +90,10 @@ const MachineRegistry: React.FC = () => {
     const handleDismissAlert = async (machine: CustomerMachine) => {
         if (!confirm('今年次の点検アラートを消去（非表示に）しますか？\n（次回の点検日を登録するまでアラートは出なくなります）')) return;
         try {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { customer, category, createdAt, updatedAt, ...cleanMachine } = machine;
             await axios.put(`${API_BASE_URL}/machines/${machine.id}`, {
-                ...machine,
+                ...cleanMachine,
                 enableInspectionAlert: false
             });
             fetchMachines();
