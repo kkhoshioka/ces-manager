@@ -2016,14 +2016,22 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                     }
                     isFirstProject = false;
 
-                    const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
-                    const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+                    const machineName = project.machineModel || project.customerMachine?.machineModel || '';
+                    const serial = project.serialNumber || project.customerMachine?.serialNumber || '';
                     const projectDate = project.completionDate || project.createdAt;
 
                     // Add Project Header Row
                     const symptom = (project.notes || '').split('\n')[0];
+                    let headerDesc = '';
+                    if (machineName || serial) {
+                        headerDesc = `【${machineName || '型式不明'} #${serial || 'シリアル不明'}${symptom ? ` ${symptom}` : ''}】`;
+                    } else {
+                        const projectTypeLabel = project.type === 'repair' ? '修理' : (project.type === 'rental' ? 'レンタル' : '販売');
+                        headerDesc = `【${projectTypeLabel}${symptom ? ` ${symptom}` : '案件詳細'}】`;
+                    }
+
                     combinedDetails.push({
-                        description: `【${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
+                        description: headerDesc,
                         quantity: '',
                         unitPrice: '',
                         lineType: 'padding',
@@ -2123,13 +2131,21 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
                 }
                 isFirstProject = false;
 
-                const machineName = project.machineModel || project.customerMachine?.machineModel || '不明';
-                const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
+                const machineName = project.machineModel || project.customerMachine?.machineModel || '';
+                const serial = project.serialNumber || project.customerMachine?.serialNumber || '';
                 const projectDate = project.completionDate || project.createdAt;
 
                 const symptom = (project.notes || '').split('\n')[0];
+                let headerDesc = '';
+                if (machineName || serial) {
+                    headerDesc = `【${machineName || '型式不明'} #${serial || 'シリアル不明'}${symptom ? ` ${symptom}` : ''}】`;
+                } else {
+                    const projectTypeLabel = project.type === 'repair' ? '修理' : (project.type === 'rental' ? 'レンタル' : '販売');
+                    headerDesc = `【${projectTypeLabel}${symptom ? ` ${symptom}` : '案件詳細'}】`;
+                }
+
                 combinedDetails.push({
-                    description: `【${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
+                    description: headerDesc,
                     quantity: '',
                     unitPrice: '',
                     lineType: 'padding',

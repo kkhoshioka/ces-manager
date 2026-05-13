@@ -328,7 +328,13 @@ export const generateInvoice = (project: Project) => {
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
                             { text: `お客様コード  (${project.customer?.code || ''})`, fontSize: 9 },
-                            { text: `件名: ${project.machineModel} #${project.serialNumber}`, fontSize: 9, margin: [0, 4, 0, 0] },
+                            { 
+                                text: (project.machineModel || project.serialNumber) 
+                                    ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
+                                    : '件名: 案件詳細', 
+                                fontSize: 9, 
+                                margin: [0, 4, 0, 0] 
+                            },
                             ...(project.notes ? [{ text: (project.notes || '').split('\n')[0], fontSize: 9, margin: [0, 2, 0, 0] }] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
@@ -681,7 +687,13 @@ export const generateDeliveryNote = (project: Project) => {
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
                             { text: `お客様コード  (${project.customer?.code || ''})`, fontSize: 9 },
-                            { text: `件名: ${project.machineModel} #${project.serialNumber}`, fontSize: 9, margin: [0, 4, 0, 0] },
+                            { 
+                                text: (project.machineModel || project.serialNumber) 
+                                    ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
+                                    : '件名: 案件詳細', 
+                                fontSize: 9, 
+                                margin: [0, 4, 0, 0] 
+                            },
                             ...(project.notes ? [{ text: (project.notes || '').split('\n')[0], fontSize: 9, margin: [0, 2, 0, 0] }] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
@@ -821,7 +833,9 @@ export const generateQuotation = (project: Project) => {
     const now = new Date();
     // Use the first line of notes as the issue summary for the subject
     const issueSummary = (project.notes || '').split('\n')[0];
-    const subjectLine = `件名: ${project.machineModel} #${project.serialNumber}`;
+    const subjectLine = (project.machineModel || project.serialNumber) 
+        ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
+        : '件名: 案件詳細';
 
     // UI Colors
     const PRIMARY_COLOR = '#5B9BD5'; // Water/Light Blue
