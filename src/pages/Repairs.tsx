@@ -485,15 +485,18 @@ const Repairs: React.FC = () => {
             // 原価表示のない項目（自社工賃、出張費）および「その他」はチェック対象外とする
             if (d.lineType === 'labor' || d.lineType === 'travel' || d.lineType === 'other') return false;
 
+            // 自社在庫レンタルの場合は原価が0なのが普通なのでチェック対象外とする
+            if (d.machineModel && d.lineType === 'part') return false;
+
             const cost = Number(d.unitCost) || 0;
             const price = Number(d.unitPrice) || 0;
             // 内容が入力されているか、どちらかの金額が入っている場合のみチェック
-            if (!d.description && cost === 0 && price === 0) return false;
+            if (!d.description && !d.machineModel && cost === 0 && price === 0) return false;
             return (cost > 0 && price === 0) || (cost === 0 && price > 0);
         });
 
         if (anomalies.length > 0) {
-            const names = anomalies.map(a => a.description || '(内容未入力)').slice(0, 5).join('、');
+            const names = anomalies.map(a => a.description || a.machineModel || '(内容未入力)').slice(0, 5).join('、');
             const suffix = anomalies.length > 5 ? ' など' : '';
             if (!window.confirm(`【確認】原価が入っていて請求額が0円、またはその逆の項目があります。\n（対象: ${names}${suffix}）\n\nこのまま保存してよろしいですか？`)) {
                 return;
