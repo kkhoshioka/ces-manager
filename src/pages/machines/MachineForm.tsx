@@ -53,7 +53,13 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
             const date = new Date(val);
             date.setFullYear(date.getFullYear() + 1);
             setNextInspectionDate(date.toISOString().split('T')[0]);
+            setEnableInspectionAlert(true);
         }
+    };
+
+    const handleNextInspectionDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNextInspectionDate(e.target.value);
+        setEnableInspectionAlert(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -170,7 +176,7 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
                                 label="年次点検期限 (前回+1年)"
                                 type="date"
                                 value={nextInspectionDate}
-                                onChange={e => setNextInspectionDate(e.target.value)}
+                                onChange={handleNextInspectionDateChange}
                             />
                         </div>
                     </div>
