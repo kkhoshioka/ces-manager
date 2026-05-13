@@ -86,10 +86,12 @@ const SupplierMaster: React.FC = () => {
             if (res.ok) {
                 fetchSuppliers();
             } else {
-                alert('削除に失敗しました');
+                const errorData = await res.json().catch(() => ({}));
+                alert(`削除に失敗しました。\n理由: ${errorData.error || 'この仕入先に関連する案件や発注データが残っている可能性があります。'}`);
             }
         } catch (error) {
             console.error('Delete failed', error);
+            alert('通信エラーが発生したため、削除できませんでした。');
         }
     };
 

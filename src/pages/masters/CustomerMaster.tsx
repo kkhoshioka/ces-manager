@@ -113,9 +113,13 @@ const CustomerMaster: React.FC = () => {
             });
             if (res.ok) {
                 fetchCustomers();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                alert(`削除に失敗しました。\n理由: ${errorData.error || 'この得意先に関連する案件や機材データが残っている可能性があります。'}`);
             }
         } catch (error) {
             console.error('Failed to delete customer', error);
+            alert('通信エラーが発生したため、削除できませんでした。');
         }
     };
 
