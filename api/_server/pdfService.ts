@@ -129,10 +129,11 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
             if (Number(current.rentalCompensationFee) > 0) {
                 const compDays = Number(current.rentalCompensationDays) || Number(current.quantity) || 1;
                 processed.push({
-                    description: `　補償料${compDays > 1 ? ` (${compDays}日間)` : ''}`,
-                    quantity: 1,
-                    unitPrice: (Number(current.rentalCompensationFee) || 0) * compDays,
+                    description: `　補償料`,
+                    quantity: compDays,
+                    unitPrice: current.rentalCompensationFee || 0,
                     lineType: 'padding_fee',
+                    laborType: 'days',
                     date: current.rentalStartDate || current.date
                 });
             }
@@ -471,7 +472,7 @@ export const generateInvoice = (project: Project) => {
                                     { text: dateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: (d.laborType === 'time' ? 'H' : (d.laborType === 'days' ? '日' : '式')), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
@@ -741,7 +742,7 @@ export const generateDeliveryNote = (project: Project) => {
                                     { text: displayDateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
                                     { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: d.lineType === 'padding' ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.lineType === 'padding' ? '' : (d.laborType === 'time' ? 'H' : (d.laborType === 'days' ? '日' : '式')), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
                                 ];
                             });
@@ -978,7 +979,7 @@ export const generateQuotation = (project: Project) => {
                             return [
                                 { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : (d.laborType === 'time' ? 'H' : '式'), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : (d.laborType === 'time' ? 'H' : (d.laborType === 'days' ? '日' : '式')), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                             ];
