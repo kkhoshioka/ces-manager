@@ -535,6 +535,7 @@ app.put('/api/projects/:id', async (req, res) => {
         const project = await prisma.$transaction(async (tx) => {
             // 1. Update main project fields
             const projectUpdateData: any = { ...data };
+            let cmid: number | null = null;
 
             // Handle relation fields only if they are provided
             if (customerId !== undefined) {
@@ -544,7 +545,7 @@ app.put('/api/projects/:id', async (req, res) => {
             }
 
             if (customerMachineId !== undefined) {
-                const cmid = customerMachineId ? Number(customerMachineId) : null;
+                cmid = customerMachineId ? Number(customerMachineId) : null;
                 if (customerMachineId && isNaN(cmid!)) throw new Error("Invalid Customer Machine ID");
                 projectUpdateData.customerMachine = cmid ? { connect: { id: cmid } } : { disconnect: true };
             }
