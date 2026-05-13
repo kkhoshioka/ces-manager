@@ -1754,7 +1754,16 @@ const Repairs: React.FC = () => {
                         )}
 
                         <div style={{ display: activeTab === 'details' ? 'block' : 'none' }}>
-                            <form onSubmit={handleSubmit} className={styles.form}>
+                            <form 
+                                onSubmit={handleSubmit} 
+                                className={styles.form}
+                                onKeyDown={(e) => {
+                                    const target = e.target as HTMLElement;
+                                    if (e.key === 'Enter' && target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
+                                        e.preventDefault();
+                                    }
+                                }}
+                            >
                                 {/* Summary Header */}
                                 <div className={styles.summaryHeader}>
                                     <div className={styles.formGrid}>
