@@ -18,6 +18,7 @@ interface ProjectDetail {
     rentalCompensationFee?: number | string;
 }
 interface Customer {
+    code?: string;
     name: string;
 }
 interface Project {

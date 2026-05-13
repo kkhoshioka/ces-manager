@@ -156,7 +156,7 @@ const ProductTypeMaster: React.FC = () => {
                         ) : categories.length === 0 ? (
                             <tr><td colSpan={4} className={styles.emptyState}>データがありません</td></tr>
                         ) : (
-                            categories.map(category => (
+                            categories.map((category, index) => (
                                 <tr key={category.id}>
                                     <td style={{ fontWeight: 600 }}>{category.section}</td>
                                     <td className={styles.partNumber}>{category.code || '-'}</td>
