@@ -56,9 +56,18 @@ router.post('/projects/:projectId/quotations', async (req, res) => {
             if (project && project.details) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 initialDetails = project.details.map((d: any) => ({
-                    remarks: d.remarks,
+                    lineType: d.lineType,
+                    description: d.description,
+                    quantity: d.quantity,
+                    unitPrice: d.unitPrice,
+                    unitCost: d.unitCost,
+                    date: d.date,
+                    travelType: d.travelType,
+                    outsourcingDetailType: d.outsourcingDetailType,
+                    laborType: d.laborType,
+                    supplier: d.supplier,
                     supplierId: d.supplierId,
-                    // Rental fields
+                    remarks: d.remarks,
                     machineModel: d.machineModel,
                     serialNumber: d.serialNumber,
                     rentalBillingType: d.rentalBillingType,
@@ -67,7 +76,6 @@ router.post('/projects/:projectId/quotations', async (req, res) => {
                     rentalBasicFee: d.rentalBasicFee,
                     rentalCompensationFee: d.rentalCompensationFee,
                     rentalCompensationDays: d.rentalCompensationDays
-                    // Notes: Ignoring IDs to create new ones
                 }));
             }
         }
