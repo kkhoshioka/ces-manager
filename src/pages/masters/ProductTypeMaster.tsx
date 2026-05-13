@@ -14,6 +14,21 @@ interface ProductCategory {
     sortOrder: number;
 }
 
+const getSectionPrefix = (section: string) => {
+    if (section.includes('修理') || section.includes('整備')) return 'M';
+    if (section.includes('新車')) return 'S';
+    if (section.includes('中古')) return 'U';
+    if (section.includes('レンタル')) return 'R';
+    if (section.includes('部品')) return 'P';
+    if (section.includes('用品')) return 'A';
+    if (section.includes('諸経費')) return 'E';
+    
+    // Fallback: Use first character if it's alphanumeric, otherwise 'Z'
+    const firstChar = section.charAt(0).toUpperCase();
+    if (/[A-Z0-9]/.test(firstChar)) return firstChar;
+    return 'Z';
+};
+
 const ProductTypeMaster: React.FC = () => {
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,7 +103,10 @@ const ProductTypeMaster: React.FC = () => {
         }
     };
 
-    const handleMove = async (index: number, direction: 'up' | 'down') => {
+    const handleMove = async (id: number, direction: 'up' | 'down') => {
+        const index = categories.findIndex(c => c.id === id);
+        if (index === -1) return;
+
         const newCategories = [...categories];
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         
@@ -125,9 +143,22 @@ const ProductTypeMaster: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const openAdd = () => {
+    const openAdd = (section: string = '') => {
         setEditingId(null);
-        setFormData({ section: '', code: '', name: '' });
+        let code = '';
+        if (section) {
+            const sectionCats = categories.filter(c => c.section === section);
+            const prefix = getSectionPrefix(section);
+            const numbers = sectionCats
+                .map(c => {
+                    const match = c.code?.match(/\d+$/);
+                    return match ? parseInt(match[0], 10) : 0;
+                })
+                .filter(n => !isNaN(n));
+            const nextNum = Math.max(0, ...numbers) + 1;
+            code = `${prefix}-${nextNum.toString().padStart(2, '0')}`;
+        }
+        setFormData({ section, code, name: '' });
         setIsModalOpen(true);
     };
 
@@ -135,8 +166,8 @@ const ProductTypeMaster: React.FC = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>商品種別マスタ</h2>
-                <Button icon={<Plus size={18} />} onClick={openAdd}>
-                    新規登録
+                <Button icon={<Plus size={18} />} onClick={() => openAdd()}>
+                    新規部門登録
                 </Button>
             </div>
 
@@ -144,7 +175,7 @@ const ProductTypeMaster: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th>部門</th>
+                            <th style={{ width: '200px' }}>部門</th>
                             <th style={{ width: '120px' }}>コード</th>
                             <th>種別名</th>
                             <th style={{ width: '100px' }}>アクション</th>
@@ -156,40 +187,57 @@ const ProductTypeMaster: React.FC = () => {
                         ) : categories.length === 0 ? (
                             <tr><td colSpan={4} className={styles.emptyState}>データがありません</td></tr>
                         ) : (
-                            categories.map((category, index) => (
-                                <tr key={category.id}>
-                                    <td style={{ fontWeight: 600 }}>{category.section}</td>
-                                    <td className={styles.partNumber}>{category.code || '-'}</td>
-                                    <td>{category.name}</td>
-                                    <td>
-                                        <div className={styles.actions}>
-                                            <div style={{ display: 'flex', gap: '2px', marginRight: '8px' }}>
-                                                <button 
-                                                    className={styles.actionButton} 
-                                                    onClick={() => handleMove(index, 'up')}
-                                                    disabled={index === 0}
-                                                    style={{ opacity: index === 0 ? 0.3 : 1 }}
-                                                >
-                                                    <ArrowUp size={14} />
-                                                </button>
-                                                <button 
-                                                    className={styles.actionButton} 
-                                                    onClick={() => handleMove(index, 'down')}
-                                                    disabled={index === categories.length - 1}
-                                                    style={{ opacity: index === categories.length - 1 ? 0.3 : 1 }}
-                                                >
-                                                    <ArrowDown size={14} />
-                                                </button>
+                            sections.map(section => (
+                                <React.Fragment key={section}>
+                                    <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                                        <td colSpan={4} style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: '#1e293b' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span>{section}</span>
+                                                <Button size="sm" variant="ghost" onClick={() => openAdd(section)} style={{ padding: '2px 8px' }}>
+                                                    <Plus size={14} /> 追加
+                                                </Button>
                                             </div>
-                                            <button className={styles.actionButton} onClick={() => openEdit(category)}>
-                                                <Edit size={16} />
-                                            </button>
-                                            <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(category.id)}>
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
+                                    {categories.filter(c => c.section === section).map((category) => {
+                                        const globalIndex = categories.findIndex(c => c.id === category.id);
+                                        return (
+                                            <tr key={category.id}>
+                                                <td style={{ color: '#64748b', fontSize: '0.8rem', paddingLeft: '2rem' }}>{section}</td>
+                                                <td className={styles.partNumber}>{category.code || '-'}</td>
+                                                <td>{category.name}</td>
+                                                <td>
+                                                    <div className={styles.actions}>
+                                                        <div style={{ display: 'flex', gap: '2px', marginRight: '8px' }}>
+                                                            <button 
+                                                                className={styles.actionButton} 
+                                                                onClick={() => handleMove(category.id, 'up')}
+                                                                disabled={globalIndex === 0}
+                                                                style={{ opacity: globalIndex === 0 ? 0.3 : 1 }}
+                                                            >
+                                                                <ArrowUp size={14} />
+                                                            </button>
+                                                            <button 
+                                                                className={styles.actionButton} 
+                                                                onClick={() => handleMove(category.id, 'down')}
+                                                                disabled={globalIndex === categories.length - 1}
+                                                                style={{ opacity: globalIndex === categories.length - 1 ? 0.3 : 1 }}
+                                                            >
+                                                                <ArrowDown size={14} />
+                                                            </button>
+                                                        </div>
+                                                        <button className={styles.actionButton} onClick={() => openEdit(category)}>
+                                                            <Edit size={16} />
+                                                        </button>
+                                                        <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(category.id)}>
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </React.Fragment>
                             ))
                         )}
                     </tbody>
