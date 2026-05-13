@@ -753,8 +753,13 @@ export const generateDeliveryNote = (project: Project) => {
             },
 
             // Notes
-            { text: '備考:', margin: [0, 20, 0, 5], fontSize: 9 },
-            { text: project.notes || 'なし', fontSize: 9, color: '#555' }
+            {
+                unbreakable: true,
+                stack: [
+                    { text: '備考:', margin: [0, 20, 0, 5], fontSize: 9 },
+                    { text: project.notes || 'なし', fontSize: 9, color: '#555' }
+                ]
+            }
         ],
         defaultStyle: {
             font: 'Roboto',
