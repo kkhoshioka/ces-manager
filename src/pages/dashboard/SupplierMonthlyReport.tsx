@@ -65,7 +65,6 @@ const SupplierMonthlyReport = () => {
         ));
 
         try {
-            // Get current internal state to build payload if necessary, but here we just send the one changing field + other
             const currentItem = detailData.find(item => item.id === detailId);
             if (!currentItem) return;
 
@@ -85,7 +84,32 @@ const SupplierMonthlyReport = () => {
         } catch (error) {
             console.error(error);
             alert('ステータスの更新に失敗しました');
-            // Re-fetch detail data on error to revert
+            fetchReport();
+        }
+    };
+
+    const handleBatchStatusChange = async (field: 'isInvoiceReceived' | 'isPaid', value: boolean) => {
+        const actionLabel = field === 'isInvoiceReceived' ? '請求書受領済' : '支払済';
+        if (!confirm(`${selectedSupplier} の全明細を「${actionLabel}」に更新しますか？`)) return;
+        
+        setDetailLoading(true);
+        try {
+            await Promise.all(detailData.map(async (item) => {
+                if (item[field] === value) return;
+                
+                const payload = {
+                    isInvoiceReceived: field === 'isInvoiceReceived' ? value : item.isInvoiceReceived,
+                    isPaid: field === 'isPaid' ? value : item.isPaid
+                };
+
+                return fetch(`${API_BASE_URL}/project-details/${item.id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }));
+
+            // Refresh details
             if (selectedSupplier) {
                 const response = await fetch(`${API_BASE_URL}/dashboard/supplier-details?year=${year}&month=${month}&supplier=${encodeURIComponent(selectedSupplier)}`);
                 if (response.ok) {
@@ -93,6 +117,12 @@ const SupplierMonthlyReport = () => {
                     setDetailData(result);
                 }
             }
+        } catch (error) {
+            console.error(error);
+            alert('一括更新に失敗しました');
+        } finally {
+            setDetailLoading(true); // Temporary to show loading during refresh
+            setTimeout(() => setDetailLoading(false), 500);
         }
     };
 
@@ -108,7 +138,11 @@ const SupplierMonthlyReport = () => {
             const response = await fetch(`${API_BASE_URL}/dashboard/supplier-details?year=${year}&month=${month}&supplier=${encodeURIComponent(supplierName)}`);
             if (response.ok) {
                 const result = await response.json();
-                setDetailData(result);
+                // Sort by customer name for better grouping
+                const sorted = Array.isArray(result) 
+                    ? [...result].sort((a, b) => (a.customerName || '').localeCompare(b.customerName || ''))
+                    : [];
+                setDetailData(sorted);
             }
         } catch (error) {
             console.error(error);
@@ -155,6 +189,22 @@ const SupplierMonthlyReport = () => {
                         <Button variant="ghost" onClick={handleNextMonth}>
                             翌月 <ChevronRight size={18} style={{ marginLeft: '4px', verticalAlign: 'middle' }} />
                         </Button>
+                    </div>
+                </div>
+            </div>
+
+            <div className={styles.legendCard} style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Settings size={16} /> 項目の説明
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div>
+                        <strong style={{ color: '#1e293b' }}>● 請求書（受領）:</strong> 
+                        <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>仕入先から当月分の請求書が届いているかを確認するチェックです。</span>
+                    </div>
+                    <div>
+                        <strong style={{ color: '#1e293b' }}>● 支払（完了）:</strong> 
+                        <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>その仕入先への支払いが完了したかを確認するチェックです。</span>
                     </div>
                 </div>
             </div>
@@ -239,22 +289,32 @@ const SupplierMonthlyReport = () => {
                                             <tr className={styles.detailRow}>
                                                 <td colSpan={5} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
                                                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc' }}>
-                                                        <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#475569' }}>
-                                                            {item.name} の取引明細
-                                                        </h3>
-                                                        <div style={{ overflowX: 'auto', backgroundColor: 'white', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-                                                            <table style={{ width: '100%', fontSize: '0.85rem' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
+                                                            <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>
+                                                                {item.name} の取引明細 (顧客順)
+                                                            </h3>
+                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange('isInvoiceReceived', true)} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
+                                                                    全明細を請求書受領済にする
+                                                                </Button>
+                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange('isPaid', true)} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
+                                                                    全明細を支払済にする
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ overflowX: 'auto', backgroundColor: 'white', borderRadius: '0.5rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                                                 <thead>
-                                                                    <tr style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>日付</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>顧客名</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>機種 / S/N</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>品名</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>請求書</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>支払</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>数量</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>単価</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額</th>
+                                                                    <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', borderBottom: '2px solid #e2e8f0' }}>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>日付</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>顧客名</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>機種 / S/N</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>品名</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '80px' }}>請求書</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '80px' }}>支払</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>数量</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>単価</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>金額</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
