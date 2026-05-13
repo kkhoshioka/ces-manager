@@ -479,6 +479,31 @@ const Repairs: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isSubmitting) return;
+
+        // 原価と請求額の整合性チェック
+        const details = [
+            ...formState.laborDetails,
+            ...formState.partsDetails,
+            ...formState.outsourcingDetails,
+            ...formState.otherDetails
+        ];
+        
+        const anomalies = details.filter(d => {
+            const cost = Number(d.cost) || 0;
+            const amount = Number(d.amount) || 0;
+            // 内容が入力されているか、どちらかの金額が入っている場合のみチェック
+            if (!d.description && cost === 0 && amount === 0) return false;
+            return (cost > 0 && amount === 0) || (cost === 0 && amount > 0);
+        });
+
+        if (anomalies.length > 0) {
+            const names = anomalies.map(a => a.description || '(内容未入力)').slice(0, 5).join('、');
+            const suffix = anomalies.length > 5 ? ' など' : '';
+            if (!window.confirm(`【確認】原価が入っていて請求額が0円、またはその逆の項目があります。\n（対象: ${names}${suffix}）\n\nこのまま保存してよろしいですか？`)) {
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
             // Customer Logic
