@@ -1190,31 +1190,23 @@ const Repairs: React.FC = () => {
                                                 }
                                             />
                                             {/* Unit Logic */}
-                                            <span className={styles.currencyUnit}>
-                                                {(type === 'labor') ? (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.7rem', marginLeft: '4px' }}>
-                                                        <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                                            <input
-                                                                type="radio"
-                                                                name={`laborType-${detail.originalIndex}`}
-                                                                checked={detail.laborType !== 'fixed'}
-                                                                onChange={() => handleLaborToggle(detail.originalIndex, 'time')}
-                                                            /> H
-                                                        </label>
-                                                        <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                                            <input
-                                                                type="radio"
-                                                                name={`laborType-${detail.originalIndex}`}
-                                                                checked={detail.laborType === 'fixed'}
-                                                                onChange={() => handleLaborToggle(detail.originalIndex, 'fixed')}
-                                                            /> 式
-                                                        </label>
-                                                    </div>
-                                                ) : (
-                                                    type === 'travel' && detail.travelType === 'distance' ? 'km' :
-                                                        (type === 'travel' ? 'H' : '')
-                                                )}
-                                            </span>
+                                            {/* Unit Selection Dropdown */}
+                                            <select
+                                                className={styles.tableInput}
+                                                style={{ fontSize: '0.8rem', padding: '0.1rem', marginLeft: '4px', width: '60px' }}
+                                                value={detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType || '式'))}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    let laborTypeVal = val;
+                                                    if (val === 'H') laborTypeVal = 'time';
+                                                    else if (val === '式') laborTypeVal = 'fixed';
+                                                    handleDetailChange(detail.originalIndex, 'laborType', laborTypeVal);
+                                                }}
+                                            >
+                                                {['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱'].map(u => (
+                                                    <option key={u} value={u}>{u}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </td>
                                     {(type !== 'labor' && type !== 'travel') && (
