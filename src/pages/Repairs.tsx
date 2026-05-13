@@ -848,7 +848,7 @@ const Repairs: React.FC = () => {
     };
 
     // Helper to render Detail Section
-    const renderDetailTable = (title: string, type: DetailItem['lineType'], subType?: string, showSupplier: boolean = false) => {
+    const renderDetailTable = (title: string, type: DetailItem['lineType'], subType?: string, showSupplier: boolean = false, description?: string) => {
         const sectionDetails = details
             .map((d, i) => ({ ...d, originalIndex: i }))
             .filter(d => {
@@ -869,7 +869,10 @@ const Repairs: React.FC = () => {
         return (
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
-                    <span>{title}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span>{title}</span>
+                        {description && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{description}</span>}
+                    </div>
                     {type === 'outsourcing' && subType ? (
                         <div className="flex gap-2">
                             {subType === 'labor' && (
@@ -1307,7 +1310,7 @@ const Repairs: React.FC = () => {
         return result;
     }, [projects, statusFilter, sortField, sortOrder]);
 
-    const renderRentalDetailTable = (title: string, type: 'part' | 'outsourcing') => {
+    const renderRentalDetailTable = (title: string, type: 'part' | 'outsourcing', description?: string) => {
         const sectionDetails = details
             .map((d, i) => ({ ...d, originalIndex: i }))
             .filter(d => d.lineType === type);
@@ -1320,7 +1323,10 @@ const Repairs: React.FC = () => {
         return (
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
-                    <span>{title}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span>{title}</span>
+                        {description && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{description}</span>}
+                    </div>
                     <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type)}>
                         <Plus size={16} /> 追加
                     </Button>
@@ -2143,19 +2149,19 @@ const Repairs: React.FC = () => {
                                 <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
                                     {formType === 'rental' ? (
                                         <>
-                                            {renderRentalDetailTable('自社在庫レンタル', 'part')}
-                                            {renderRentalDetailTable('他社Wレンタル', 'outsourcing')}
+                                            {renderRentalDetailTable('自社在庫レンタル', 'part', '請求単価0で登録した内容は明細には表示されません')}
+                                            {renderRentalDetailTable('他社Wレンタル', 'outsourcing', '請求単価0で登録した内容は明細には表示されません')}
                                         </>
                                     ) : (
                                         <>
-                                            {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false)}
-                                            {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false)}
-                                            {renderDetailTable('発注部品・商品', 'part', 'part', true)}
+                                            {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
+                                            {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
+                                            {renderDetailTable('発注部品・商品', 'part', 'part', true, '請求単価0で登録した内容は明細には表示されません')}
 
                                             {/* Outsourcing Section - Consolidated */}
-                                            {renderDetailTable('外注費', 'outsourcing', undefined, true)}
+                                            {renderDetailTable('外注費', 'outsourcing', undefined, true, '請求単価0で登録した内容は明細には表示されません')}
 
-                                            {renderDetailTable('その他', 'other', undefined, false)}
+                                            {renderDetailTable('その他', 'other', undefined, false, '請求単価0で登録した場合は、内容のみ明細に表示されます')}
                                         </>
                                     )}
                                 </div>
