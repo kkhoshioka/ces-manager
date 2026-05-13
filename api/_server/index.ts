@@ -255,15 +255,34 @@ app.delete('/api/machines/:id', async (req, res) => {
 app.get('/api/categories', async (req, res) => {
     try {
         const categories = await prisma.productCategory.findMany({
-            // orderBy: [{ section: 'asc' }, { code: 'asc' }] // Temporarily removed due to schema sync issue
+            orderBy: [
+                { sortOrder: 'asc' },
+                { section: 'asc' },
+                { id: 'asc' }
+            ]
         });
         res.json(categories);
     } catch (error) {
-        console.error('Failed to fetch categories:', error);
-        res.status(500).json({
-            error: 'Failed to fetch categories',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        });
+        res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+});
+
+// Reorder Categories
+app.put('/api/categories/reorder', async (req, res) => {
+    try {
+        const { orders } = req.body; // Array of { id, sortOrder }
+        if (!Array.isArray(orders)) throw new Error('Invalid format');
+
+        await Promise.all(orders.map((o: any) => 
+            prisma.productCategory.update({
+                where: { id: Number(o.id) },
+                data: { sortOrder: Number(o.sortOrder) }
+            })
+        ));
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to reorder categories' });
     }
 });
 

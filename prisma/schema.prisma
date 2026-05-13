@@ -202,6 +202,7 @@ model ProductCategory {
   section   String   // e.g. "新車販売", "レンタル"
   code      String?  @unique
   name      String
+  sortOrder Int      @default(0) // Custom display order
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

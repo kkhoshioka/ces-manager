@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -11,6 +11,7 @@ interface ProductCategory {
     section: string;
     code: string | null;
     name: string;
+    sortOrder: number;
 }
 
 const ProductTypeMaster: React.FC = () => {
@@ -87,6 +88,33 @@ const ProductTypeMaster: React.FC = () => {
         }
     };
 
+    const handleMove = async (index: number, direction: 'up' | 'down') => {
+        const newCategories = [...categories];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        if (targetIndex < 0 || targetIndex >= newCategories.length) return;
+        
+        // Swap
+        [newCategories[index], newCategories[targetIndex]] = [newCategories[targetIndex], newCategories[index]];
+        
+        // Update sortOrder values based on new indices
+        const updatedWithOrders = newCategories.map((c, i) => ({ ...c, sortOrder: i }));
+        setCategories(updatedWithOrders);
+        
+        // Save to server
+        try {
+            await fetch(`${API_BASE_URL}/categories/reorder`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orders: updatedWithOrders.map(c => ({ id: c.id, sortOrder: c.sortOrder }))
+                })
+            });
+        } catch (error) {
+            console.error('Failed to save order', error);
+        }
+    };
+
     const openEdit = (category: ProductCategory) => {
         setEditingId(category.id);
         setFormData({
@@ -135,6 +163,24 @@ const ProductTypeMaster: React.FC = () => {
                                     <td>{category.name}</td>
                                     <td>
                                         <div className={styles.actions}>
+                                            <div style={{ display: 'flex', gap: '2px', marginRight: '8px' }}>
+                                                <button 
+                                                    className={styles.actionButton} 
+                                                    onClick={() => handleMove(index, 'up')}
+                                                    disabled={index === 0}
+                                                    style={{ opacity: index === 0 ? 0.3 : 1 }}
+                                                >
+                                                    <ArrowUp size={14} />
+                                                </button>
+                                                <button 
+                                                    className={styles.actionButton} 
+                                                    onClick={() => handleMove(index, 'down')}
+                                                    disabled={index === categories.length - 1}
+                                                    style={{ opacity: index === categories.length - 1 ? 0.3 : 1 }}
+                                                >
+                                                    <ArrowDown size={14} />
+                                                </button>
+                                            </div>
                                             <button className={styles.actionButton} onClick={() => openEdit(category)}>
                                                 <Edit size={16} />
                                             </button>
