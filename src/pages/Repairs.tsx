@@ -481,19 +481,12 @@ const Repairs: React.FC = () => {
         if (isSubmitting) return;
 
         // 原価と請求額の整合性チェック
-        const details = [
-            ...formState.laborDetails,
-            ...formState.partsDetails,
-            ...formState.outsourcingDetails,
-            ...formState.otherDetails
-        ];
-        
         const anomalies = details.filter(d => {
-            const cost = Number(d.cost) || 0;
-            const amount = Number(d.amount) || 0;
+            const cost = Number(d.unitCost) || 0;
+            const price = Number(d.unitPrice) || 0;
             // 内容が入力されているか、どちらかの金額が入っている場合のみチェック
-            if (!d.description && cost === 0 && amount === 0) return false;
-            return (cost > 0 && amount === 0) || (cost === 0 && amount > 0);
+            if (!d.description && cost === 0 && price === 0) return false;
+            return (cost > 0 && price === 0) || (cost === 0 && price > 0);
         });
 
         if (anomalies.length > 0) {
