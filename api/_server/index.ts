@@ -1999,7 +1999,7 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                     // Add Project Header Row
                     const symptom = (project.notes || '').split('\n')[0];
                     combinedDetails.push({
-                        description: `【案件: ${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
+                        description: `【${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
                         quantity: '',
                         unitPrice: '',
                         lineType: 'padding',
@@ -2105,7 +2105,7 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
 
                 const symptom = (project.notes || '').split('\n')[0];
                 combinedDetails.push({
-                    description: `【案件: ${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
+                    description: `【${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
                     quantity: '',
                     unitPrice: '',
                     lineType: 'padding',
