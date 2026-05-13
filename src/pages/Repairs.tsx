@@ -312,8 +312,8 @@ const Repairs: React.FC = () => {
 
             // Adjust for standardized logic
             if (type === 'labor') {
-                unitPrice = systemSettings.defaultLaborRate;
-                sales = systemSettings.defaultLaborRate;
+                unitPrice = 0;
+                sales = 0;
             }
 
             setDetails(prev => [...prev, {
