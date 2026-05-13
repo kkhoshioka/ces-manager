@@ -80,7 +80,34 @@ const MonthlyInvoicing = () => {
     };
 
     const handleBatchIssue = async () => {
-        if (!confirm(`${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締めの請求書を一括発行（ステータス更新）しますか？`)) return;
+        if (!confirm(`${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締めの請求書を一括発行（ステータス確定）しますか？`)) return;
+
+        // Check for projects with 'received' status in the current group
+        const receivedProjects = groupedData.flatMap(c => c.projects).filter(p => p.status === 'received');
+        if (receivedProjects.length > 0) {
+            if (confirm(`対象の中に「仮登録」状態の案件が ${receivedProjects.length} 件あります。これらをすべて「完了」に変更して確定処理を続行しますか？`)) {
+                try {
+                    const updatePromises = receivedProjects.map(p => 
+                        fetch(`${API_BASE_URL}/projects/${p.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session?.access_token}`
+                            },
+                            body: JSON.stringify({ status: 'completed' })
+                        })
+                    );
+                    const results = await Promise.all(updatePromises);
+                    if (results.some(r => !r.ok)) throw new Error('Some updates failed');
+                } catch (e) {
+                    console.error('Failed to auto-complete projects:', e);
+                    alert('案件ステータスの更新に失敗しました。処理を中断します。');
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
 
         setIsBatchIssuing(true);
         try {
@@ -94,11 +121,11 @@ const MonthlyInvoicing = () => {
             });
 
             if (res.ok) {
-                alert('一括発行（ステータス更新）が完了しました。');
+                alert('一括発行（請求確定）が完了しました。');
                 fetchReport();
 
                 // Batch Download
-                if (confirm('続けて、すべての請求書をまとめて印刷（ダウンロード）しますか？')) {
+                if (confirm('続けて、すべての請求書をまとめてダウンロード（ZIP）しますか？')) {
                     try {
                         const downloadRes = await fetch(`${API_BASE_URL}/invoices/batch-pdf`, {
                             method: 'POST',
@@ -141,6 +168,36 @@ const MonthlyInvoicing = () => {
         e.preventDefault();
         e.stopPropagation();
         if (downloadingId === customerId) return;
+
+        // Check for received projects for this customer
+        const customerData = data.find(d => d.customerId === customerId);
+        if (customerData) {
+            const receivedProjects = customerData.projects.filter(p => p.status === 'received');
+            if (receivedProjects.length > 0) {
+                if (confirm(`この顧客には「仮登録」状態の案件が ${receivedProjects.length} 件あります。これらを「完了」に変更して請求書を発行しますか？`)) {
+                    try {
+                        const updatePromises = receivedProjects.map(p => 
+                            fetch(`${API_BASE_URL}/projects/${p.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${session?.access_token}`
+                                },
+                                body: JSON.stringify({ status: 'completed' })
+                            })
+                        );
+                        const results = await Promise.all(updatePromises);
+                        if (results.some(r => !r.ok)) throw new Error('Some updates failed');
+                    } catch (e) {
+                        console.error('Failed to auto-complete projects:', e);
+                        alert('案件ステータスの更新に失敗しました。');
+                        return;
+                    }
+                } else {
+                    return;
+                }
+            }
+        }
 
         setDownloadingId(customerId);
         try {
