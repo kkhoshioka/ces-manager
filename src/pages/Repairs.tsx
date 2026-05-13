@@ -1810,8 +1810,7 @@ const Repairs: React.FC = () => {
                                                 value={formType}
                                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                 onChange={(e) => setFormType(e.target.value as any)}
-                                                disabled={!!selectedProjectId}
-                                                className={`border rounded-md p-2 text-sm form-select ${selectedProjectId ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+                                                className={`border rounded-md p-2 text-sm form-select cursor-pointer`}
                                                 style={{
                                                     width: '160px',
                                                     backgroundColor: (formType === 'sales' ? '#e0f2fe' :
@@ -1835,7 +1834,6 @@ const Repairs: React.FC = () => {
                                                 <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
                                                 <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
                                             </select>
-                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※登録済みの案件タイプは変更できません</div>
                                         </div>
 
                                         <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>

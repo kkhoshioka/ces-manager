@@ -2001,7 +2001,16 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                         description: d.description,
                         quantity: Number(d.quantity),
                         unitPrice: Number(d.unitPrice),
-                        lineType: d.lineType
+                        lineType: d.lineType,
+                        // Add rental fields
+                        machineModel: d.machineModel,
+                        serialNumber: d.serialNumber,
+                        rentalStartDate: d.rentalStartDate,
+                        rentalEndDate: d.rentalEndDate,
+                        rentalBillingType: d.rentalBillingType,
+                        rentalBasicFee: Number(d.rentalBasicFee || 0),
+                        rentalCompensationFee: Number(d.rentalCompensationFee || 0),
+                        rentalCompensationDays: Number(d.rentalCompensationDays || 0)
                     }));
 
                 if (safeDetails.length > 0) {
@@ -2117,7 +2126,16 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
                     description: d.description,
                     quantity: Number(d.quantity),
                     unitPrice: Number(d.unitPrice),
-                    lineType: d.lineType
+                    lineType: d.lineType,
+                    // Add rental fields
+                    machineModel: d.machineModel,
+                    serialNumber: d.serialNumber,
+                    rentalStartDate: d.rentalStartDate,
+                    rentalEndDate: d.rentalEndDate,
+                    rentalBillingType: d.rentalBillingType,
+                    rentalBasicFee: Number(d.rentalBasicFee || 0),
+                    rentalCompensationFee: Number(d.rentalCompensationFee || 0),
+                    rentalCompensationDays: Number(d.rentalCompensationDays || 0)
                 }));
 
             if (safeDetails.length > 0) {
@@ -2323,7 +2341,12 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                 id: project.id,
                 date: project.completionDate || project.createdAt,
                 type: project.type,
-                title: `${project.machineModel || project.customerMachine?.machineModel || ''} ${project.type === 'repair' ? '修理' : '販売'}`, // Simple title
+                title: `${project.machineModel || project.customerMachine?.machineModel || ''} ${
+                    project.type === 'repair' ? '修理' : 
+                    project.type === 'rental' ? 'レンタル' : 
+                    project.type === 'inspection' ? '点検' : 
+                    project.type === 'maintenance' ? '整備' : '販売'
+                }`.trim(),
                 serialNumber: project.serialNumber || project.customerMachine?.serialNumber,
                 amount: Number(project.totalAmount),
                 status: project.status,
