@@ -88,13 +88,12 @@ const SupplierMonthlyReport = () => {
         }
     };
 
-    const handleBatchStatusChange = async (field: 'isInvoiceReceived' | 'isPaid', value: boolean) => {
-        const actionLabel = field === 'isInvoiceReceived' ? '請求書受領済' : '支払済';
-        if (!confirm(`${selectedSupplier} の全明細を「${actionLabel}」に更新しますか？`)) return;
+    const handleBatchStatusChange = async (targetItems: SupplierDetail[], field: 'isInvoiceReceived' | 'isPaid', value: boolean, label: string) => {
+        if (!confirm(`${label} の全明細を「${field === 'isInvoiceReceived' ? '請求書受領済' : '支払済'}」に更新しますか？`)) return;
         
         setDetailLoading(true);
         try {
-            await Promise.all(detailData.map(async (item) => {
+            await Promise.all(targetItems.map(async (item) => {
                 if (item[field] === value) return;
                 
                 const payload = {
@@ -114,15 +113,18 @@ const SupplierMonthlyReport = () => {
                 const response = await fetch(`${API_BASE_URL}/dashboard/supplier-details?year=${year}&month=${month}&supplier=${encodeURIComponent(selectedSupplier)}`);
                 if (response.ok) {
                     const result = await response.json();
-                    setDetailData(result);
+                    const sorted = Array.isArray(result) 
+                        ? [...result].sort((a, b) => (a.customerName || '').localeCompare(b.customerName || ''))
+                        : [];
+                    setDetailData(sorted);
                 }
             }
         } catch (error) {
             console.error(error);
             alert('一括更新に失敗しました');
         } finally {
-            setDetailLoading(true); // Temporary to show loading during refresh
-            setTimeout(() => setDetailLoading(false), 500);
+            setDetailLoading(true);
+            setTimeout(() => setDetailLoading(false), 300);
         }
     };
 
@@ -294,10 +296,10 @@ const SupplierMonthlyReport = () => {
                                                                 {item.name} の取引明細 (顧客順)
                                                             </h3>
                                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange('isInvoiceReceived', true)} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
+                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange(detailData, 'isInvoiceReceived', true, selectedSupplier || '')} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
                                                                     全明細を請求書受領済にする
                                                                 </Button>
-                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange('isPaid', true)} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
+                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange(detailData, 'isPaid', true, selectedSupplier || '')} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
                                                                     全明細を支払済にする
                                                                 </Button>
                                                             </div>
@@ -310,8 +312,8 @@ const SupplierMonthlyReport = () => {
                                                                         <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>顧客名</th>
                                                                         <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>機種 / S/N</th>
                                                                         <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>品名</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '80px' }}>請求書</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '80px' }}>支払</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '100px' }} title="仕入先から請求書を受領したか">請求書(受領)</th>
+                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '100px' }} title="仕入先への支払いが完了したか">支払(完了)</th>
                                                                         <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>数量</th>
                                                                         <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>単価</th>
                                                                         <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>金額</th>
@@ -323,30 +325,53 @@ const SupplierMonthlyReport = () => {
                                                                     ) : detailData.length === 0 ? (
                                                                         <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>明細データなし</td></tr>
                                                                     ) : (() => {
-                                                                        let lastGroupKey = "";
-                                                                        return detailData.map((d) => {
-                                                                            const groupKey = `${new Date(d.date).toLocaleDateString()}_${d.customerName}_${d.machineModel}`;
-                                                                            const isNewGroup = groupKey !== lastGroupKey;
-                                                                            lastGroupKey = groupKey;
+                                                                        // Pre-group data for rendering
+                                                                        const groups: { key: string, items: SupplierDetail[] }[] = [];
+                                                                        detailData.forEach(d => {
+                                                                            const key = `${new Date(d.date).toLocaleDateString()}_${d.customerName}_${d.machineModel}`;
+                                                                            if (groups.length === 0 || groups[groups.length - 1].key !== key) {
+                                                                                groups.push({ key, items: [d] });
+                                                                            } else {
+                                                                                groups[groups.length - 1].items.push(d);
+                                                                            }
+                                                                        });
 
-                                                                            return (
-                                                                                <React.Fragment key={d.id}>
-                                                                                    {isNewGroup && (
-                                                                                        <tr style={{ backgroundColor: '#f8fafc' }}>
-                                                                                            <td colSpan={9} style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', borderTop: '1px solid #e2e8f0' }}>
-                                                                                                【案件】{new Date(d.date).toLocaleDateString()} / {d.customerName} / {d.machineModel}
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                    )}
-                                                                                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                                                        <td style={{ padding: '0.5rem', color: isNewGroup ? 'inherit' : '#94a3b8' }}>
-                                                                                            {isNewGroup ? new Date(d.date).toLocaleDateString() : '〃'}
+                                                                        return groups.map((group) => (
+                                                                            <React.Fragment key={group.key}>
+                                                                                <tr style={{ backgroundColor: '#f8fafc' }}>
+                                                                                    <td colSpan={4} style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', borderTop: '1px solid #e2e8f0' }}>
+                                                                                        【案件】{group.key.replace(/_/g, ' / ')}
+                                                                                    </td>
+                                                                                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', borderTop: '1px solid #e2e8f0' }}>
+                                                                                        <button 
+                                                                                            onClick={() => handleBatchStatusChange(group.items, 'isInvoiceReceived', true, 'この案件')}
+                                                                                            style={{ fontSize: '0.7rem', padding: '1px 4px', cursor: 'pointer', borderRadius: '3px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                                                            title="この案件の全明細を受領済にする"
+                                                                                        >
+                                                                                            一括
+                                                                                        </button>
+                                                                                    </td>
+                                                                                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', borderTop: '1px solid #e2e8f0' }}>
+                                                                                        <button 
+                                                                                            onClick={() => handleBatchStatusChange(group.items, 'isPaid', true, 'この案件')}
+                                                                                            style={{ fontSize: '0.7rem', padding: '1px 4px', cursor: 'pointer', borderRadius: '3px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                                                            title="この案件の全明細を支払済にする"
+                                                                                        >
+                                                                                            一括
+                                                                                        </button>
+                                                                                    </td>
+                                                                                    <td colSpan={3} style={{ borderTop: '1px solid #e2e8f0' }}></td>
+                                                                                </tr>
+                                                                                {group.items.map((d, idx) => (
+                                                                                    <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                                                        <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
+                                                                                            {idx === 0 ? new Date(d.date).toLocaleDateString() : '〃'}
                                                                                         </td>
-                                                                                        <td style={{ padding: '0.5rem', color: isNewGroup ? 'inherit' : '#94a3b8' }}>
-                                                                                            {isNewGroup ? d.customerName : '〃'}
+                                                                                        <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
+                                                                                            {idx === 0 ? d.customerName : '〃'}
                                                                                         </td>
-                                                                                        <td style={{ padding: '0.5rem', color: isNewGroup ? 'inherit' : '#94a3b8' }}>
-                                                                                            {isNewGroup ? (
+                                                                                        <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
+                                                                                            {idx === 0 ? (
                                                                                                 <>
                                                                                                     {d.machineModel}<br />
                                                                                                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.serialNumber}</span>
@@ -360,6 +385,7 @@ const SupplierMonthlyReport = () => {
                                                                                                 checked={!!d.isInvoiceReceived}
                                                                                                 onChange={(e) => handleDetailStatusChange(d.id, 'isInvoiceReceived', e.target.checked)}
                                                                                                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                                title="請求書受領"
                                                                                             />
                                                                                         </td>
                                                                                         <td style={{ padding: '0.5rem', textAlign: 'center' }}>
@@ -368,15 +394,16 @@ const SupplierMonthlyReport = () => {
                                                                                                 checked={!!d.isPaid}
                                                                                                 onChange={(e) => handleDetailStatusChange(d.id, 'isPaid', e.target.checked)}
                                                                                                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                                title="支払完了"
                                                                                             />
                                                                                         </td>
                                                                                         <td style={{ padding: '0.5rem', textAlign: 'right' }}>{d.quantity}</td>
                                                                                         <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(d.unitCost)}</td>
                                                                                         <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(d.amount)}</td>
                                                                                     </tr>
-                                                                                </React.Fragment>
-                                                                            );
-                                                                        });
+                                                                                ))}
+                                                                            </React.Fragment>
+                                                                        ));
                                                                     })()}
                                                                 </tbody>
                                                             </table>
