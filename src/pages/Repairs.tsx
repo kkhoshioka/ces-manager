@@ -605,6 +605,8 @@ const Repairs: React.FC = () => {
                                 : d.description),
                         supplier: d.supplier,
                         supplierId: validSupplierId,
+                        productCategoryId: validCategoryId,
+                        productId: d.productId || null,
                         remarks: d.remarks,
                         quantity: safeQty,
                         unitPrice: safePrice,
