@@ -482,6 +482,9 @@ const Repairs: React.FC = () => {
 
         // 原価と請求額の整合性チェック
         const anomalies = details.filter(d => {
+            // 原価表示のない項目（自社工賃、出張費）および「その他」はチェック対象外とする
+            if (d.lineType === 'labor' || d.lineType === 'travel' || d.lineType === 'other') return false;
+
             const cost = Number(d.unitCost) || 0;
             const price = Number(d.unitPrice) || 0;
             // 内容が入力されているか、どちらかの金額が入っている場合のみチェック
