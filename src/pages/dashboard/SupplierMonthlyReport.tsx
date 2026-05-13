@@ -322,35 +322,62 @@ const SupplierMonthlyReport = () => {
                                                                         <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>読み込み中...</td></tr>
                                                                     ) : detailData.length === 0 ? (
                                                                         <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>明細データなし</td></tr>
-                                                                    ) : (
-                                                                        detailData.map((d) => (
-                                                                            <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                                                <td style={{ padding: '0.5rem' }}>{new Date(d.date).toLocaleDateString()}</td>
-                                                                                <td style={{ padding: '0.5rem' }}>{d.customerName}</td>
-                                                                                <td style={{ padding: '0.5rem' }}>{d.machineModel}<br /><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.serialNumber}</span></td>
-                                                                                <td style={{ padding: '0.5rem' }}>{d.description}</td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                                                                    <input
-                                                                                        type="checkbox"
-                                                                                        checked={!!d.isInvoiceReceived}
-                                                                                        onChange={(e) => handleDetailStatusChange(d.id, 'isInvoiceReceived', e.target.checked)}
-                                                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                                                                    />
-                                                                                </td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                                                                    <input
-                                                                                        type="checkbox"
-                                                                                        checked={!!d.isPaid}
-                                                                                        onChange={(e) => handleDetailStatusChange(d.id, 'isPaid', e.target.checked)}
-                                                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                                                                    />
-                                                                                </td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{d.quantity}</td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(d.unitCost)}</td>
-                                                                                <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(d.amount)}</td>
-                                                                            </tr>
-                                                                        ))
-                                                                    )}
+                                                                    ) : (() => {
+                                                                        let lastGroupKey = "";
+                                                                        return detailData.map((d) => {
+                                                                            const groupKey = `${new Date(d.date).toLocaleDateString()}_${d.customerName}_${d.machineModel}`;
+                                                                            const isNewGroup = groupKey !== lastGroupKey;
+                                                                            lastGroupKey = groupKey;
+
+                                                                            return (
+                                                                                <React.Fragment key={d.id}>
+                                                                                    {isNewGroup && (
+                                                                                        <tr style={{ backgroundColor: '#f8fafc' }}>
+                                                                                            <td colSpan={9} style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', borderTop: '1px solid #e2e8f0' }}>
+                                                                                                【案件】{new Date(d.date).toLocaleDateString()} / {d.customerName} / {d.machineModel}
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    )}
+                                                                                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                                                        <td style={{ padding: '0.5rem', color: isNewGroup ? 'inherit' : '#94a3b8' }}>
+                                                                                            {isNewGroup ? new Date(d.date).toLocaleDateString() : '〃'}
+                                                                                        </td>
+                                                                                        <td style={{ padding: '0.5rem', color: isNewGroup ? 'inherit' : '#94a3b8' }}>
+                                                                                            {isNewGroup ? d.customerName : '〃'}
+                                                                                        </td>
+                                                                                        <td style={{ padding: '0.5rem', color: isNewGroup ? 'inherit' : '#94a3b8' }}>
+                                                                                            {isNewGroup ? (
+                                                                                                <>
+                                                                                                    {d.machineModel}<br />
+                                                                                                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.serialNumber}</span>
+                                                                                                </>
+                                                                                            ) : '〃'}
+                                                                                        </td>
+                                                                                        <td style={{ padding: '0.5rem' }}>{d.description}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={!!d.isInvoiceReceived}
+                                                                                                onChange={(e) => handleDetailStatusChange(d.id, 'isInvoiceReceived', e.target.checked)}
+                                                                                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                            />
+                                                                                        </td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={!!d.isPaid}
+                                                                                                onChange={(e) => handleDetailStatusChange(d.id, 'isPaid', e.target.checked)}
+                                                                                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                            />
+                                                                                        </td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{d.quantity}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(d.unitCost)}</td>
+                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(d.amount)}</td>
+                                                                                    </tr>
+                                                                                </React.Fragment>
+                                                                            );
+                                                                        });
+                                                                    })()}
                                                                 </tbody>
                                                             </table>
                                                         </div>
