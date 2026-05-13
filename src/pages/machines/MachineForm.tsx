@@ -29,25 +29,16 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
     const [hourMeter, setHourMeter] = useState(machine?.hourMeter || '');
     const [notes, setNotes] = useState(machine?.notes || '');
     const [enableInspectionAlert, setEnableInspectionAlert] = useState(machine?.enableInspectionAlert !== false); // Default true if undefined
-    const [productCategoryId, setProductCategoryId] = useState<string>(machine?.productCategoryId?.toString() || '');
-    const [categories, setCategories] = useState<{ id: number; section: string; name: string; code: string | null }[]>([]);
 
     useEffect(() => {
         // Fetch masters
         const loadMasters = async () => {
             try {
-                const [custRes, catRes] = await Promise.all([
-                    axios.get<Customer[]>(`${API_BASE_URL}/customers`),
-                    axios.get<{ id: number; section: string; name: string; code: string | null }[]>(`${API_BASE_URL}/categories`)
-                ]);
-
+                const custRes = await axios.get<Customer[]>(`${API_BASE_URL}/customers`);
                 setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
-                setCategories(Array.isArray(catRes.data) ? catRes.data : []);
             } catch (error) {
-                console.error('Failed to load form dependencies', error);
-                // Fallback to empty arrays
+                console.error('Failed to load customers', error);
                 setCustomers([]);
-                setCategories([]);
             }
         };
         loadMasters();
@@ -77,7 +68,6 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
             nextInspectionDate: nextInspectionDate ? new Date(nextInspectionDate) : null,
             hourMeter: hourMeter || null,
             notes,
-            productCategoryId: productCategoryId ? Number(productCategoryId) : null,
             enableInspectionAlert
         };
 
@@ -96,14 +86,7 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
 
     if (!isOpen) return null;
 
-    // Group categories by section
-    const groupedCategories: Record<string, typeof categories> = {};
-    categories.forEach(cat => {
-        if (!groupedCategories[cat.section]) groupedCategories[cat.section] = [];
-        groupedCategories[cat.section].push(cat);
-    });
-
-    const sortedSections = Object.keys(groupedCategories).sort();
+    const sortedSections = []; // Not used anymore
 
     return (
         <div className={styles.modalOverlay}>
@@ -130,25 +113,7 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
                         </select>
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label className={styles.label}>種別 (カテゴリー)</label>
-                        <select
-                            className={styles.select}
-                            value={productCategoryId}
-                            onChange={e => setProductCategoryId(e.target.value)}
-                        >
-                            <option value="">未選択</option>
-                            {sortedSections.map(section => (
-                                <optgroup key={section} label={section}>
-                                    {groupedCategories[section].map(cat => (
-                                        <option key={cat.id} value={cat.id}>
-                                            {cat.code ? `${cat.code}: ` : ''}{cat.name}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                            ))}
-                        </select>
-                    </div>
+
 
 
 

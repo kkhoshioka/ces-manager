@@ -74,19 +74,7 @@ const MachineDetail: React.FC = () => {
                         <span className={styles.detailValue} style={{ fontWeight: 'bold' }}>{machine.machineModel}</span>
                     </div>
 
-                    <div className={styles.detailItem}>
-                        <span className={styles.detailLabel}>種別 (カテゴリー)</span>
-                        <span className={styles.detailValue}>
-                            {machine.category ? (
-                                <>
-                                    <span style={{ color: '#6b7280', fontSize: '0.85em', marginRight: '0.5em' }}>
-                                        [{machine.category.section}]
-                                    </span>
-                                    {machine.category.name}
-                                </>
-                            ) : '-'}
-                        </span>
-                    </div>
+
 
                     <div className={styles.detailItem}>
                         <span className={styles.detailLabel}>シリアルNo</span>
