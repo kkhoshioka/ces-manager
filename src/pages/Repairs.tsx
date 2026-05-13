@@ -1772,7 +1772,8 @@ const Repairs: React.FC = () => {
                                                 value={formType}
                                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                 onChange={(e) => setFormType(e.target.value as any)}
-                                                className={`border rounded-md p-2 text-sm form-select cursor-pointer`}
+                                                disabled={!!selectedProjectId}
+                                                className={`border rounded-md p-2 text-sm form-select ${selectedProjectId ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
                                                 style={{
                                                     width: '160px',
                                                     backgroundColor: (formType === 'sales' ? '#e0f2fe' :
@@ -1796,6 +1797,7 @@ const Repairs: React.FC = () => {
                                                 <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
                                                 <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
                                             </select>
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※登録済みの案件タイプは変更できません</div>
                                         </div>
 
                                         <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1854,6 +1856,7 @@ const Repairs: React.FC = () => {
                                                 list="customer-list"
                                                 autoComplete="off"
                                             />
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※未登録の場合は、保存時に新規顧客として自動登録されます</div>
                                             <datalist id="customer-list">
                                                 {customers.map(c => <option key={c.id} value={c.name} />)}
                                             </datalist>
@@ -1900,6 +1903,7 @@ const Repairs: React.FC = () => {
                                                                 </option>
                                                             ))}
                                                         </select>
+                                                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※機種名・シリアルは書類（請求書等）に印字されます</div>
                                                     </div>
                                                 )}
 
@@ -1982,7 +1986,10 @@ const Repairs: React.FC = () => {
 
                                 <div className={styles.notesGrid}>
                                     {formType !== 'sales' && formType !== 'rental' && (
-                                        <Textarea label="症状・不具合内容" name="issueDescription" value={formState.issueDescription} onChange={handleInputChange} required />
+                                        <div>
+                                            <Textarea label="症状・不具合内容" name="issueDescription" value={formState.issueDescription} onChange={handleInputChange} required />
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書の件名（2行目）に表示されます。Enterキーでは保存されません。</div>
+                                        </div>
                                     )}
                                     <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
                                 </div>

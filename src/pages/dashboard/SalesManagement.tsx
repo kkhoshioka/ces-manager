@@ -347,8 +347,14 @@ const SalesManagement = () => {
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>完了日/登録日</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>件名 / S/N</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>請求書発行</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>入金確認</th>
+                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                            請求書発行
+                                                                            <div style={{ fontSize: '0.65rem', fontWeight: 'normal', color: '#64748b' }}>発行済フラグ</div>
+                                                                        </th>
+                                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                            入金確認
+                                                                            <div style={{ fontSize: '0.65rem', fontWeight: 'normal', color: '#64748b' }}>入金済フラグ</div>
+                                                                        </th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
