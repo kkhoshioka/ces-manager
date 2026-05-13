@@ -103,12 +103,12 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
             const startDate = current.rentalStartDate ? formatDate(current.rentalStartDate) : '';
             const endDate = current.rentalEndDate ? formatDate(current.rentalEndDate) : '';
             const periodStr = (startDate || endDate) ? ` (${startDate}～${endDate})` : '';
-            const billingTypeStr = current.rentalBillingType === 'monthly' ? ' [レンタル][月極]' : ' [レンタル]';
+            const billingTypeStr = current.rentalBillingType === 'monthly' ? ' [月極]' : '';
             
             // 1. Main Rental Line
             processed.push({
                 ...current,
-                description: `${current.machineModel}${current.serialNumber ? ` (${current.serialNumber})` : ''}${periodStr}${billingTypeStr}`,
+                description: `[レンタル] ${current.machineModel}${current.serialNumber ? ` (${current.serialNumber})` : ''}${periodStr}${billingTypeStr}`,
                 quantity: current.rentalBillingType === 'monthly' ? 1 : current.quantity,
                 unitPrice: current.unitPrice,
                 date: current.rentalStartDate || current.date
