@@ -87,6 +87,20 @@ const MachineRegistry: React.FC = () => {
         setIsFormOpen(false);
     };
 
+    const handleDismissAlert = async (machine: CustomerMachine) => {
+        if (!confirm('今年次の点検アラートを消去（非表示に）しますか？\n（次回の点検日を登録するまでアラートは出なくなります）')) return;
+        try {
+            await axios.put(`${API_BASE_URL}/machines/${machine.id}`, {
+                ...machine,
+                enableInspectionAlert: false
+            });
+            fetchMachines();
+        } catch (error) {
+            console.error(error);
+            alert('アラートの消去に失敗しました');
+        }
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -141,13 +155,21 @@ const MachineRegistry: React.FC = () => {
 
                             filteredMachines.map((machine) => {
                                 let isAlert = false;
+                                let isExpired = false;
                                 if (machine.nextInspectionDate) {
                                     const nextDate = new Date(machine.nextInspectionDate);
                                     const now = new Date();
                                     const oneMonthLater = new Date();
                                     oneMonthLater.setMonth(now.getMonth() + 1);
-                                    if (nextDate <= oneMonthLater && machine.enableInspectionAlert !== false) {
-                                        isAlert = true;
+                                    
+                                    if (machine.enableInspectionAlert !== false) {
+                                        if (nextDate <= now) {
+                                            isAlert = true;
+                                            isExpired = true;
+                                        } else if (nextDate <= oneMonthLater) {
+                                            isAlert = true;
+                                            isExpired = false;
+                                        }
                                     }
                                 }
 
@@ -163,7 +185,25 @@ const MachineRegistry: React.FC = () => {
                                         <td>{machine.hourMeter || '-'}</td>
                                         <td style={isAlert ? { color: '#e11d48', fontWeight: 'bold' } : {}}>
                                             {machine.nextInspectionDate ? format(new Date(machine.nextInspectionDate), 'yyyy/MM/dd') : '-'}
-                                            {isAlert && <span style={{ marginLeft: '8px', fontSize: '0.75rem', backgroundColor: '#e11d48', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>期限近</span>}
+                                            {isAlert && (
+                                                <button 
+                                                    onClick={() => handleDismissAlert(machine)}
+                                                    style={{ 
+                                                        marginLeft: '8px', 
+                                                        fontSize: '0.75rem', 
+                                                        backgroundColor: isExpired ? '#991b1b' : '#e11d48', 
+                                                        color: 'white', 
+                                                        padding: '2px 6px', 
+                                                        borderRadius: '4px',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                    title="アラートを消去"
+                                                >
+                                                    {isExpired ? '期限切れ' : '期限近'}
+                                                </button>
+                                            )}
                                         </td>
                                         <td>
                                             <div className={styles.actions}>
