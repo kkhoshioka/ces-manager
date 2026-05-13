@@ -130,8 +130,8 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
                 const compDays = Number(current.rentalCompensationDays) || Number(current.quantity) || 1;
                 processed.push({
                     description: `　補償料${compDays > 1 ? ` (${compDays}日間)` : ''}`,
-                    quantity: compDays,
-                    unitPrice: current.rentalCompensationFee || 0,
+                    quantity: 1,
+                    unitPrice: (Number(current.rentalCompensationFee) || 0) * compDays,
                     lineType: 'padding_fee',
                     date: current.rentalStartDate || current.date
                 });
