@@ -52,7 +52,7 @@ interface ProjectDetail {
 }
 
 interface Customer {
-    code: string;
+    code?: string;
     name: string;
 }
 
