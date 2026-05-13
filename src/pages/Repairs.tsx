@@ -1987,7 +1987,17 @@ const Repairs: React.FC = () => {
                                 <div className={styles.notesGrid}>
                                     {formType !== 'sales' && formType !== 'rental' && (
                                         <div>
-                                            <Textarea label="症状・不具合内容" name="issueDescription" value={formState.issueDescription} onChange={handleInputChange} required />
+                                            <Textarea 
+                                                label={
+                                                    formType === 'repair' ? "症状・不具合内容" :
+                                                    formType === 'inspection' ? "点検内容" :
+                                                    formType === 'maintenance' ? "整備内容" : "内容"
+                                                } 
+                                                name="issueDescription" 
+                                                value={formState.issueDescription} 
+                                                onChange={handleInputChange} 
+                                                required 
+                                            />
                                             <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書の件名（2行目）に表示されます。Enterキーでは保存されません。</div>
                                         </div>
                                     )}
