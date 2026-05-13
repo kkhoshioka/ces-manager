@@ -1997,8 +1997,9 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                     const projectDate = project.completionDate || project.createdAt;
 
                     // Add Project Header Row
+                    const symptom = (project.notes || '').split('\n')[0];
                     combinedDetails.push({
-                        description: `【案件: ${machineName} #${serial}】`,
+                        description: `【案件: ${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
                         quantity: '',
                         unitPrice: '',
                         lineType: 'padding',
@@ -2102,8 +2103,9 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
                 const serial = project.serialNumber || project.customerMachine?.serialNumber || '不明';
                 const projectDate = project.completionDate || project.createdAt;
 
+                const symptom = (project.notes || '').split('\n')[0];
                 combinedDetails.push({
-                    description: `【案件: ${machineName} #${serial}】`,
+                    description: `【案件: ${machineName} #${serial}${symptom ? ` ${symptom}` : ''}】`,
                     quantity: '',
                     unitPrice: '',
                     lineType: 'padding',
