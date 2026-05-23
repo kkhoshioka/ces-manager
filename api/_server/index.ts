@@ -2489,7 +2489,7 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                     // Let's rely on Section names matching the hardcoded categories primarily.
                     // If no section, map "labor/travel" -> "修理"?
                     if (d.lineType === 'labor' || d.lineType === 'travel') label = '修理';
-                    else if (d.lineType === 'part') label = '部品・他'; // Default part
+                    else if (d.lineType === 'part' || d.lineType === 'inventory') label = '部品・他'; // Default part
                     else label = '部品・他';
                 }
 
@@ -2515,7 +2515,7 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                 else if (label === '美容品販売') costLabel = '美容品仕入'; // If exists? Or just mapping
                 else if (label === '修理') {
                     if (d.lineType === 'outsourcing') costLabel = '外注費';
-                    else if (d.lineType === 'part') costLabel = '材料費'; // Parts in repair = Materials
+                    else if (d.lineType === 'part' || d.lineType === 'inventory') costLabel = '材料費'; // Parts in repair = Materials
                     else costLabel = 'その他';
                 } else if (label === '部品・他') {
                     costLabel = '荷造運賃'; // Wait, "shipping" is unlikely default. Maybe 'その他'?
@@ -2545,7 +2545,7 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                 else if (label.includes('販売')) costLabel = '商品仕入';
                 else if (label === '美容品販売') costLabel = '美容品仕入';
                 else if (label === 'レンタル') costLabel = 'レンタル仕入';
-                else if (label === '修理' && d.lineType === 'part') costLabel = '材料費';
+                else if (label === '修理' && (d.lineType === 'part' || d.lineType === 'inventory')) costLabel = '材料費';
 
                 if (costCategories.includes(costLabel)) {
                     monthlyData[key].cost[costLabel] += cost;

@@ -15,7 +15,8 @@ import { CurrencyInput } from '../components/ui/CurrencyInput';
 import type { Customer, CustomerMachine } from '../types/customer';
 import type { ProjectPhoto, RepairStatus } from '../types/repair';
 import type { Supplier } from '../types/supplier';
-import type { ProductCategory } from '../types/inventory';
+import type { ProductCategory, Part } from '../types/inventory';
+import { InventoryService } from '../utils/inventoryService';
 import QuotationList from '../components/quotations/QuotationList';
 import QuotationEdit from '../components/quotations/QuotationEdit';
 
@@ -127,6 +128,7 @@ const Repairs: React.FC = () => {
     const [allMachines, setAllMachines] = useState<CustomerMachine[]>([]);
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
 
     // Loading Flags
     const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
@@ -146,17 +148,19 @@ const Repairs: React.FC = () => {
 
         setIsFormLoading(true);
         try {
-            const [custs, machs, cats, supps] = await Promise.all([
+            const [custs, machs, cats, supps, parts] = await Promise.all([
                 customerService.getAllCustomers().catch(() => []),
                 customerService.getAllMachines().catch(() => []),
                 fetch(`${API_BASE_URL}/categories`).then(r => r.json()).catch(() => []),
-                fetch(`${API_BASE_URL}/suppliers`).then(r => r.json()).catch(() => [])
+                fetch(`${API_BASE_URL}/suppliers`).then(r => r.json()).catch(() => []),
+                InventoryService.getAll().catch(() => [])
             ]);
 
             setCustomers(Array.isArray(custs) ? custs : []);
             setAllMachines(Array.isArray(machs) ? machs : []);
             setCategories(Array.isArray(cats) ? cats : []);
             setSuppliers(Array.isArray(supps) ? supps : []);
+            setInventoryParts(Array.isArray(parts) ? parts : []);
 
             setIsMasterDataLoaded(true);
         } catch (error) {
@@ -169,7 +173,7 @@ const Repairs: React.FC = () => {
 
     // Details State
     interface DetailItem {
-        lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other';
+        lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other' | 'inventory';
         travelType?: 'time' | 'distance'; // New field for Travel rows
         productCode?: string; // New field for Product Code
         description: string;
@@ -379,11 +383,12 @@ const Repairs: React.FC = () => {
         let totalCost = 0;
         let totalSales = 0;
 
-        const categoryTotals = {
+        const categoryTotals: Record<DetailItem['lineType'], { cost: number; sales: number }> = {
             labor: { cost: 0, sales: 0 },
             part: { cost: 0, sales: 0 },
             outsourcing: { cost: 0, sales: 0 },
             travel: { cost: 0, sales: 0 },
+            inventory: { cost: 0, sales: 0 },
             other: { cost: 0, sales: 0 }
         };
 
@@ -486,7 +491,7 @@ const Repairs: React.FC = () => {
             if (d.lineType === 'labor' || d.lineType === 'travel' || d.lineType === 'other') return false;
 
             // 自社在庫レンタルの場合は原価が0なのが普通なのでチェック対象外とする
-            if (d.machineModel && d.lineType === 'part') return false;
+            if (d.machineModel && (d.lineType === 'part' || d.lineType === 'inventory')) return false;
 
             const cost = Number(d.unitCost) || 0;
             const price = Number(d.unitPrice) || 0;
@@ -624,7 +629,7 @@ const Repairs: React.FC = () => {
                         lineType: d.lineType,
                         description: ((d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel')) && d.travelType)
                             ? `【${d.travelType === 'time' ? '移動時間' : '移動距離'}】${d.description}`
-                            : (d.lineType === 'part' && d.productCode
+                            : ((d.lineType === 'part' || d.lineType === 'inventory') && d.productCode
                                 ? `【${d.productCode}】${d.description}`
                                 : d.description),
                         supplier: d.supplier,
@@ -788,7 +793,7 @@ const Repairs: React.FC = () => {
                                 // Default fallback if data is weird or user manually entered something
                                 tType = 'time';
                             }
-                        } else if (d.lineType === 'part') {
+                        } else if (d.lineType === 'part' || d.lineType === 'inventory') {
                             // Parse Product Code: 【Code】Name
                             const codeMatch = desc.match(/^【(.*?)】(.*)/);
                             if (codeMatch) {
@@ -869,6 +874,142 @@ const Repairs: React.FC = () => {
         setPhotos([]);
 
         await loadProjectDetails(project.id);
+    };
+
+    // Helper to render Inventory Detail Section
+    const renderInventoryDetailTable = (title: string, type: DetailItem['lineType'], description?: string) => {
+        const sectionDetails = details
+            .map((d, i) => ({ ...d, originalIndex: i }))
+            .filter(d => d.lineType === type);
+
+        const subtotalCost = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitCost), 0);
+        const subtotalSales = sectionDetails.reduce((sum, d) => sum + (d.quantity * d.unitPrice), 0);
+
+        // Get categories that actually have parts
+        const inventoryCategoryIds = new Set(inventoryParts.map(p => p.categoryId));
+        const activeCategories = categories.filter(c => inventoryCategoryIds.has(c.id));
+
+        return (
+            <div className={styles.detailTableWrapper}>
+                <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span>{title}</span>
+                        {description && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{description}</span>}
+                    </div>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type)}>
+                        <Plus size={16} /> 追加
+                    </Button>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
+                        <thead>
+                            <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>カテゴリー</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>部品選択</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>品番</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%' }}>内容・品名</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>数量</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>売価</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>原価</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '70px' }}>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sectionDetails.map((detail) => {
+                                const availableParts = inventoryParts.filter(p => p.categoryId === detail.productCategoryId);
+                                
+                                return (
+                                    <tr key={detail.originalIndex} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <select
+                                                className={styles.tableInput}
+                                                value={detail.productCategoryId || ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value ? Number(e.target.value) : null;
+                                                    handleDetailChange(detail.originalIndex, 'productCategoryId', val);
+                                                    // Reset part selection when category changes
+                                                    handleDetailChange(detail.originalIndex, 'productId', null);
+                                                    handleDetailChange(detail.originalIndex, 'productCode', '');
+                                                    handleDetailChange(detail.originalIndex, 'description', '');
+                                                    handleDetailChange(detail.originalIndex, 'unitPrice', 0);
+                                                    handleDetailChange(detail.originalIndex, 'unitCost', 0);
+                                                }}
+                                            >
+                                                <option value="">-</option>
+                                                {activeCategories.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <select
+                                                className={styles.tableInput}
+                                                value={detail.productId || ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value ? Number(e.target.value) : null;
+                                                    handleDetailChange(detail.originalIndex, 'productId', val);
+                                                    
+                                                    if (val) {
+                                                        const part = inventoryParts.find(p => p.id === val);
+                                                        if (part) {
+                                                            handleDetailChange(detail.originalIndex, 'productCode', part.code || '');
+                                                            handleDetailChange(detail.originalIndex, 'description', part.name || '');
+                                                            handleDetailChange(detail.originalIndex, 'unitPrice', part.standardPrice || 0);
+                                                            handleDetailChange(detail.originalIndex, 'unitCost', part.standardCost || 0);
+                                                        }
+                                                    }
+                                                }}
+                                                disabled={!detail.productCategoryId}
+                                            >
+                                                <option value="">-</option>
+                                                {availableParts.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name} {p.code ? `(${p.code})` : ''}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <input type="text" className={styles.tableInput} value={detail.productCode || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'productCode', e.target.value)} placeholder="品番" />
+                                        </td>
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <input type="text" className={styles.tableInput} value={detail.description || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)} placeholder="品名" />
+                                        </td>
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <input type="number" className={styles.tableInput} style={{ textAlign: 'right' }} min="1" step="0.1" value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', Number(e.target.value))} />
+                                        </td>
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <CurrencyInput value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                        </td>
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <CurrencyInput value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                        </td>
+                                        <td style={{ padding: '0.25rem', textAlign: 'center' }}>
+                                            <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', padding: '0.25rem' }}>
+                                                <Trash2 size={16} />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {sectionDetails.length > 0 && (
+                                <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
+                                    <td colSpan={5} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>¥{subtotalSales.toLocaleString()}</td>
+                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>¥{subtotalCost.toLocaleString()}</td>
+                                    <td></td>
+                                </tr>
+                            )}
+                            {sectionDetails.length === 0 && (
+                                <tr>
+                                    <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                                        明細行がありません。「追加」ボタンから追加してください。
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
     };
 
     // Helper to render Detail Section
@@ -2209,6 +2350,7 @@ const Repairs: React.FC = () => {
                                         <>
                                             {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
                                             {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
+                                            {renderInventoryDetailTable('在庫部品・商品', 'inventory', '在庫管理に登録されている部品を選択します')}
                                             {renderDetailTable('発注部品・商品', 'part', 'part', true, '請求単価0で登録した内容は明細には表示されません')}
 
                                             {/* Outsourcing Section - Consolidated */}

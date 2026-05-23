@@ -65,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               onClick={onClose}
             >
               <Package size={20} />
-              <span>部品在庫</span>
+              <span>在庫管理</span>
             </NavLink>
 
             <NavLink

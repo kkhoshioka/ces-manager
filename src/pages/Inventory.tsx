@@ -154,7 +154,7 @@ const Inventory: React.FC = () => {
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>部品在庫</h1>
+                    <h1 className={styles.title}>在庫管理</h1>
                     <p className={styles.subtitle}>在庫状況の確認と管理</p>
                 </div>
                 <Button icon={<Plus size={18} />} onClick={() => openForm()}>
