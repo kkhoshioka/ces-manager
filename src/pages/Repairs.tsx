@@ -977,10 +977,16 @@ const Repairs: React.FC = () => {
                                             <input type="number" className={styles.tableInput} style={{ textAlign: 'right' }} min="1" step="0.1" value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', Number(e.target.value))} />
                                         </td>
                                         <td style={{ padding: '0.25rem' }}>
-                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                            <div className={styles.currencyWrapper}>
+                                                <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                                <span className={styles.currencyUnit}>円</span>
+                                            </div>
                                         </td>
                                         <td style={{ padding: '0.25rem' }}>
-                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                            <div className={styles.currencyWrapper}>
+                                                <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                                <span className={styles.currencyUnit}>円</span>
+                                            </div>
                                         </td>
                                         <td style={{ padding: '0.25rem', textAlign: 'center' }}>
                                             <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', padding: '0.25rem' }}>
