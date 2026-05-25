@@ -10,7 +10,7 @@ router.get('/projects/:projectId/quotations', async (req, res) => {
     try {
         const quotations = await prisma.quotation.findMany({
             where: { projectId: Number(projectId) },
-            include: { details: true },
+            include: { details: { orderBy: { id: 'asc' } } },
             orderBy: { createdAt: 'desc' }
         });
         res.json(quotations);
@@ -29,7 +29,7 @@ router.get('/quotations/:id', async (req, res) => {
     try {
         const quotation = await prisma.quotation.findUnique({
             where: { id: Number(id) },
-            include: { details: true }
+            include: { details: { orderBy: { id: 'asc' } } }
         });
         if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
         res.json(quotation);
@@ -51,7 +51,7 @@ router.post('/projects/:projectId/quotations', async (req, res) => {
         if (cloneFromProject) {
             const project = await prisma.project.findUnique({
                 where: { id: Number(projectId) },
-                include: { details: true }
+                include: { details: { orderBy: { id: 'asc' } } }
             });
             if (project && project.details) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,7 +94,7 @@ router.post('/projects/:projectId/quotations', async (req, res) => {
                     create: initialDetails
                 }
             },
-            include: { details: true }
+            include: { details: { orderBy: { id: 'asc' } } }
         });
 
         res.json(newQuotation);
@@ -164,7 +164,7 @@ router.put('/quotations/:id', async (req, res) => {
 
         const finalQuotation = await prisma.quotation.findUnique({
             where: { id: Number(id) },
-            include: { details: true }
+            include: { details: { orderBy: { id: 'asc' } } }
         });
 
         res.json(finalQuotation);
@@ -194,7 +194,7 @@ router.post('/quotations/:id/apply', async (req, res) => {
     try {
         const quotation = await prisma.quotation.findUnique({
             where: { id: Number(id) },
-            include: { details: true }
+            include: { details: { orderBy: { id: 'asc' } } }
         });
 
         if (!quotation) return res.status(404).json({ error: 'Quotation not found' });

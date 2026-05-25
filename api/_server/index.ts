@@ -461,7 +461,7 @@ app.post('/api/projects', async (req, res) => {
             include: {
                 customer: true,
                 customerMachine: true,
-                details: true,
+                details: { orderBy: { id: 'asc' } },
                 photos: true
             }
         });
@@ -489,7 +489,7 @@ app.get('/api/projects/:id', async (req, res) => {
             include: {
                 customer: true,
                 customerMachine: true,
-                details: true,
+                details: { orderBy: { id: 'asc' } },
                 photos: true
             }
         });
@@ -621,7 +621,7 @@ app.put('/api/projects/:id', async (req, res) => {
                 include: {
                     customer: true,
                     customerMachine: true,
-                    details: true,
+                    details: { orderBy: { id: 'asc' } },
                     photos: true
                 }
             });
@@ -904,7 +904,7 @@ app.get('/api/machines/:id/history', async (req, res) => {
         const history = await prisma.project.findMany({
             where: { customerMachineId: Number(id) },
             include: {
-                details: true,
+                details: { orderBy: { id: 'asc' } },
                 photos: true
             },
             orderBy: { createdAt: 'desc' }
@@ -1358,7 +1358,7 @@ app.get('/api/dashboard/trend', async (req, res) => {
                 ]
             },
             include: {
-                details: true
+                details: { orderBy: { id: 'asc' } }
             }
         });
 
@@ -1453,6 +1453,7 @@ app.get('/api/dashboard/details', async (req, res) => {
                 customer: true,
                 customerMachine: true,
                 details: {
+                    orderBy: { id: 'asc' },
                     include: {
                         product: {
                             include: { productCategory: true }
@@ -1775,7 +1776,7 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
         if (type === 'quotation' && quotationId) {
             const quotation = await prisma.quotation.findUnique({
                 where: { id: quotationId },
-                include: { details: true, project: { include: { customer: true, customerMachine: true } } }
+                include: { details: { orderBy: { id: 'asc' } }, project: { include: { customer: true, customerMachine: true } } }
             });
 
             if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
@@ -1942,7 +1943,7 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
             include: {
                 customer: true,
                 customerMachine: true,
-                details: true
+                details: { orderBy: { id: 'asc' } }
             },
             orderBy: {
                 // Ensure projects are ordered nicely
