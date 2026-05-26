@@ -1075,22 +1075,6 @@ const Repairs: React.FC = () => {
                             <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'area')}>
                                 + 地区指定追加
                             </Button>
-                            <Button type="button" size="sm" variant="ghost" onClick={() => {
-                                addDetail(type, 'travel');
-                                setDetails(prev => {
-                                    const newDetails = [...prev];
-                                    const lastIdx = newDetails.length - 2; // -2 because addDetail adds TWO rows (time + distance) for 'travel'
-                                    if (lastIdx >= 0) {
-                                        newDetails[lastIdx].travelType = 'time';
-                                        newDetails[lastIdx].description = '移動時間';
-                                        newDetails[lastIdx].unitPrice = systemSettings.defaultTravelTimeRate;
-                                        newDetails[lastIdx].amountSales = systemSettings.defaultTravelTimeRate;
-                                    }
-                                    return newDetails;
-                                });
-                            }}>
-                                <Plus size={16} /> 出張費追加
-                            </Button>
                         </div>
                     ) : type === 'outsourcing' && subType ? (
                         <div className="flex gap-2">
