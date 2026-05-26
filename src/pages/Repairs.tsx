@@ -1070,7 +1070,29 @@ const Repairs: React.FC = () => {
                         <span>{title}</span>
                         {description && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{description}</span>}
                     </div>
-                    {type === 'outsourcing' && subType ? (
+                    {(type === 'travel' || (type === 'outsourcing' && subType === 'travel')) ? (
+                        <div className="flex gap-2">
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'area')}>
+                                + 地区指定追加
+                            </Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => {
+                                addDetail(type, 'travel');
+                                setDetails(prev => {
+                                    const newDetails = [...prev];
+                                    const lastIdx = newDetails.length - 2; // -2 because addDetail adds TWO rows (time + distance) for 'travel'
+                                    if (lastIdx >= 0) {
+                                        newDetails[lastIdx].travelType = 'time';
+                                        newDetails[lastIdx].description = '移動時間';
+                                        newDetails[lastIdx].unitPrice = systemSettings.defaultTravelTimeRate;
+                                        newDetails[lastIdx].amountSales = systemSettings.defaultTravelTimeRate;
+                                    }
+                                    return newDetails;
+                                });
+                            }}>
+                                <Plus size={16} /> 出張費追加
+                            </Button>
+                        </div>
+                    ) : type === 'outsourcing' && subType ? (
                         <div className="flex gap-2">
                             {subType === 'labor' && (
                                 <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'labor')}>
@@ -1081,29 +1103,6 @@ const Repairs: React.FC = () => {
                                 <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'part')}>
                                     <Plus size={16} /> 部品追加
                                 </Button>
-                            )}
-                            {subType === 'travel' && (
-                                <>
-                                    <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'area')}>
-                                        + 地区指定追加
-                                    </Button>
-                                    <Button type="button" size="sm" variant="ghost" onClick={() => {
-                                        addDetail(type, 'travel');
-                                        setDetails(prev => {
-                                            const newDetails = [...prev];
-                                            const lastIdx = newDetails.length - 2; // -2 because addDetail adds TWO rows (time + distance) for 'travel'
-                                            if (lastIdx >= 0) {
-                                                newDetails[lastIdx].travelType = 'time';
-                                                newDetails[lastIdx].description = '移動時間';
-                                                newDetails[lastIdx].unitPrice = systemSettings.defaultTravelTimeRate;
-                                                newDetails[lastIdx].amountSales = systemSettings.defaultTravelTimeRate;
-                                            }
-                                            return newDetails;
-                                        });
-                                    }}>
-                                        <Plus size={16} /> 出張費追加
-                                    </Button>
-                                </>
                             )}
                         </div>
                     ) : (
