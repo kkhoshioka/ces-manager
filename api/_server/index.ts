@@ -14,6 +14,7 @@ import 'dotenv/config';
 import { generateInvoice, generateDeliveryNote, generateQuotation } from './pdfService';
 import systemSettingsRouter from './routes/systemSettings';
 import quotationRouter from './routes/quotations';
+import travelExpenseRouter from './routes/travelExpenses';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import { stringify } from 'csv-stringify/sync';
@@ -114,6 +115,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // System Settings
 app.use('/api/system-settings', systemSettingsRouter);
+app.use('/api/travel-expenses', travelExpenseRouter);
 
 // --- Customers ---
 app.get('/api/customers', async (req, res) => {

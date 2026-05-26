@@ -4,11 +4,12 @@ import SupplierMaster from './masters/SupplierMaster';
 import CustomerMaster from './masters/CustomerMaster';
 import ProductTypeMaster from './masters/ProductTypeMaster';
 import ExpenseMaster from './masters/ExpenseMaster';
+import TravelExpenseMaster from './masters/TravelExpenseMaster';
 import UserMaster from './masters/UserMaster';
 import SystemSettingsMaster from './masters/SystemSettingsMaster';
-import { Users, Tag, DollarSign, Settings, Truck, UserCog } from 'lucide-react';
+import { Users, Tag, DollarSign, Settings, Truck, UserCog, MapPin } from 'lucide-react';
 
-type Tab = 'customer' | 'type' | 'expense' | 'supplier' | 'user' | 'system';
+type Tab = 'customer' | 'type' | 'expense' | 'travel' | 'supplier' | 'user' | 'system';
 
 const Masters: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('customer');
@@ -53,6 +54,13 @@ const Masters: React.FC = () => {
                     営業費マスター
                 </button>
                 <button
+                    className={`${styles.tab} ${activeTab === 'travel' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('travel')}
+                >
+                    <MapPin size={18} />
+                    出張費マスター
+                </button>
+                <button
                     className={`${styles.tab} ${activeTab === 'user' ? styles.active : ''}`}
                     onClick={() => setActiveTab('user')}
                 >
@@ -73,6 +81,7 @@ const Masters: React.FC = () => {
                 {activeTab === 'supplier' && <SupplierMaster />}
                 {activeTab === 'type' && <ProductTypeMaster />}
                 {activeTab === 'expense' && <ExpenseMaster />}
+                {activeTab === 'travel' && <TravelExpenseMaster />}
                 {activeTab === 'user' && <UserMaster />}
                 {activeTab === 'system' && <SystemSettingsMaster />}
             </div>

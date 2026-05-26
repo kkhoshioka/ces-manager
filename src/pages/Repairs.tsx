@@ -128,6 +128,7 @@ const Repairs: React.FC = () => {
     const [allMachines, setAllMachines] = useState<CustomerMachine[]>([]);
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [travelExpenses, setTravelExpenses] = useState<any[]>([]);
     const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
 
     // Loading Flags
@@ -148,12 +149,13 @@ const Repairs: React.FC = () => {
 
         setIsFormLoading(true);
         try {
-            const [custs, machs, cats, supps, parts] = await Promise.all([
+            const [custs, machs, cats, supps, parts, travelExp] = await Promise.all([
                 customerService.getAllCustomers().catch(() => []),
                 customerService.getAllMachines().catch(() => []),
                 fetch(`${API_BASE_URL}/categories`).then(r => r.json()).catch(() => []),
                 fetch(`${API_BASE_URL}/suppliers`).then(r => r.json()).catch(() => []),
-                InventoryService.getAll().catch(() => [])
+                InventoryService.getAll().catch(() => []),
+                fetch(`${API_BASE_URL}/travel-expenses`).then(r => r.json()).catch(() => [])
             ]);
 
             setCustomers(Array.isArray(custs) ? custs : []);
@@ -161,6 +163,7 @@ const Repairs: React.FC = () => {
             setCategories(Array.isArray(cats) ? cats : []);
             setSuppliers(Array.isArray(supps) ? supps : []);
             setInventoryParts(Array.isArray(parts) ? parts : []);
+            setTravelExpenses(Array.isArray(travelExp) ? travelExp : []);
 
             setIsMasterDataLoaded(true);
         } catch (error) {
@@ -174,7 +177,7 @@ const Repairs: React.FC = () => {
     // Details State
     interface DetailItem {
         lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other' | 'inventory';
-        travelType?: 'time' | 'distance'; // New field for Travel rows
+        travelType?: 'time' | 'distance' | 'area'; // New field for Travel rows
         productCode?: string; // New field for Product Code
         description: string;
         supplier?: string;
@@ -249,6 +252,25 @@ const Repairs: React.FC = () => {
         nextIdRef.current += 1;
 
         if (type === 'travel') {
+            if (subType === 'area') {
+                const areaRow: DetailItem = {
+                    lineType: type,
+                    travelType: 'area',
+                    productCode: '',
+                    description: '',
+                    supplier: '',
+                    supplierId: null,
+                    remarks: '',
+                    quantity: 1,
+                    unitPrice: 0,
+                    unitCost: 0,
+                    amountCost: 0,
+                    amountSales: 0,
+                    originalIndex: nextIdRef.current,
+                    outsourcingDetailType: undefined
+                };
+                setDetails(prev => [...prev, areaRow]);
+            } else {
             // Add Time and Distance rows
             const timeRow: DetailItem = {
                 lineType: type,
@@ -285,6 +307,7 @@ const Repairs: React.FC = () => {
                 outsourcingDetailType: undefined
             };
             setDetails(prev => [...prev, timeRow, distanceRow]);
+            }
         } else {
             let defaultDescription = '';
             let unitPrice = 0;
@@ -628,7 +651,7 @@ const Repairs: React.FC = () => {
                     return {
                         lineType: d.lineType,
                         description: ((d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel')) && d.travelType)
-                            ? `【${d.travelType === 'time' ? '移動時間' : '移動距離'}】${d.description}`
+                            ? `【${d.travelType === 'area' ? '地区指定' : (d.travelType === 'time' ? '移動時間' : '移動距離')}】${d.description}`
                             : ((d.lineType === 'part' || d.lineType === 'inventory') && d.productCode
                                 ? `【${d.productCode}】${d.description}`
                                 : d.description),
@@ -772,12 +795,15 @@ const Repairs: React.FC = () => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     setDetails(fullProject.details.map((d: any) => {
-                        let tType: 'time' | 'distance' | undefined = undefined;
+                        let tType: 'time' | 'distance' | 'area' | undefined = undefined;
                         let pCode = '';
                         let desc = d.description;
 
                         if (d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel')) {
-                            if (desc.startsWith('【移動時間】')) {
+                            if (desc.startsWith('【地区指定】')) {
+                                tType = 'area';
+                                desc = desc.replace('【地区指定】', '');
+                            } else if (desc.startsWith('【移動時間】')) {
                                 tType = 'time';
                                 desc = desc.replace('【移動時間】', '');
                             } else if (desc.startsWith('【移動距離】')) {
@@ -1057,9 +1083,27 @@ const Repairs: React.FC = () => {
                                 </Button>
                             )}
                             {subType === 'travel' && (
-                                <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'travel')}>
-                                    <Plus size={16} /> 出張費追加
-                                </Button>
+                                <>
+                                    <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type, 'area')}>
+                                        + 地区指定追加
+                                    </Button>
+                                    <Button type="button" size="sm" variant="ghost" onClick={() => {
+                                        addDetail(type, 'travel');
+                                        setDetails(prev => {
+                                            const newDetails = [...prev];
+                                            const lastIdx = newDetails.length - 2; // -2 because addDetail adds TWO rows (time + distance) for 'travel'
+                                            if (lastIdx >= 0) {
+                                                newDetails[lastIdx].travelType = 'time';
+                                                newDetails[lastIdx].description = '移動時間';
+                                                newDetails[lastIdx].unitPrice = systemSettings.defaultTravelTimeRate;
+                                                newDetails[lastIdx].amountSales = systemSettings.defaultTravelTimeRate;
+                                            }
+                                            return newDetails;
+                                        });
+                                    }}>
+                                        <Plus size={16} /> 出張費追加
+                                    </Button>
+                                </>
                             )}
                         </div>
                     ) : (
@@ -1233,7 +1277,7 @@ const Repairs: React.FC = () => {
                                         <>
                                             {/* Date Input Column */}
                                             <td style={{ padding: '0.25rem' }}>
-                                                {detail.travelType === 'time' && (
+                                                {(detail.travelType === 'time' || detail.travelType === 'area') && (
                                                     <input
                                                         type="date"
                                                         className={styles.tableInput}
@@ -1290,6 +1334,53 @@ const Repairs: React.FC = () => {
                                                         placeholder="移動場所・区間など"
                                                     />
                                                 )}
+                                                {detail.travelType === 'area' && (
+                                                    <div style={{ position: 'relative' }}>
+                                                        <input
+                                                            type="text"
+                                                            list={`travel-areas-${detail.originalIndex}`}
+                                                            className={styles.tableInput}
+                                                            value={detail.description}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                const match = travelExpenses.find(t => t.area === val);
+                                                                if (match) {
+                                                                    handleDetailChange(detail.originalIndex, 'description', val);
+                                                                    handleDetailChange(detail.originalIndex, 'unitPrice', match.fee);
+                                                                    handleDetailChange(detail.originalIndex, 'amountSales', match.fee * detail.quantity);
+                                                                } else {
+                                                                    handleDetailChange(detail.originalIndex, 'description', val);
+                                                                }
+                                                            }}
+                                                            onBlur={async (e) => {
+                                                                const val = e.target.value;
+                                                                if (val && !travelExpenses.find(t => t.area === val)) {
+                                                                    if (confirm(`「${val}」は出張費マスターに未登録です。マスターに追加しますか？`)) {
+                                                                        try {
+                                                                            const res = await fetch(`${API_BASE_URL}/travel-expenses`, {
+                                                                                method: 'POST',
+                                                                                headers: { 'Content-Type': 'application/json' },
+                                                                                body: JSON.stringify({ area: val, fee: detail.unitPrice || 0 })
+                                                                            });
+                                                                            if (res.ok) {
+                                                                                const newExp = await res.json();
+                                                                                setTravelExpenses(prev => [...prev, newExp]);
+                                                                            }
+                                                                        } catch (error) {
+                                                                            console.error('Failed to create travel expense', error);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }}
+                                                            placeholder="地区を選択または入力"
+                                                        />
+                                                        <datalist id={`travel-areas-${detail.originalIndex}`}>
+                                                            {travelExpenses.map(t => (
+                                                                <option key={t.id} value={t.area}>{t.area} ({Number(t.fee).toLocaleString()}円)</option>
+                                                            ))}
+                                                        </datalist>
+                                                    </div>
+                                                )}
                                                 {detail.travelType === 'distance' && (
                                                     <div style={{ height: '34px' }}></div> // Spacer for empty cell
                                                 )}
@@ -1302,7 +1393,7 @@ const Repairs: React.FC = () => {
                                                     fontWeight: 'bold',
                                                     color: '#475569',
                                                 }}>
-                                                    {detail.travelType === 'time' ? '移動時間' : '移動距離'}
+                                                    {detail.travelType === 'area' ? '地区指定' : (detail.travelType === 'time' ? '移動時間' : '移動距離')}
                                                 </span>
                                             </td>
                                         </>
