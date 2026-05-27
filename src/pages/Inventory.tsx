@@ -16,6 +16,10 @@ const Inventory: React.FC = () => {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Filter states
+    const [sectionFilter, setSectionFilter] = useState<string>('');
+    const [lowStockFilter, setLowStockFilter] = useState(false);
+
     // Derived state for form
     const [selectedSection, setSelectedSection] = useState<string>('');
 
@@ -177,6 +181,21 @@ const Inventory: React.FC = () => {
         }
     };
 
+    const filteredParts = parts.filter(part => {
+        if (sectionFilter && part.productCategory?.section !== sectionFilter) return false;
+        if (lowStockFilter && part.stockQuantity > 5) return false;
+        return true;
+    });
+
+    const totalInventoryValue = filteredParts.reduce((sum, part) => sum + (part.stockQuantity * part.standardCost), 0);
+
+    const categorySummary = filteredParts.reduce((acc, part) => {
+        const sectionName = part.productCategory?.section || '未分類';
+        const value = part.stockQuantity * part.standardCost;
+        acc[sectionName] = (acc[sectionName] || 0) + value;
+        return acc;
+    }, {} as Record<string, number>);
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -187,6 +206,22 @@ const Inventory: React.FC = () => {
                 <Button icon={<Plus size={18} />} onClick={() => openForm()}>
                     在庫品登録
                 </Button>
+            </div>
+
+            {/* Summary Dashboard */}
+            <div className={styles.summaryDashboard}>
+                <div className={`${styles.summaryCard} ${styles.summaryCardPrimary}`}>
+                    <div className={styles.summaryTitle}>全体の在庫金額 (原価)</div>
+                    <div className={styles.summaryValue}>{formatCurrency(totalInventoryValue)}</div>
+                </div>
+                <div className={styles.categoryGrid}>
+                    {Object.entries(categorySummary).map(([category, value]) => (
+                        <div key={category} className={styles.categoryCard}>
+                            <div className={styles.categoryTitle}>{category}</div>
+                            <div className={styles.categoryValue}>{formatCurrency(value)}</div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <div className={styles.controls}>
@@ -200,9 +235,30 @@ const Inventory: React.FC = () => {
                         onChange={handleSearch}
                     />
                 </div>
-                <Button variant="secondary" icon={<Filter size={18} />}>
-                    フィルター
-                </Button>
+                
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <select
+                        className={styles.searchInput}
+                        style={{ width: '200px', paddingLeft: '1rem' }}
+                        value={sectionFilter}
+                        onChange={(e) => setSectionFilter(e.target.value)}
+                    >
+                        <option value="">すべての部門</option>
+                        {Array.from(new Set(categories.map(c => c.section))).sort().map(section => (
+                            <option key={section} value={section}>{section}</option>
+                        ))}
+                    </select>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--color-text-main)', cursor: 'pointer', background: 'white', padding: '0 1rem', height: '40px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                        <input
+                            type="checkbox"
+                            checked={lowStockFilter}
+                            onChange={(e) => setLowStockFilter(e.target.checked)}
+                            style={{ width: '16px', height: '16px' }}
+                        />
+                        在庫不足のみ
+                    </label>
+                </div>
             </div>
 
             <div className={styles.tableContainer}>
@@ -227,14 +283,14 @@ const Inventory: React.FC = () => {
                                     </div>
                                 </td>
                             </tr>
-                        ) : parts.length === 0 ? (
+                        ) : filteredParts.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className={styles.emptyState}>
                                     データがありません
                                 </td>
                             </tr>
                         ) : (
-                            parts.map(part => (
+                            filteredParts.map(part => (
                                 <tr key={part.id}>
                                     <td className={styles.partNumber}>{part.code}</td>
                                     <td className={styles.partName}>
