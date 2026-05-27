@@ -1022,14 +1022,12 @@ const Repairs: React.FC = () => {
                                     </tr>
                                 );
                             })}
-                            {sectionDetails.length > 0 && (
-                                <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
-                                    <td colSpan={5} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
-                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
-                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
-                                    <td></td>
-                                </tr>
-                            )}
+                            <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
+                                <td colSpan={5} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
+                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
+                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
+                                <td></td>
+                            </tr>
                             {sectionDetails.length === 0 && (
                                 <tr>
                                     <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
