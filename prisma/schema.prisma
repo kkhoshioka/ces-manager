@@ -48,6 +48,11 @@ model Product {
   standardPrice  Decimal  @default(0)
   standardCost   Decimal  @default(0)
   stockQuantity  Int      @default(0)
+  
+  // New alert fields
+  alertEnabled   Boolean  @default(false)
+  alertThreshold Int      @default(5)
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

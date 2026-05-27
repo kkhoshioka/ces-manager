@@ -30,6 +30,8 @@ const Inventory: React.FC = () => {
         stockQuantity: 0,
         standardPrice: 0,
         standardCost: 0,
+        alertEnabled: false,
+        alertThreshold: 5,
     };
 
     const [formData, setFormData] = useState<NewPart>(initialFormState);
@@ -73,10 +75,21 @@ const Inventory: React.FC = () => {
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
+        const target = e.target as HTMLInputElement;
+        const name = target.name;
+        
+        if (target.type === 'checkbox') {
+            setFormData(prev => ({
+                ...prev,
+                [name]: target.checked
+            }));
+            return;
+        }
+
+        const value = target.value;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'stockQuantity' || name === 'standardPrice' || name === 'standardCost' ? Number(value) : value
+            [name]: name === 'stockQuantity' || name === 'standardPrice' || name === 'standardCost' || name === 'alertThreshold' ? Number(value) : value
         }));
     };
 
@@ -130,6 +143,8 @@ const Inventory: React.FC = () => {
                 stockQuantity: part.stockQuantity,
                 standardPrice: part.standardPrice,
                 standardCost: part.standardCost,
+                alertEnabled: part.alertEnabled ?? false,
+                alertThreshold: part.alertThreshold ?? 5,
             });
 
             // Set initial selected section based on current categoryId or productCategory
@@ -183,7 +198,10 @@ const Inventory: React.FC = () => {
 
     const filteredParts = parts.filter(part => {
         if (sectionFilter && part.productCategory?.section !== sectionFilter) return false;
-        if (lowStockFilter && part.stockQuantity > 5) return false;
+        if (lowStockFilter) {
+            if (!part.alertEnabled) return false;
+            if (part.stockQuantity > (part.alertThreshold ?? 5)) return false;
+        }
         return true;
     });
 
@@ -295,7 +313,7 @@ const Inventory: React.FC = () => {
                                     <td className={styles.partNumber}>{part.code}</td>
                                     <td className={styles.partName}>
                                         {part.name}
-                                        {part.stockQuantity <= 5 && (
+                                        {part.alertEnabled && part.stockQuantity <= (part.alertThreshold ?? 5) && (
                                             <span className={styles.lowStockBadge} title="在庫不足">
                                                 <AlertTriangle size={14} />
                                             </span>
@@ -316,7 +334,7 @@ const Inventory: React.FC = () => {
                                         )}
                                     </td>
                                     <td>
-                                        <span className={`${styles.stockCount} ${part.stockQuantity <= 5 ? styles.lowStock : ''}`}>
+                                        <span className={`${styles.stockCount} ${part.alertEnabled && part.stockQuantity <= (part.alertThreshold ?? 5) ? styles.lowStock : ''}`}>
                                             {formatNumber(part.stockQuantity)}
                                         </span>
                                     </td>
@@ -433,6 +451,29 @@ const Inventory: React.FC = () => {
                                     onChange={handleInputChange}
                                     required
                                 />
+                            </div>
+
+                            <div className={styles.formGrid}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', alignSelf: 'center', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
+                                    <input
+                                        type="checkbox"
+                                        name="alertEnabled"
+                                        checked={formData.alertEnabled ?? false}
+                                        onChange={handleInputChange}
+                                        style={{ width: '18px', height: '18px' }}
+                                    />
+                                    在庫数アラートを有効にする
+                                </label>
+                                {formData.alertEnabled && (
+                                    <Input
+                                        label="アラートの基準数 (これを下回るとアラート)"
+                                        name="alertThreshold"
+                                        type="number"
+                                        min="0"
+                                        value={formData.alertThreshold ?? 5}
+                                        onChange={handleInputChange}
+                                    />
+                                )}
                             </div>
 
                             <div className={styles.formActions}>

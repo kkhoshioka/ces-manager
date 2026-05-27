@@ -13,6 +13,8 @@ export interface Part {
     standardPrice: number;
     standardCost: number;
     stockQuantity: number;
+    alertEnabled?: boolean;
+    alertThreshold?: number;
     createdAt: string;
     updatedAt: string;
 }
