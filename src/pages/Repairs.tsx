@@ -1022,7 +1022,7 @@ const Repairs: React.FC = () => {
                                     </tr>
                                 );
                             })}
-                            <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
+                            <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
                                 <td colSpan={5} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
@@ -1729,16 +1729,9 @@ const Repairs: React.FC = () => {
                                 </td>
                             </tr>
                         ))}
-                        {sectionDetails.length === 0 && (
-                            <tr>
-                                <td colSpan={isWRental ? 9 : 8} style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8' }}>
-                                    データがありません
-                                </td>
-                            </tr>
-                        )}
                     </tbody>
                     <tfoot>
-                        <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
+                        <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
                             <td colSpan={isWRental ? 8 : 7} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
                             <td colSpan={isWRental ? 5 : 5} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                             {isWRental && <td style={{ padding: '0.5rem', textAlign: 'right', color: '#ef4444' }}>{subtotalCost.toLocaleString()}円 (原価)</td>}
