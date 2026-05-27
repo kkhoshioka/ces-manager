@@ -1954,7 +1954,7 @@ const Repairs: React.FC = () => {
             {/* Modal */}
             {isFormOpen && (
                 <div className={styles.modalOverlay}>
-                    <div className={styles.modal} style={{ maxWidth: '1400px', width: '95%', position: 'relative' }}>
+                    <div className={styles.modal} style={{ maxWidth: '1400px', width: '95%', position: 'relative', overflowY: 'auto' }}>
                         {isFormLoading && (
                             <div style={{
                                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -1972,10 +1972,19 @@ const Repairs: React.FC = () => {
                             color: (formType === 'sales' ? '#0369a1' :
                                 formType === 'inspection' ? '#7e22ce' :
                                     formType === 'maintenance' ? '#c2410c' :
-                                        formType === 'rental' ? '#047857' : '#854d0e')
+                                        formType === 'rental' ? '#047857' : '#854d0e'),
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 100
                         }}>
                             <h2>
-                                {selectedProjectId ? '案件詳細・編集' : (formType === 'sales' ? '新規販売登録' : formType === 'rental' ? 'レンタル案件登録' : '新規修理受付')}
+                                {selectedProjectId ? '案件詳細・編集' : (
+                                    formType === 'sales' ? '新規販売登録' : 
+                                    formType === 'rental' ? 'レンタル案件登録' : 
+                                    formType === 'inspection' ? '新規特定自主検査受付' :
+                                    formType === 'maintenance' ? '新規整備受付' :
+                                    '新規修理受付'
+                                )}
                             </h2>
                             <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
                         </div>
