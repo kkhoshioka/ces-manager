@@ -85,7 +85,34 @@ const Inventory: React.FC = () => {
 
     const handleMinorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const minorId = Number(e.target.value);
-        setFormData(prev => ({ ...prev, categoryId: minorId }));
+        
+        let newCode = formData.code;
+        if (!editingId) {
+            const category = categories.find(c => c.id === minorId);
+            if (category && category.code) {
+                const prefix = category.code;
+                
+                // Find all existing parts that start with this prefix followed by a hyphen
+                const matchingParts = parts.filter(p => p.code.startsWith(prefix + '-'));
+                
+                let maxNum = 0;
+                matchingParts.forEach(p => {
+                    // Extract the number part after the last hyphen
+                    const partsArray = p.code.split('-');
+                    const lastPart = partsArray[partsArray.length - 1];
+                    const num = parseInt(lastPart, 10);
+                    if (!isNaN(num) && num > maxNum) {
+                        maxNum = num;
+                    }
+                });
+                
+                const nextNum = maxNum + 1;
+                // Format: Prefix-001
+                newCode = `${prefix}-${nextNum.toString().padStart(3, '0')}`;
+            }
+        }
+
+        setFormData(prev => ({ ...prev, categoryId: minorId, code: newCode }));
     };
 
     const openForm = (part?: Part) => {
