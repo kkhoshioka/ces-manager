@@ -158,7 +158,7 @@ const Inventory: React.FC = () => {
                     <p className={styles.subtitle}>在庫状況の確認と管理</p>
                 </div>
                 <Button icon={<Plus size={18} />} onClick={() => openForm()}>
-                    部品登録
+                    在庫品登録
                 </Button>
             </div>
 
@@ -261,7 +261,7 @@ const Inventory: React.FC = () => {
                 <div className={styles.modalOverlay}>
                     <div className={styles.modal}>
                         <div className={styles.modalHeader}>
-                            <h2>{editingId ? '部品情報の編集' : '新規部品登録'}</h2>
+                            <h2>{editingId ? '在庫品情報の編集' : '新規在庫品登録'}</h2>
                             <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}>
                                 <X size={24} />
                             </button>
