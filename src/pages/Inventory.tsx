@@ -295,29 +295,13 @@ const Inventory: React.FC = () => {
                         </div>
                         <form onSubmit={handleSubmit} className={styles.form}>
                             <div className={styles.formGrid}>
-                                <Input
-                                    label="部品番号 (コード)"
-                                    name="code"
-                                    value={formData.code}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                                <Input
-                                    label="部品名称"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.formGrid3}>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>部門</label>
                                     <select
                                         className={styles.select}
                                         value={selectedSection}
                                         onChange={handleMajorChange}
+                                        required
                                     >
                                         <option value="">選択してください</option>
                                         {Array.from(new Set(categories.map(c => c.section))).sort().map(section => (
@@ -333,6 +317,7 @@ const Inventory: React.FC = () => {
                                         value={formData.categoryId || ''}
                                         onChange={handleMinorChange}
                                         disabled={!selectedSection}
+                                        required
                                     >
                                         <option value="">選択してください</option>
                                         {categories
@@ -344,18 +329,27 @@ const Inventory: React.FC = () => {
                                             ))}
                                     </select>
                                 </div>
+                            </div>
+
+                            <div className={styles.formGrid}>
                                 <Input
-                                    label="在庫数"
-                                    name="stockQuantity"
-                                    type="number"
-                                    min="0"
-                                    value={formData.stockQuantity}
+                                    label="部品番号 (コード)"
+                                    name="code"
+                                    value={formData.code}
+                                    onChange={handleInputChange}
+                                    placeholder="種別を選択すると自動入力されます"
+                                    required
+                                />
+                                <Input
+                                    label="部品名称"
+                                    name="name"
+                                    value={formData.name}
                                     onChange={handleInputChange}
                                     required
                                 />
                             </div>
 
-                            <div className={styles.formGrid}>
+                            <div className={styles.formGrid3}>
                                 <Input
                                     label="標準売価 (円)"
                                     name="standardPrice"
@@ -371,6 +365,15 @@ const Inventory: React.FC = () => {
                                     type="number"
                                     min="0"
                                     value={formData.standardCost}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                                <Input
+                                    label="在庫数"
+                                    name="stockQuantity"
+                                    type="number"
+                                    min="0"
+                                    value={formData.stockQuantity}
                                     onChange={handleInputChange}
                                     required
                                 />
