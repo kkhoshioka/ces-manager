@@ -2347,7 +2347,7 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                 title: `${project.machineModel || project.customerMachine?.machineModel || ''} ${
                     project.type === 'repair' ? '修理' : 
                     project.type === 'rental' ? 'レンタル' : 
-                    project.type === 'inspection' ? '点検' : 
+                    project.type === 'inspection' ? '特定自主検査' : 
                     project.type === 'maintenance' ? '整備' : '販売'
                 }`.trim(),
                 serialNumber: project.serialNumber || project.customerMachine?.serialNumber,

@@ -1856,7 +1856,7 @@ const Repairs: React.FC = () => {
                                             whiteSpace: 'nowrap'
                                         }}>
                                             {project.type === 'sales' ? '販売' :
-                                                project.type === 'inspection' ? '点検' :
+                                                project.type === 'inspection' ? '特定自主検査' :
                                                     project.type === 'maintenance' ? '整備' :
                                                         project.type === 'rental' ? 'レンタル' : '修理'}
                                         </span>
@@ -2050,7 +2050,7 @@ const Repairs: React.FC = () => {
                                                 }}
                                             >
                                                 <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
-                                                <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>点検案件</option>
+                                                <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>特定自主検査案件</option>
                                                 <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
                                                 <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
                                                 <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
@@ -2247,7 +2247,7 @@ const Repairs: React.FC = () => {
                                             <Textarea 
                                                 label={
                                                     formType === 'repair' ? "症状・不具合内容" :
-                                                    formType === 'inspection' ? "点検内容" :
+                                                    formType === 'inspection' ? "特定自主検査内容" :
                                                     formType === 'maintenance' ? "整備内容" : "内容"
                                                 } 
                                                 name="issueDescription" 
