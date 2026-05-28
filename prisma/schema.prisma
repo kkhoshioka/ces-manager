@@ -41,6 +41,7 @@ model Customer {
 model Product {
   id             Int      @id @default(autoincrement())
   code           String   @unique
+  partNumber     String?  // Manufacturer Part Number
   name           String
   category       String? // Deprecated: keep for now, sync with categoryId if possible
   categoryId     Int?    // Link to ProductCategory (Minor category)
@@ -59,6 +60,30 @@ model Product {
 
   projectDetails ProjectDetail[]
   productCategory ProductCategory? @relation(fields: [categoryId], references: [id])
+}
+
+// Monthly Inventory Snapshot
+model MonthlyInventorySnapshot {
+  id             Int      @id @default(autoincrement())
+  year           Int
+  month          Int
+  productId      Int
+  code           String
+  partNumber     String?
+  name           String
+  categoryName   String?
+  stockQuantity  Int
+  unit           String?
+  standardCost   Decimal
+  standardPrice  Decimal
+  totalCostValue Decimal  // stockQuantity * standardCost
+
+  createdAt      DateTime @default(now())
+  
+  // Optional: keep relation to Product, though it might be deleted later
+  // product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@unique([year, month, productId])
 }
 
 // 3. Owned Machines Master
@@ -124,6 +149,7 @@ model Project {
   isDeliveryNoteIssued Boolean @default(false) // New: Track if delivery note is issued
   isPaymentReceived Boolean   @default(false)
   paymentDate       DateTime?
+  stockDeducted     Boolean   @default(false) // Track if inventory was deducted
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

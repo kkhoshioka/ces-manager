@@ -20,11 +20,17 @@ const Inventory: React.FC = () => {
     const [sectionFilter, setSectionFilter] = useState<string>('');
     const [lowStockFilter, setLowStockFilter] = useState(false);
 
+    // Snapshot states
+    const [snapshotYear, setSnapshotYear] = useState<number>(new Date().getFullYear());
+    const [snapshotMonth, setSnapshotMonth] = useState<number>(new Date().getMonth() + 1);
+    const [isSnapshotLoading, setIsSnapshotLoading] = useState(false);
+
     // Derived state for form
     const [selectedSection, setSelectedSection] = useState<string>('');
 
     const initialFormState: NewPart = {
         code: '',
+        partNumber: '',
         name: '',
         category: '',
         stockQuantity: 0,
@@ -138,6 +144,7 @@ const Inventory: React.FC = () => {
             setEditingId(part.id);
             setFormData({
                 code: part.code,
+                partNumber: part.partNumber || '',
                 name: part.name,
                 category: part.category || '',
                 categoryId: part.categoryId,
@@ -186,6 +193,24 @@ const Inventory: React.FC = () => {
         }
     };
 
+    const handleSaveSnapshot = async () => {
+        if (!confirm(`${snapshotYear}年${snapshotMonth}月の月末在庫を確定しますか？\n（既にデータがある場合は上書きされます）`)) return;
+        setIsSnapshotLoading(true);
+        try {
+            await InventoryService.saveSnapshot(snapshotYear, snapshotMonth);
+            alert('月末在庫を確定しました！');
+        } catch (error) {
+            console.error('Failed to save snapshot', error);
+            alert('在庫の確定に失敗しました');
+        } finally {
+            setIsSnapshotLoading(false);
+        }
+    };
+
+    const handleDownloadSnapshotPdf = () => {
+        InventoryService.downloadSnapshotPdf(snapshotYear, snapshotMonth);
+    };
+
     const handleDelete = async (id: number) => {
         if (window.confirm('本当にこの部品を削除しますか？')) {
             try {
@@ -223,9 +248,40 @@ const Inventory: React.FC = () => {
                     <h1 className={styles.title}>在庫管理</h1>
                     <p className={styles.subtitle}>在庫状況の確認と管理</p>
                 </div>
-                <Button icon={<Plus size={18} />} onClick={() => openForm()}>
-                    在庫品登録
-                </Button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                        <select
+                            value={snapshotYear}
+                            onChange={e => setSnapshotYear(Number(e.target.value))}
+                            className={styles.select}
+                            style={{ padding: '0.25rem' }}
+                        >
+                            {[...Array(5)].map((_, i) => {
+                                const y = new Date().getFullYear() - i;
+                                return <option key={y} value={y}>{y}年</option>;
+                            })}
+                        </select>
+                        <select
+                            value={snapshotMonth}
+                            onChange={e => setSnapshotMonth(Number(e.target.value))}
+                            className={styles.select}
+                            style={{ padding: '0.25rem' }}
+                        >
+                            {[...Array(12)].map((_, i) => (
+                                <option key={i + 1} value={i + 1}>{i + 1}月</option>
+                            ))}
+                        </select>
+                        <Button variant="secondary" onClick={handleSaveSnapshot} disabled={isSnapshotLoading}>
+                            {isSnapshotLoading ? '処理中...' : '月末在庫確定'}
+                        </Button>
+                        <Button variant="secondary" onClick={handleDownloadSnapshotPdf}>
+                            月次在庫表PDF
+                        </Button>
+                    </div>
+                    <Button icon={<Plus size={18} />} onClick={() => openForm()}>
+                        在庫品登録
+                    </Button>
+                </div>
             </div>
 
             {/* Summary Dashboard */}
@@ -285,19 +341,20 @@ const Inventory: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th>部品番号</th>
-                            <th>名称</th>
-                            <th>カテゴリ</th>
-                            <th>在庫数</th>
-                            <th>標準売価</th>
-                            <th>標準原価</th>
-                            <th>アクション</th>
+                            <th style={{ width: '8%' }}>部門</th>
+                            <th style={{ width: '12%' }}>種別</th>
+                            <th style={{ width: '15%' }}>部品番号 / 品番</th>
+                            <th style={{ width: '25%' }}>部品名称</th>
+                            <th style={{ width: '10%' }}>在庫数</th>
+                            <th style={{ width: '10%' }}>標準売価</th>
+                            <th style={{ width: '10%' }}>標準原価</th>
+                            <th style={{ width: '10%' }}>操作</th>
                         </tr>
                     </thead>
                     <tbody>
                         {isLoading ? (
                             <tr>
-                                <td colSpan={7}>
+                                <td colSpan={8}>
                                     <div style={{ padding: '2rem' }}>
                                         <LoadingSpinner />
                                     </div>
@@ -305,14 +362,19 @@ const Inventory: React.FC = () => {
                             </tr>
                         ) : filteredParts.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className={styles.emptyState}>
+                                <td colSpan={8} className={styles.emptyState}>
                                     データがありません
                                 </td>
                             </tr>
                         ) : (
                             filteredParts.map(part => (
                                 <tr key={part.id}>
-                                    <td className={styles.partNumber}>{part.code}</td>
+                                    <td>{part.productCategory?.section || '-'}</td>
+                                    <td>{part.productCategory?.name || '-'}</td>
+                                    <td>
+                                        <div style={{ fontWeight: '500' }}>{part.code}</div>
+                                        {part.partNumber && <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>品番: {part.partNumber}</div>}
+                                    </td>
                                     <td className={styles.partName}>
                                         {part.name}
                                         {part.alertEnabled && part.stockQuantity <= (part.alertThreshold ?? 5) && (
@@ -409,13 +471,21 @@ const Inventory: React.FC = () => {
 
                             <div className={styles.formGrid}>
                                 <Input
-                                    label="部品番号 (コード)"
+                                    label="部品番号 (自動採番)"
                                     name="code"
                                     value={formData.code}
                                     onChange={handleInputChange}
                                     placeholder="種別を選択すると自動入力されます"
                                     required
                                 />
+                                <Input
+                                    label="品番 (メーカー品番等)"
+                                    name="partNumber"
+                                    value={formData.partNumber || ''}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                            <div className={styles.formGrid}>
                                 <Input
                                     label="部品名称"
                                     name="name"

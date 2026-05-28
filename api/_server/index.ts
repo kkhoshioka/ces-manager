@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 import 'dotenv/config';
-import { generateInvoice, generateDeliveryNote, generateQuotation } from './pdfService';
+import { generateInvoice, generateDeliveryNote, generateQuotation, generateMonthlyInventoryPdf } from './pdfService';
 import systemSettingsRouter from './routes/systemSettings';
 import quotationRouter from './routes/quotations';
 import travelExpenseRouter from './routes/travelExpenses';
@@ -401,6 +401,87 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
+// --- Inventory Snapshot ---
+app.post('/api/inventory/snapshot', async (req, res) => {
+    try {
+        const { year, month } = req.body;
+        if (!year || !month) return res.status(400).json({ error: 'Year and month are required' });
+
+        // Get all products with category info
+        const products = await prisma.product.findMany({
+            include: { productCategory: true }
+        });
+
+        const snapshots = products.map(p => ({
+            year: Number(year),
+            month: Number(month),
+            productId: p.id,
+            code: p.code,
+            partNumber: p.partNumber,
+            name: p.name,
+            categoryName: p.productCategory?.name || p.category || '',
+            stockQuantity: p.stockQuantity,
+            unit: p.unit || '個',
+            standardCost: p.standardCost,
+            standardPrice: p.standardPrice,
+            totalCostValue: Number(p.stockQuantity) * Number(p.standardCost)
+        }));
+
+        // Delete existing snapshot for this month if it exists, then insert new
+        await prisma.$transaction(async (tx) => {
+            await tx.monthlyInventorySnapshot.deleteMany({
+                where: { year: Number(year), month: Number(month) }
+            });
+            await tx.monthlyInventorySnapshot.createMany({
+                data: snapshots
+            });
+        });
+
+        res.json({ success: true, count: snapshots.length });
+    } catch (error) {
+        console.error('Failed to create snapshot:', error);
+        res.status(500).json({ error: 'Failed to create snapshot' });
+    }
+});
+
+app.get('/api/inventory/snapshot/:year/:month', async (req, res) => {
+    try {
+        const { year, month } = req.params;
+        const snapshots = await prisma.monthlyInventorySnapshot.findMany({
+            where: { year: Number(year), month: Number(month) },
+            orderBy: [{ categoryName: 'asc' }, { code: 'asc' }]
+        });
+        res.json(snapshots);
+    } catch (error) {
+        console.error('Failed to fetch snapshot:', error);
+        res.status(500).json({ error: 'Failed to fetch snapshot' });
+    }
+});
+
+app.get('/api/inventory/snapshot/:year/:month/pdf', async (req, res) => {
+    try {
+        const { year, month } = req.params;
+        const snapshots = await prisma.monthlyInventorySnapshot.findMany({
+            where: { year: Number(year), month: Number(month) },
+            orderBy: [{ categoryName: 'asc' }, { code: 'asc' }]
+        });
+
+        if (snapshots.length === 0) {
+            return res.status(404).json({ error: 'No snapshot data found for this month' });
+        }
+
+        const doc = generateMonthlyInventoryPdf(snapshots, Number(year), Number(month));
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="inventory_snapshot_${year}_${month}.pdf"`);
+        doc.pipe(res);
+        doc.end();
+    } catch (error) {
+        console.error('PDF Generation Error:', error);
+        res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+});
+
 // --- Projects (Repairs) ---
 app.get('/api/projects', async (req, res) => {
     try {
@@ -447,34 +528,53 @@ app.post('/api/projects', async (req, res) => {
             return res.status(400).json({ error: 'Valid Customer ID is required' });
         }
 
-        const project = await prisma.project.create({
-            data: {
-                ...data,
-                rentalStartDate: data.rentalStartDate ? new Date(data.rentalStartDate) : null,
-                rentalEndDate: data.rentalEndDate ? new Date(data.rentalEndDate) : null,
-                actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : null,
-                rentalStatus: data.rentalStatus || null,
-                hourMeter,
-                customerContactName: data.customerContactName || null,
-                customer: { connect: { id: Number(customerId) } },
-                ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
-                ...(details && { details: { create: details } })
-            },
-            include: {
-                customer: true,
-                customerMachine: true,
-                details: { orderBy: { id: 'asc' } },
-                photos: true
-            }
-        });
+        const isCompleted = data.status === 'completed' || data.status === 'delivered';
 
-        // Auto-update Link Machine Hour Meter
-        if (customerMachineId && hourMeter) {
-            await prisma.customerMachine.update({
-                where: { id: Number(customerMachineId) },
-                data: { hourMeter: String(hourMeter) }
-            }).catch(e => console.error('Failed to auto-update machine hour meter', e));
-        }
+        const project = await prisma.$transaction(async (tx) => {
+            const createdProject = await tx.project.create({
+                data: {
+                    ...data,
+                    rentalStartDate: data.rentalStartDate ? new Date(data.rentalStartDate) : null,
+                    rentalEndDate: data.rentalEndDate ? new Date(data.rentalEndDate) : null,
+                    actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : null,
+                    rentalStatus: data.rentalStatus || null,
+                    hourMeter,
+                    stockDeducted: isCompleted,
+                    customerContactName: data.customerContactName || null,
+                    customer: { connect: { id: Number(customerId) } },
+                    ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
+                    ...(details && { details: { create: details } })
+                },
+                include: {
+                    customer: true,
+                    customerMachine: true,
+                    details: { orderBy: { id: 'asc' } },
+                    photos: true
+                }
+            });
+
+            // Deduct stock if necessary
+            if (isCompleted && details) {
+                for (const detail of createdProject.details) {
+                    if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
+                        await tx.product.update({
+                            where: { id: detail.productId },
+                            data: { stockQuantity: { decrement: Number(detail.quantity) || 0 } }
+                        }).catch(e => console.error('Failed to deduct stock on creation', e));
+                    }
+                }
+            }
+
+            // Auto-update Link Machine Hour Meter
+            if (customerMachineId && hourMeter) {
+                await tx.customerMachine.update({
+                    where: { id: Number(customerMachineId) },
+                    data: { hourMeter: String(hourMeter) }
+                }).catch(e => console.error('Failed to auto-update machine hour meter', e));
+            }
+
+            return createdProject;
+        });
 
         res.json(project);
     } catch (error) {
@@ -535,8 +635,31 @@ app.put('/api/projects/:id', async (req, res) => {
 
         // Transaction to ensure atomicity
         const project = await prisma.$transaction(async (tx) => {
+            // 0. Fetch existing project to handle stock deduction logic
+            const existingProject = await tx.project.findUnique({
+                where: { id: Number(id) },
+                include: { details: true }
+            });
+            if (!existingProject) throw new Error("Project not found");
+
+            // If stock was previously deducted, revert it first
+            if (existingProject.stockDeducted) {
+                for (const detail of existingProject.details) {
+                    if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
+                        await tx.product.update({
+                            where: { id: detail.productId },
+                            data: { stockQuantity: { increment: Number(detail.quantity) || 0 } }
+                        });
+                    }
+                }
+            }
+
+            // Determine if we should deduct stock with the new status
+            const newStatus = data.status || existingProject.status;
+            const shouldDeduct = newStatus === 'completed' || newStatus === 'delivered';
+
             // 1. Update main project fields
-            const projectUpdateData: any = { ...data };
+            const projectUpdateData: any = { ...data, stockDeducted: shouldDeduct };
             let cmid: number | null = null;
 
             // Handle relation fields only if they are provided
@@ -573,6 +696,7 @@ app.put('/api/projects/:id', async (req, res) => {
             }
 
             // 2. Update details (Delete all existing and recreate)
+            let detailsToDeduct: any[] = [];
             if (details) {
                 console.log(`[DEBUG] Updating details: count=${details.length}`);
                 await tx.projectDetail.deleteMany({
@@ -615,6 +739,26 @@ app.put('/api/projects/:id', async (req, res) => {
                     data: newDetailsData
                 });
                 console.log('[DEBUG] Details created');
+                detailsToDeduct = newDetailsData;
+            } else {
+                detailsToDeduct = existingProject.details;
+            }
+
+            // Deduct stock if necessary
+            if (shouldDeduct) {
+                for (const detail of detailsToDeduct) {
+                    if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
+                        // Check if product exists to avoid relation errors
+                        const product = await tx.product.findUnique({ where: { id: detail.productId } });
+                        if (product) {
+                            await tx.product.update({
+                                where: { id: detail.productId },
+                                data: { stockQuantity: { decrement: Number(detail.quantity) || 0 } }
+                            });
+                        }
+                    }
+                }
+                console.log('[DEBUG] Stock deducted');
             }
 
             // 3. Fetch Full Object to return
@@ -668,6 +812,21 @@ app.delete('/api/projects/:id', async (req, res) => {
                     .remove(fileNames);
 
                 if (error) console.error('Supabase batch delete error:', error);
+            }
+        }
+
+        // Handle stock deduction reversion if project is deleted
+        if (project.stockDeducted) {
+            const projectDetails = await prisma.projectDetail.findMany({
+                where: { projectId: Number(id) }
+            });
+            for (const detail of projectDetails) {
+                if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
+                    await prisma.product.update({
+                        where: { id: detail.productId },
+                        data: { stockQuantity: { increment: Number(detail.quantity) || 0 } }
+                    }).catch(e => console.error("Failed to revert stock on project delete:", e));
+                }
             }
         }
 

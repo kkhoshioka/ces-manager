@@ -56,7 +56,22 @@ export const InventoryService = {
         const lowerQuery = query.toLowerCase();
         return allParts.filter(part =>
             part.name.toLowerCase().includes(lowerQuery) ||
-            part.code.toLowerCase().includes(lowerQuery)
+            part.code.toLowerCase().includes(lowerQuery) ||
+            (part.partNumber && part.partNumber.toLowerCase().includes(lowerQuery))
         );
+    },
+
+    saveSnapshot: async (year: number, month: number): Promise<boolean> => {
+        const response = await fetch(`${API_BASE_URL}/inventory/snapshot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ year, month }),
+        });
+        if (!response.ok) throw new Error('Failed to save snapshot');
+        return true;
+    },
+
+    downloadSnapshotPdf: async (year: number, month: number): Promise<void> => {
+        window.open(`${API_BASE_URL}/inventory/snapshot/${year}/${month}/pdf`, '_blank');
     }
 };

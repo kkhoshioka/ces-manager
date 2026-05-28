@@ -7,4 +7,6 @@ export declare const InventoryService: {
     update: (id: number, updates: Partial<Part>) => Promise<Part>;
     delete: (id: number) => Promise<boolean>;
     search: (query: string) => Promise<Part[]>;
+    saveSnapshot: (year: number, month: number) => Promise<boolean>;
+    downloadSnapshotPdf: (year: number, month: number) => Promise<void>;
 };

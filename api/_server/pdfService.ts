@@ -1098,3 +1098,71 @@ export const generateQuotation = (project: Project) => {
 
     return printer.createPdfKitDocument(docDefinition);
 };
+
+export const generateMonthlyInventoryPdf = (snapshots: any[], year: number, month: number) => {
+    const totalCost = snapshots.reduce((sum, item) => sum + Number(item.totalCostValue), 0);
+
+    const docDefinition: any = {
+        pageMargins: [30, 40, 30, 40],
+        content: [
+            {
+                text: `${year}年 ${month}月度 月次在庫表`,
+                fontSize: 18,
+                bold: true,
+                alignment: 'center',
+                margin: [0, 0, 0, 20]
+            },
+            {
+                text: `総在庫金額: ${formatCurrency(totalCost)}`,
+                fontSize: 12,
+                alignment: 'right',
+                margin: [0, 0, 0, 10]
+            },
+            {
+                table: {
+                    headerRows: 1,
+                    widths: ['auto', 60, '*', 40, 30, 60, 60],
+                    body: [
+                        [
+                            { text: '部門/種別', fillColor: '#5B9BD5', color: 'white', bold: true, alignment: 'center' },
+                            { text: '部品番号', fillColor: '#5B9BD5', color: 'white', bold: true, alignment: 'center' },
+                            { text: '品番 / 品名', fillColor: '#5B9BD5', color: 'white', bold: true, alignment: 'center' },
+                            { text: '数量', fillColor: '#5B9BD5', color: 'white', bold: true, alignment: 'center' },
+                            { text: '単位', fillColor: '#5B9BD5', color: 'white', bold: true, alignment: 'center' },
+                            { text: '標準原価', fillColor: '#5B9BD5', color: 'white', bold: true, alignment: 'center' },
+                            { text: '在庫金額', fillColor: '#5B9BD5', color: 'white', bold: true, alignment: 'center' }
+                        ],
+                        ...snapshots.map((item, index) => {
+                            const fillColor = index % 2 === 0 ? null : '#EBF5FF';
+                            return [
+                                { text: item.categoryName || '', fontSize: 9, fillColor },
+                                { text: item.code || '', fontSize: 9, fillColor },
+                                { text: `${item.partNumber ? `[${item.partNumber}] ` : ''}${item.name}`, fontSize: 9, fillColor },
+                                { text: item.stockQuantity.toString(), alignment: 'right', fontSize: 9, fillColor },
+                                { text: item.unit || '個', alignment: 'center', fontSize: 9, fillColor },
+                                { text: formatCurrency(item.standardCost), alignment: 'right', fontSize: 9, fillColor },
+                                { text: formatCurrency(item.totalCostValue), alignment: 'right', fontSize: 9, fillColor }
+                            ];
+                        })
+                    ]
+                },
+                layout: {
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0.5,
+                    hLineColor: () => '#5B9BD5',
+                    vLineColor: () => '#5B9BD5',
+                    paddingLeft: () => 4,
+                    paddingRight: () => 4,
+                    paddingTop: () => 4,
+                    paddingBottom: () => 4,
+                }
+            }
+        ],
+        defaultStyle: {
+            font: 'Roboto',
+            fontSize: 10
+        }
+    };
+
+    return printer.createPdfKitDocument(docDefinition);
+};

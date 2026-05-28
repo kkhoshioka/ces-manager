@@ -978,7 +978,7 @@ const Repairs: React.FC = () => {
                                                     if (val) {
                                                         const part = inventoryParts.find(p => p.id === val);
                                                         if (part) {
-                                                            handleDetailChange(detail.originalIndex, 'productCode', part.code || '');
+                                                            handleDetailChange(detail.originalIndex, 'productCode', part.partNumber || part.code || '');
                                                             handleDetailChange(detail.originalIndex, 'description', part.name || '');
                                                             handleDetailChange(detail.originalIndex, 'unitPrice', part.standardPrice || 0);
                                                             handleDetailChange(detail.originalIndex, 'unitCost', part.standardCost || 0);
@@ -989,7 +989,7 @@ const Repairs: React.FC = () => {
                                             >
                                                 <option value="">-</option>
                                                 {availableParts.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name} {p.code ? `(${p.code})` : ''}</option>
+                                                    <option key={p.id} value={p.id}>{p.name} {p.partNumber ? `[${p.partNumber}]` : (p.code ? `(${p.code})` : '')}</option>
                                                 ))}
                                             </select>
                                         </td>
