@@ -28,6 +28,7 @@ const Inventory: React.FC = () => {
         name: '',
         category: '',
         stockQuantity: 0,
+        unit: '個',
         standardPrice: 0,
         standardCost: 0,
         alertEnabled: false,
@@ -143,6 +144,7 @@ const Inventory: React.FC = () => {
                 stockQuantity: part.stockQuantity,
                 standardPrice: part.standardPrice,
                 standardCost: part.standardCost,
+                unit: part.unit || '個',
                 alertEnabled: part.alertEnabled ?? false,
                 alertThreshold: part.alertThreshold ?? 5,
             });
@@ -335,7 +337,7 @@ const Inventory: React.FC = () => {
                                     </td>
                                     <td>
                                         <span className={`${styles.stockCount} ${part.alertEnabled && part.stockQuantity <= (part.alertThreshold ?? 5) ? styles.lowStock : ''}`}>
-                                            {formatNumber(part.stockQuantity)}
+                                            {formatNumber(part.stockQuantity)} {part.unit || '個'}
                                         </span>
                                     </td>
                                     <td>{formatCurrency(part.standardPrice)}</td>
@@ -423,7 +425,7 @@ const Inventory: React.FC = () => {
                                 />
                             </div>
 
-                            <div className={styles.formGrid3}>
+                            <div className={styles.formGrid}>
                                 <Input
                                     label="標準売価 (円)"
                                     name="standardPrice"
@@ -442,6 +444,9 @@ const Inventory: React.FC = () => {
                                     onChange={handleInputChange}
                                     required
                                 />
+                            </div>
+
+                            <div className={styles.formGrid}>
                                 <Input
                                     label="在庫数"
                                     name="stockQuantity"
@@ -451,6 +456,24 @@ const Inventory: React.FC = () => {
                                     onChange={handleInputChange}
                                     required
                                 />
+                                <div className={styles.formGroup}>
+                                    <label className={styles.label}>単位</label>
+                                    <select
+                                        name="unit"
+                                        value={formData.unit || '個'}
+                                        onChange={handleInputChange}
+                                        className={styles.select}
+                                    >
+                                        <option value="個">個</option>
+                                        <option value="本">本</option>
+                                        <option value="L">L (リットル)</option>
+                                        <option value="箱">箱</option>
+                                        <option value="セット">セット</option>
+                                        <option value="枚">枚</option>
+                                        <option value="台">台</option>
+                                        <option value="式">式</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div className={styles.formGrid}>

@@ -48,6 +48,7 @@ model Product {
   standardPrice  Decimal  @default(0)
   standardCost   Decimal  @default(0)
   stockQuantity  Int      @default(0)
+  unit           String?  @default("個")
   
   // New alert fields
   alertEnabled   Boolean  @default(false)
