@@ -9,6 +9,27 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.headerControls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.snapshotControls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: white;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    flex-wrap: wrap;
 }
 
 .title {

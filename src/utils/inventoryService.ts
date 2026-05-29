@@ -72,6 +72,19 @@ export const InventoryService = {
     },
 
     downloadSnapshotPdf: async (year: number, month: number): Promise<void> => {
-        window.open(`${API_BASE_URL}/inventory/snapshot/${year}/${month}/pdf`, '_blank');
+        const response = await fetch(`${API_BASE_URL}/inventory/snapshot/${year}/${month}/pdf`);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to download PDF');
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inventory_snapshot_${year}_${month}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 };

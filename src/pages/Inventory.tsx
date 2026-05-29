@@ -207,8 +207,13 @@ const Inventory: React.FC = () => {
         }
     };
 
-    const handleDownloadSnapshotPdf = () => {
-        InventoryService.downloadSnapshotPdf(snapshotYear, snapshotMonth);
+    const handleDownloadSnapshotPdf = async () => {
+        try {
+            await InventoryService.downloadSnapshotPdf(snapshotYear, snapshotMonth);
+        } catch (error: any) {
+            console.error('Failed to download PDF', error);
+            alert(error.message || '月次在庫表のダウンロードに失敗しました。\n対象月の在庫が確定されているか確認してください。');
+        }
     };
 
     const handleDelete = async (id: number) => {
@@ -248,8 +253,8 @@ const Inventory: React.FC = () => {
                     <h1 className={styles.title}>在庫管理</h1>
                     <p className={styles.subtitle}>在庫状況の確認と管理</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                <div className={styles.headerControls}>
+                    <div className={styles.snapshotControls}>
                         <select
                             value={snapshotYear}
                             onChange={e => setSnapshotYear(Number(e.target.value))}
