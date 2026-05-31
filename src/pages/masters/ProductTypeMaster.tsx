@@ -192,7 +192,14 @@ const ProductTypeMaster: React.FC = () => {
                                     <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
                                         <td colSpan={4} style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: '#1e293b' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span>{section}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <span>{section}</span>
+                                                    {section === 'メンテナンス' && (
+                                                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'normal' }}>
+                                                            ※ここに登録された種別名は、修理案件の「自社工賃」の費目として選択できるようになります。
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <Button size="sm" variant="ghost" onClick={() => openAdd(section)} style={{ padding: '2px 8px' }}>
                                                     <Plus size={14} /> 追加
                                                 </Button>

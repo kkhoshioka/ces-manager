@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera } from 'lucide-react';
+import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown } from 'lucide-react';
 import type { Repair } from '../types/repair';
 import { RepairService } from '../utils/repairService';
 import { customerService } from '../utils/customerService';
@@ -248,7 +248,7 @@ const Repairs: React.FC = () => {
     };
 
     const nextIdRef = React.useRef(0);
-    const addDetail = (type: DetailItem['lineType'], subType: string = '') => {
+    const addDetail = (type: DetailItem['lineType'], subType: string = '', explicitDescription?: string) => {
         nextIdRef.current += 1;
 
         if (type === 'travel') {
@@ -346,7 +346,7 @@ const Repairs: React.FC = () => {
             setDetails(prev => [...prev, {
                 lineType: type,
                 productCode: '',
-                description: defaultDescription,
+                description: explicitDescription !== undefined ? explicitDescription : defaultDescription,
                 supplier: '',
                 supplierId: null,
                 remarks: '',
@@ -1088,9 +1088,43 @@ const Repairs: React.FC = () => {
                             )}
                         </div>
                     ) : (
-                        <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type)}>
-                            <Plus size={16} /> 追加
-                        </Button>
+                        <div className="flex gap-2">
+                            {type === 'labor' && categories.filter(c => c.section === 'メンテナンス').length > 0 && (
+                                <div style={{ display: 'inline-block', position: 'relative' }}>
+                                    <select 
+                                        value=""
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                addDetail(type, '', e.target.value);
+                                            }
+                                        }}
+                                        style={{
+                                            appearance: 'none',
+                                            padding: '0.25rem 2rem 0.25rem 0.75rem',
+                                            fontSize: '0.875rem',
+                                            borderRadius: '0.375rem',
+                                            border: '1px solid transparent',
+                                            backgroundColor: 'transparent',
+                                            color: 'var(--color-primary)',
+                                            cursor: 'pointer',
+                                            fontWeight: 500,
+                                        }}
+                                        className="hover:bg-slate-100 transition-colors"
+                                    >
+                                        <option value="" disabled hidden>+ 費目を選択して追加</option>
+                                        {categories.filter(c => c.section === 'メンテナンス').map(c => (
+                                            <option key={c.id} value={c.name}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <div style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-primary)' }}>
+                                        <ChevronDown size={14} />
+                                    </div>
+                                </div>
+                            )}
+                            <Button type="button" size="sm" variant="ghost" onClick={() => addDetail(type)}>
+                                <Plus size={16} /> 追加
+                            </Button>
+                        </div>
                     )}
                 </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
