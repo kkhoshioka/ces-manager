@@ -24,6 +24,7 @@ const Inventory: React.FC = () => {
     const [snapshotYear, setSnapshotYear] = useState<number>(new Date().getFullYear());
     const [snapshotMonth, setSnapshotMonth] = useState<number>(new Date().getMonth() + 1);
     const [isSnapshotLoading, setIsSnapshotLoading] = useState(false);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
 
     // Derived state for form
     const [selectedSection, setSelectedSection] = useState<string>('');
@@ -208,11 +209,14 @@ const Inventory: React.FC = () => {
     };
 
     const handleDownloadSnapshotPdf = async () => {
+        setIsPdfLoading(true);
         try {
             await InventoryService.downloadSnapshotPdf(snapshotYear, snapshotMonth);
         } catch (error: any) {
             console.error('Failed to download PDF', error);
             alert(error.message || '月次在庫表のダウンロードに失敗しました。\n対象月の在庫が確定されているか確認してください。');
+        } finally {
+            setIsPdfLoading(false);
         }
     };
 
@@ -279,8 +283,8 @@ const Inventory: React.FC = () => {
                         <Button variant="secondary" onClick={handleSaveSnapshot} disabled={isSnapshotLoading}>
                             {isSnapshotLoading ? '処理中...' : '月末在庫確定'}
                         </Button>
-                        <Button variant="secondary" onClick={handleDownloadSnapshotPdf}>
-                            月次在庫表PDF
+                        <Button variant="secondary" onClick={handleDownloadSnapshotPdf} disabled={isPdfLoading}>
+                            {isPdfLoading ? 'ダウンロード中...' : '月次在庫表PDF'}
                         </Button>
                     </div>
                     <Button icon={<Plus size={18} />} onClick={() => openForm()}>
