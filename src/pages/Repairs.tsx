@@ -176,7 +176,7 @@ const Repairs: React.FC = () => {
 
     // Details State
     interface DetailItem {
-        lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other' | 'inventory';
+        lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other' | 'inventory' | 'expense' | 'discount';
         travelType?: 'time' | 'distance' | 'area'; // New field for Travel rows
         productCode?: string; // New field for Product Code
         description: string;
@@ -412,6 +412,8 @@ const Repairs: React.FC = () => {
             outsourcing: { cost: 0, sales: 0 },
             travel: { cost: 0, sales: 0 },
             inventory: { cost: 0, sales: 0 },
+            expense: { cost: 0, sales: 0 },
+            discount: { cost: 0, sales: 0 },
             other: { cost: 0, sales: 0 }
         };
 
@@ -2469,6 +2471,12 @@ const Repairs: React.FC = () => {
 
                                             {/* Outsourcing Section - Consolidated */}
                                             {renderDetailTable('外注費', 'outsourcing', undefined, true, '請求単価0で登録した内容は明細には表示されません')}
+
+                                            {/* Expense Section */}
+                                            {renderDetailTable('諸経費', 'expense', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
+
+                                            {/* Discount Section */}
+                                            {renderDetailTable('値引き', 'discount', undefined, false, '請求単価をマイナスで入力してください（例: -5000）')}
 
                                             {renderDetailTable('その他', 'other', undefined, false, '請求単価0で登録した場合は、内容のみ明細に表示されます')}
                                         </>

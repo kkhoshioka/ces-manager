@@ -4,7 +4,7 @@ export interface ProjectDetail {
     id: number;
     projectId: number;
     productId?: number | null;
-    lineType: 'labor' | 'part' | 'outsourcing' | 'other' | 'travel';
+    lineType: 'labor' | 'part' | 'outsourcing' | 'other' | 'travel' | 'expense' | 'discount';
     description: string;
     supplier?: string | null;
     supplierId?: number | null;
