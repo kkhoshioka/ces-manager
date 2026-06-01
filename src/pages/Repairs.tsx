@@ -198,12 +198,13 @@ const Repairs: React.FC = () => {
         // Rental specific fields
         machineModel?: string;
         serialNumber?: string;
-        rentalBillingType?: 'daily' | 'monthly';
-        rentalStartDate?: string;
-        rentalEndDate?: string;
-        rentalBasicFee?: number;
-        rentalCompensationFee?: number;
-        rentalCompensationDays?: number;
+        rentalBillingType?: 'daily' | 'monthly' | null;
+        rentalStartDate?: string | null;
+        rentalEndDate?: string | null;
+        rentalBasicFee?: number | null;
+        rentalCompensationFee?: number | null;
+        rentalCompensationDays?: number | null;
+        isTaxExempt?: boolean;
     }
 
     const [details, setDetails] = useState<DetailItem[]>([]);

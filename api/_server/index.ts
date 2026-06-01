@@ -729,7 +729,8 @@ app.put('/api/projects/:id', async (req, res) => {
                         rentalBasicFee: Number(detail.rentalBasicFee) || 0,
                         rentalCompensationFee: Number(detail.rentalCompensationFee) || 0,
                         rentalCompensationDays: Number(detail.rentalCompensationDays) || 0,
-                        laborType: detail.laborType || null
+                        laborType: detail.laborType || null,
+                        isTaxExempt: detail.isTaxExempt === true || detail.isTaxExempt === 'true'
                     };
                     return safeDetail;
                 });

@@ -49,6 +49,7 @@ interface ProjectDetail {
     rentalBasicFee?: number | string;
     rentalCompensationDays?: number | string;
     rentalCompensationFee?: number | string;
+    isTaxExempt?: boolean;
 }
 
 interface Customer {
@@ -231,7 +232,11 @@ export const generateInvoice = (project: Project) => {
         if (d.lineType === 'padding') return sum;
         return sum + (Number(d.quantity) * Number(d.unitPrice));
     }, 0);
-    const tax = Math.floor(subtotal * 0.1);
+    const taxableSubtotal = processedDetails.reduce((sum: number, d: ProjectDetail) => {
+        if (d.lineType === 'padding' || d.isTaxExempt) return sum;
+        return sum + (Number(d.quantity) * Number(d.unitPrice));
+    }, 0);
+    const tax = Math.floor(taxableSubtotal * 0.1);
     const total = subtotal + tax;
 
     const now = new Date();
@@ -482,7 +487,7 @@ export const generateInvoice = (project: Project) => {
 
                                 return [
                                     { text: dateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.description + (d.isTaxExempt ? ' (非課税)' : ''), fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : (d.laborType === 'time' ? 'H' : (d.laborType === 'fixed' ? '式' : (d.laborType === 'days' ? '日' : (d.laborType || '式')))), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
@@ -827,7 +832,11 @@ export const generateQuotation = (project: Project) => {
         if (d.lineType === 'padding') return sum;
         return sum + (Number(d.quantity) * Number(d.unitPrice));
     }, 0);
-    const tax = Math.floor(subtotal * 0.1);
+    const taxableSubtotal = processedDetails.reduce((sum: number, d: ProjectDetail) => {
+        if (d.lineType === 'padding' || d.isTaxExempt) return sum;
+        return sum + (Number(d.quantity) * Number(d.unitPrice));
+    }, 0);
+    const tax = Math.floor(taxableSubtotal * 0.1);
     const total = subtotal + tax;
 
     const now = new Date();
@@ -1013,7 +1022,7 @@ export const generateQuotation = (project: Project) => {
                             const rowBorder = [true, true, true, true];
                             const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
                             return [
-                                { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                { text: d.lineType === 'padding' ? '\u00A0' : d.description + (d.isTaxExempt ? ' (非課税)' : ''), fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : (d.laborType === 'time' ? 'H' : (d.laborType === 'fixed' ? '式' : (d.laborType === 'days' ? '日' : (d.laborType || '式')))), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                 { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0 && d.lineType !== 'padding') ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },

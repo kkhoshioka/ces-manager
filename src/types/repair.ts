@@ -22,6 +22,7 @@ export interface ProjectDetail {
     machineModel?: string | null;
     serialNumber?: string | null;
     rentalBillingType?: string | null;
+    isTaxExempt?: boolean;
 }
 
 export interface ProjectPhoto {

@@ -16,6 +16,7 @@ interface ProjectDetail {
     rentalBasicFee?: number | string;
     rentalCompensationDays?: number | string;
     rentalCompensationFee?: number | string;
+    isTaxExempt?: boolean;
 }
 interface Customer {
     code?: string;
