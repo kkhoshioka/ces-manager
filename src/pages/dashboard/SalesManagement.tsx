@@ -41,6 +41,12 @@ const SalesManagement = () => {
     const [data, setData] = useState<CustomerStat[]>([]);
     const [loading, setLoading] = useState(false);
     const [expandedCustomer, setExpandedCustomer] = useState<number | null>(null);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<{ id: number, name: string } | null>(null);
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [paymentMethod, setPaymentMethod] = useState('振込');
+    const [paymentNotes, setPaymentNotes] = useState('');
 
     const fetchReport = React.useCallback(async () => {
         setLoading(true);
@@ -140,6 +146,46 @@ const SalesManagement = () => {
         }
     };
 
+
+    const handleOpenPaymentModal = (customerId: number, customerName: string) => {
+        setSelectedCustomerForPayment({ id: customerId, name: customerName });
+        setPaymentAmount('');
+        setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
+        setPaymentMethod('振込');
+        setPaymentNotes('');
+        setIsPaymentModalOpen(true);
+    };
+
+    const handleSavePayment = async () => {
+        if (!selectedCustomerForPayment) return;
+        if (!paymentAmount || isNaN(Number(paymentAmount))) {
+            alert('有効な金額を入力してください');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/billing/payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customerId: selectedCustomerForPayment.id,
+                    amount: Number(paymentAmount),
+                    paymentDate,
+                    method: paymentMethod,
+                    notes: paymentNotes
+                })
+            });
+
+            if (!res.ok) throw new Error('入金登録に失敗しました');
+
+            alert('入金を登録しました');
+            setIsPaymentModalOpen(false);
+            fetchReport(); // Refresh data to show updated unpaid amounts if needed
+        } catch (error) {
+            console.error(error);
+            alert('入金の登録に失敗しました');
+        }
+    };
 
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
@@ -324,6 +370,13 @@ const SalesManagement = () => {
                                                             </h3>
                                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                                 <Button
+                                                                    variant="primary"
+                                                                    size="sm"
+                                                                    onClick={() => handleOpenPaymentModal(item.customerId, item.customerName)}
+                                                                >
+                                                                    入金登録
+                                                                </Button>
+                                                                <Button
                                                                     variant="outline"
                                                                     size="sm"
                                                                     disabled={downloadingId === item.customerId}
@@ -398,6 +451,67 @@ const SalesManagement = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Payment Modal */}
+            {isPaymentModalOpen && selectedCustomerForPayment && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: 'white', padding: '2rem', borderRadius: '8px', width: '400px', maxWidth: '90%'
+                    }}>
+                        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1.25rem' }}>
+                            入金登録: {selectedCustomerForPayment.name}
+                        </h2>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>入金日</label>
+                            <input
+                                type="date"
+                                value={paymentDate}
+                                onChange={(e) => setPaymentDate(e.target.value)}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>入金額 (円)</label>
+                            <input
+                                type="number"
+                                value={paymentAmount}
+                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>入金方法</label>
+                            <select
+                                value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                            >
+                                <option value="振込">振込</option>
+                                <option value="現金">現金</option>
+                                <option value="手形">手形</option>
+                                <option value="その他">その他</option>
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>備考</label>
+                            <input
+                                type="text"
+                                value={paymentNotes}
+                                onChange={(e) => setPaymentNotes(e.target.value)}
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                                placeholder="例: 10月分として"
+                            />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                            <Button variant="outline" onClick={() => setIsPaymentModalOpen(false)}>キャンセル</Button>
+                            <Button variant="primary" onClick={handleSavePayment}>登録する</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

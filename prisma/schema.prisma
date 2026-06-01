@@ -35,6 +35,8 @@ model Customer {
   projects         Project[]
   customerMachines CustomerMachine[]
   monthlyBillStatuses MonthlyBillStatus[]
+  payments         Payment[]
+  monthlyBillings  MonthlyBilling[]
 }
 
 // 2. Products/Services Master
@@ -398,4 +400,42 @@ model QuotationDetail {
   rentalBasicFee         Decimal   @default(0)
   rentalCompensationFee  Decimal   @default(0)
   rentalCompensationDays Decimal   @default(0)
+}
+
+// 11. Payments & Billing
+model Payment {
+  id           Int      @id @default(autoincrement())
+  customerId   Int
+  amount       Decimal
+  paymentDate  DateTime
+  method       String?  // '振込', '現金', '手形', etc.
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  customer     Customer @relation(fields: [customerId], references: [id])
+}
+
+model MonthlyBilling {
+  id               Int      @id @default(autoincrement())
+  customerId       Int
+  year             Int
+  month            Int
+  
+  previousBalance  Decimal  @default(0) // 前回請求額
+  paymentReceived  Decimal  @default(0) // 御入金額
+  carryForward     Decimal  @default(0) // 繰越金額
+  currentSales     Decimal  @default(0) // 今回御買上額 (税抜)
+  taxAmount        Decimal  @default(0) // 消費税額
+  currentBilling   Decimal  @default(0) // 今回御請求額
+  
+  closingDate      DateTime // 実際の締日
+  isClosed         Boolean  @default(false)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  customer         Customer @relation(fields: [customerId], references: [id])
+  
+  @@unique([customerId, year, month])
 }

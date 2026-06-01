@@ -32,6 +32,11 @@ interface Project {
     notes?: string;
     createdAt?: Date | string | null;
     completionDate?: Date | string | null;
+    billingSnapshot?: {
+        previousBalance: number;
+        paymentReceived: number;
+        carryForward: number;
+    };
 }
 export declare const generateInvoice: (project: Project) => PDFKit.PDFDocument;
 export declare const generateDeliveryNote: (project: Project) => PDFKit.PDFDocument;

@@ -15,6 +15,7 @@ import { generateInvoice, generateDeliveryNote, generateQuotation, generateMonth
 import systemSettingsRouter from './routes/systemSettings';
 import quotationRouter from './routes/quotations';
 import travelExpenseRouter from './routes/travelExpenses';
+import billingRouter from './routes/billing';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import { stringify } from 'csv-stringify/sync';
@@ -115,7 +116,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // System Settings
 app.use('/api/system-settings', systemSettingsRouter);
+app.use('/api/quotations', quotationRouter);
 app.use('/api/travel-expenses', travelExpenseRouter);
+app.use('/api/billing', billingRouter);
 
 // --- Customers ---
 app.get('/api/customers', async (req, res) => {
@@ -2338,14 +2341,112 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
         }
 
         const customId = `${year}${String(month).padStart(2, '0')}-${customer.id}`;
+        
+        // --- Calculate Billing Snapshot for this month ---
+        let closingDay = 99;
+        if (customer.closingDate && !isNaN(Number(customer.closingDate))) {
+            closingDay = Number(customer.closingDate);
+        }
+        const getClosingDate = (y: number, m: number, day: number) => {
+            if (day >= 28) {
+                return new Date(y, m, 0, 23, 59, 59, 999);
+            }
+            return new Date(y, m - 1, day, 23, 59, 59, 999);
+        };
+        const currentClosingDate = getClosingDate(Number(year), Number(month), closingDay);
+        
+        let prevYear = Number(year);
+        let prevMonth = Number(month) - 1;
+        if (prevMonth === 0) {
+            prevYear--;
+            prevMonth = 12;
+        }
+        const previousClosingDate = getClosingDate(prevYear, prevMonth, closingDay);
+        const billStartDate = new Date(previousClosingDate.getTime() + 1);
+
+        const previousBilling = await prisma.monthlyBilling.findUnique({
+            where: {
+                customerId_year_month: {
+                    customerId: Number(customerId),
+                    year: prevYear,
+                    month: prevMonth
+                }
+            }
+        });
+        const previousBalance = previousBilling?.currentBilling || 0;
+
+        const payments = await prisma.payment.findMany({
+            where: {
+                customerId: Number(customerId),
+                paymentDate: {
+                    gt: billStartDate,
+                    lte: currentClosingDate
+                }
+            }
+        });
+        const paymentReceived = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const carryForward = Number(previousBalance) - paymentReceived;
+        // --- End of Billing Snapshot ---
+
         const pdfData = {
             id: customId,
             customer: { name: customer.name, code: customer.code },
             machineModel: '複数案件合算',
             serialNumber: '-',
             details: combinedDetails,
-            notes: ''
+            notes: '',
+            billingSnapshot: {
+                previousBalance: Number(previousBalance),
+                paymentReceived,
+                carryForward
+            }
         };
+
+        // Calculate totals for MonthlyBilling snapshot
+        let currentSales = 0;
+        let taxAmount = 0;
+        for (const project of projects) {
+            const details = project.details;
+            for (const d of details) {
+                if ((d as any).isTaxExempt) continue;
+                currentSales += (Number((d as any).quantity || 0) * Number((d as any).unitPrice || 0));
+            }
+        }
+        taxAmount = Math.floor(currentSales * 0.1);
+        const currentBilling = carryForward + currentSales + taxAmount;
+
+        await prisma.monthlyBilling.upsert({
+            where: {
+                customerId_year_month: {
+                    customerId: Number(customerId),
+                    year: Number(year),
+                    month: Number(month)
+                }
+            },
+            create: {
+                customerId: Number(customerId),
+                year: Number(year),
+                month: Number(month),
+                previousBalance,
+                paymentReceived,
+                carryForward,
+                currentSales,
+                taxAmount,
+                currentBilling,
+                closingDate: currentClosingDate,
+                isClosed: true
+            },
+            update: {
+                previousBalance,
+                paymentReceived,
+                carryForward,
+                currentSales,
+                taxAmount,
+                currentBilling,
+                closingDate: currentClosingDate,
+                isClosed: true
+            }
+        });
 
         const pdfDoc = generateInvoice(pdfData);
 

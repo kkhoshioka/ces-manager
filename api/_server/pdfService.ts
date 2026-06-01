@@ -67,6 +67,11 @@ interface Project {
     notes?: string;
     createdAt?: Date | string | null;
     completionDate?: Date | string | null;
+    billingSnapshot?: {
+        previousBalance: number;
+        paymentReceived: number;
+        carryForward: number;
+    };
 }
 
 const formatCurrency = (amount: number | string) => {
@@ -249,6 +254,51 @@ export const generateInvoice = (project: Project) => {
     const ACCENT_COLOR = '#EBF5FF';  // Lighter matching stripe
     const BORDER_COLOR = '#5B9BD5';
 
+    let summaryTableBody: any[];
+    if (project.billingSnapshot) {
+        summaryTableBody = [
+            [
+                { text: '前回御請求額', style: 'tableHeaderMain' },
+                { text: '御入金額', style: 'tableHeaderMain' },
+                { text: '繰越金額', style: 'tableHeaderMain' },
+                { text: '今回御買上額', style: 'tableHeaderMain' },
+                { text: '消費税額', style: 'tableHeaderMain' },
+                { text: '', border: [false, false, false, false] },
+                { text: '今回御請求額', style: 'blueHeaderUnique' }
+            ],
+            [
+                { text: formatCurrency(project.billingSnapshot.previousBalance).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: formatCurrency(project.billingSnapshot.paymentReceived).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: formatCurrency(project.billingSnapshot.carryForward).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: formatCurrency(subtotal).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: '', border: [false, false, false, false] },
+                { text: formatCurrency(project.billingSnapshot.carryForward + subtotal + tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: ['#1a3c7e', '#1a3c7e', '#1a3c7e', '#1a3c7e'], fillColor: '#EBF5FF' }
+            ]
+        ];
+    } else {
+        summaryTableBody = [
+            [
+                { text: '御請求金額', style: 'tableHeaderMain' },
+                { text: '内、消費税', style: 'tableHeaderMain' },
+                { text: '', border: [false, false, false, false] },
+                { text: '税抜金額計', style: 'tableHeaderMain' },
+                { text: '消費税額計', style: 'tableHeaderMain' },
+                { text: '', border: [false, false, false, false] },
+                { text: '今回御請求額', style: 'blueHeaderUnique' }
+            ],
+            [
+                { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: '', border: [false, false, false, false] },
+                { text: formatCurrency(subtotal).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                { text: '', border: [false, false, false, false] },
+                { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: ['#1a3c7e', '#1a3c7e', '#1a3c7e', '#1a3c7e'], fillColor: '#EBF5FF' }
+            ]
+        ];
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docDefinition: any = {
         pageMargins: [30, 30, 30, 30], // Narrower margins
@@ -400,26 +450,7 @@ export const generateInvoice = (project: Project) => {
                     {
                         table: {
                             widths: [80, 80, 80, 80, 80, 5, 80],
-                            body: [
-                                [
-                                    { text: '御請求金額', style: 'tableHeaderMain' },
-                                    { text: '内、消費税', style: 'tableHeaderMain' },
-                                    { text: '', border: [false, false, false, false] },
-                                    { text: '税抜金額計', style: 'tableHeaderMain' },
-                                    { text: '消費税額計', style: 'tableHeaderMain' },
-                                    { text: '', border: [false, false, false, false] },
-                                    { text: '今回御請求額', style: 'blueHeaderUnique' }
-                                ],
-                                [
-                                    { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                                    { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                                    { text: '', border: [false, false, false, false] },
-                                    { text: formatCurrency(subtotal).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                                    { text: formatCurrency(tax).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
-                                    { text: '', border: [false, false, false, false] },
-                                    { text: formatCurrency(total).replace('¥', ''), style: 'summaryCell', border: [true, false, true, true], borderColor: ['#1a3c7e', '#1a3c7e', '#1a3c7e', '#1a3c7e'], fillColor: '#EBF5FF' }
-                                ]
-                            ]
+                            body: summaryTableBody
                         },
                         layout: {
                             hLineWidth: (i: number) => 1,
