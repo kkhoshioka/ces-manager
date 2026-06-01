@@ -1030,13 +1030,6 @@ const Repairs: React.FC = () => {
                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
                                 <td></td>
                             </tr>
-                            {sectionDetails.length === 0 && (
-                                <tr>
-                                    <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
-                                        明細行がありません。「追加」ボタンから追加してください。
-                                    </td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
                 </div>
