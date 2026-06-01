@@ -677,7 +677,8 @@ const Repairs: React.FC = () => {
                         rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate) : null,
                         rentalBasicFee: Number(d.rentalBasicFee) || 0,
                         rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
-                        rentalCompensationDays: Number(d.rentalCompensationDays) || 0
+                        rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
+                        isTaxExempt: d.isTaxExempt || false
                     };
                 })
             };
