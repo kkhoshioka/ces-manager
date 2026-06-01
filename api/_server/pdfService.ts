@@ -382,14 +382,13 @@ export const generateInvoice = (project: Project) => {
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
-                            { text: `お客様コード  (${project.customer?.code || ''})`, fontSize: 9 },
-                            { 
+                            ...(project.billingSnapshot ? [] : [{ 
                                 text: (project.machineModel || project.serialNumber) 
                                     ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
                                     : '件名: 案件詳細', 
                                 fontSize: 9, 
                                 margin: [0, 4, 0, 0] 
-                            },
+                            }]),
                             ...(project.notes ? [{ text: (project.notes || '').split('\n')[0], fontSize: 9, margin: [0, 2, 0, 0] }] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
@@ -722,7 +721,6 @@ export const generateDeliveryNote = (project: Project) => {
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
-                            { text: `お客様コード  (${project.customer?.code || ''})`, fontSize: 9 },
                             { 
                                 text: (project.machineModel || project.serialNumber) 
                                     ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
@@ -966,7 +964,6 @@ export const generateQuotation = (project: Project) => {
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             // Add customerContactName if it exists, otherwise omit this line
                             ...(project.customerContactName ? [{ text: `${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
-                            { text: `お客様コード  (${project.customer?.code || ''})`, fontSize: 9 },
                             { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },
                             ...(issueSummary ? [{ text: issueSummary, fontSize: 9, margin: [0, 2, 0, 0] }] : []),
                             { text: '毎度ありがとうございます。', fontSize: 9, margin: [0, 8, 0, 0] },
