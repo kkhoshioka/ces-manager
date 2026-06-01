@@ -367,7 +367,7 @@ const Repairs: React.FC = () => {
         setDetails(details.filter((_, i) => i !== index));
     };
 
-    const handleDetailChange = (index: number, field: keyof DetailItem, value: number | string | null) => {
+    const handleDetailChange = (index: number, field: keyof DetailItem, value: number | string | boolean | null) => {
         setDetails(prevDetails => {
             const newDetails = [...prevDetails];
             const item = { ...newDetails[index] }; // Copy item to avoid mutation of prev state
@@ -1431,6 +1431,18 @@ const Repairs: React.FC = () => {
                                                         type === 'labor' ? '作業内容' : '詳細内容'
                                                     }
                                                 />
+                                                {type === 'other' && (
+                                                    <div style={{ marginTop: '4px' }}>
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem', color: '#475569' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={detail.isTaxExempt || false}
+                                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'isTaxExempt', e.target.checked)}
+                                                            />
+                                                            非課税にする
+                                                        </label>
+                                                    </div>
+                                                )}
                                             </td>
                                         </>
                                     )}
