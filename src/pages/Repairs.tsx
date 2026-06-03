@@ -511,6 +511,17 @@ const Repairs: React.FC = () => {
         e.preventDefault();
         if (isSubmitting) return;
 
+        let finalCompletionDate = formState.completionDate;
+        if (formState.status === 'completed' && !finalCompletionDate) {
+            const setToday = window.confirm('完了日が未登録です。本日の日付を完了日として登録して保存しますか？\n（「キャンセル」を押すと保存を中止し、手動で日付を入力できます）');
+            if (setToday) {
+                finalCompletionDate = new Date().toISOString().split('T')[0];
+                setFormState(prev => ({ ...prev, completionDate: finalCompletionDate }));
+            } else {
+                return;
+            }
+        }
+
         // 原価と請求額の整合性チェック
         const anomalies = details.filter(d => {
             // 原価表示のない項目（自社工賃、出張費）および「その他」はチェック対象外とする
@@ -617,7 +628,7 @@ const Repairs: React.FC = () => {
                 serialNumber: formState.serialNumber,
                 hourMeter: formState.hourMeter,
                 orderDate: formState.orderDate ? new Date(formState.orderDate) : new Date(), // Auto-fill today if empty
-                completionDate: formState.completionDate ? new Date(formState.completionDate) : null,
+                completionDate: finalCompletionDate ? new Date(finalCompletionDate) : null,
                 notes: ((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') ? formState.issueDescription : '') + (formState.notes ? `\n\n備考: ${formState.notes}` : ''),
                 status: formState.status,
                 rentalStartDate: formState.rentalStartDate ? new Date(formState.rentalStartDate) : null,
