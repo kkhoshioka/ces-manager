@@ -1605,8 +1605,8 @@ const Repairs: React.FC = () => {
                 const bVal = orderMap[b.status] || 99;
                 return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
             } else {
-                const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                const aDate = a.orderDate ? new Date(a.orderDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                const bDate = b.orderDate ? new Date(b.orderDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
                 return sortOrder === 'asc' ? aDate - bDate : bDate - aDate;
             }
         });
@@ -1914,7 +1914,7 @@ const Repairs: React.FC = () => {
                                         </span>
                                     </td>
                                     <td><StatusBadge status={project.status || 'received'} /></td>
-                                    <td>{project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-'}</td>
+                                    <td>{project.orderDate ? new Date(project.orderDate).toLocaleDateString() : (project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-')}</td>
                                     <td className={styles.customerName}>{project.customer?.name || '-'}</td>
                                     <td>
                                         <div className={styles.machineInfo}>

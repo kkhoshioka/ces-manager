@@ -244,7 +244,7 @@ export const generateInvoice = (project: Project) => {
     const tax = Math.floor(taxableSubtotal * 0.1);
     const total = subtotal + tax;
 
-    const now = new Date();
+    const now = project.completionDate ? new Date(project.completionDate) : new Date();
     const billingDate = formatDate(now);
     // Assuming deadline is end of next month for now, or just leave blank/generic
     const closingDateStr = project.customer?.name?.includes('締') ? '末' : '20'; // Placeholder logic
