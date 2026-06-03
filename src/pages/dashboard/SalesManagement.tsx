@@ -32,6 +32,7 @@ interface CustomerStat {
     totalAmount: number;
     unbilledAmount: number;
     unpaidAmount: number;
+    paidAmount?: number;
     count: number;
 }
 
@@ -360,19 +361,20 @@ const SalesManagement = () => {
                                 <th className={styles.right}>売上合計</th>
                                 <th className={styles.right}>未請求</th>
                                 <th className={styles.right}>未入金</th>
+                                <th className={styles.right} style={{ color: '#16a34a' }}>入金</th>
                                 <th style={{ width: '50px' }}></th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} style={{ padding: '2rem' }}>
+                                    <td colSpan={7} style={{ padding: '2rem' }}>
                                         <LoadingSpinner />
                                     </td>
                                 </tr>
                             ) : data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                                         データがありません
                                     </td>
                                 </tr>
@@ -395,13 +397,16 @@ const SalesManagement = () => {
                                             <td className={styles.right} style={{ color: item.unpaidAmount > 0 ? '#dc2626' : '#94a3b8' }}>
                                                 {item.unpaidAmount > 0 ? formatCurrency(item.unpaidAmount) : '-'}
                                             </td>
+                                            <td className={styles.right} style={{ color: (item.paidAmount || 0) > 0 ? '#16a34a' : '#94a3b8', fontWeight: (item.paidAmount || 0) > 0 ? 'bold' : 'normal' }}>
+                                                {(item.paidAmount || 0) > 0 ? formatCurrency(item.paidAmount || 0) : '-'}
+                                            </td>
                                             <td style={{ textAlign: 'center', color: '#94a3b8' }}>
                                                 {expandedCustomer === item.customerId ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                             </td>
                                         </tr>
                                         {expandedCustomer === item.customerId && (
                                             <tr className={styles.detailRow}>
-                                                <td colSpan={6} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
+                                                <td colSpan={7} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
                                                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                                             <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#475569' }}>

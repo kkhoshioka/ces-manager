@@ -2582,6 +2582,32 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const customerStats: Record<string, any> = {};
 
+        const paymentsInPeriod = await prisma.payment.findMany({
+            where: {
+                paymentDate: { gte: startDate, lte: endDate }
+            },
+            include: { customer: true }
+        });
+
+        paymentsInPeriod.forEach(p => {
+            const custId = p.customerId;
+            if (!customerStats[custId]) {
+                customerStats[custId] = {
+                    customerId: custId,
+                    customerName: p.customer?.name || '不明',
+                    closingDate: p.customer?.closingDate,
+                    monthlyStatus: statusMap.get(custId) || 'draft',
+                    projects: [],
+                    totalAmount: 0,
+                    unbilledAmount: 0,
+                    unpaidAmount: 0,
+                    paidAmount: 0,
+                    count: 0
+                };
+            }
+            customerStats[custId].paidAmount += Number(p.amount);
+        });
+
         projects.forEach(project => {
             const custId = project.customerId;
             const custName = project.customer?.name || '不明'; // Fallback
@@ -2596,6 +2622,7 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                     totalAmount: 0,
                     unbilledAmount: 0,
                     unpaidAmount: 0,
+                    paidAmount: 0,
                     count: 0
                 };
             }
