@@ -43,11 +43,12 @@ const SalesManagement = () => {
     const [loading, setLoading] = useState(false);
     const [expandedCustomer, setExpandedCustomer] = useState<number | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<{ id: number, name: string } | null>(null);
+    const [selectedCustomerForPayment, setSelectedCustomerForPayment] = useState<{ id: number, name: string, unpaidAmount: number } | null>(null);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [paymentMethod, setPaymentMethod] = useState('振込');
     const [paymentNotes, setPaymentNotes] = useState('');
+    const [applyFeeAdjustment, setApplyFeeAdjustment] = useState(true);
     const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
     const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<{ id: number, name: string } | null>(null);
     const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
@@ -152,21 +153,33 @@ const SalesManagement = () => {
     };
 
 
-    const handleOpenPaymentModal = (customerId: number, customerName: string) => {
-        setSelectedCustomerForPayment({ id: customerId, name: customerName });
+    const handleOpenPaymentModal = (customerId: number, customerName: string, unpaidAmount: number) => {
+        setSelectedCustomerForPayment({ id: customerId, name: customerName, unpaidAmount });
         setPaymentAmount('');
         setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
         setPaymentMethod('振込');
         setPaymentNotes('');
+        setApplyFeeAdjustment(true);
         setIsPaymentModalOpen(true);
     };
 
     const handleSavePayment = async () => {
         if (!selectedCustomerForPayment) return;
-        if (!paymentAmount || isNaN(Number(paymentAmount))) {
+        const enteredAmount = Number(paymentAmount);
+        if (!paymentAmount || isNaN(enteredAmount) || enteredAmount <= 0) {
             alert('有効な金額を入力してください');
             return;
         }
+
+        const unpaidAmount = selectedCustomerForPayment.unpaidAmount;
+        const difference = unpaidAmount - enteredAmount;
+        const showFeeOption = enteredAmount > 0 && difference > 0 && difference <= 2000;
+        const isAdjustingFee = showFeeOption && applyFeeAdjustment;
+
+        const finalAmount = isAdjustingFee ? unpaidAmount : enteredAmount;
+        const finalNotes = isAdjustingFee 
+            ? `[振込手数料相殺: ${formatCurrency(difference)} (実入金: ${formatCurrency(enteredAmount)})]\n${paymentNotes}`.trim()
+            : paymentNotes;
 
         try {
             const res = await fetch(`${API_BASE_URL}/billing/payment`, {
@@ -174,10 +187,10 @@ const SalesManagement = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     customerId: selectedCustomerForPayment.id,
-                    amount: Number(paymentAmount),
+                    amount: finalAmount,
                     paymentDate,
                     method: paymentMethod,
-                    notes: paymentNotes
+                    notes: finalNotes
                 })
             });
 
@@ -416,7 +429,7 @@ const SalesManagement = () => {
                                                                 <Button
                                                                     variant="primary"
                                                                     size="sm"
-                                                                    onClick={() => handleOpenPaymentModal(item.customerId, item.customerName)}
+                                                                    onClick={() => handleOpenPaymentModal(item.customerId, item.customerName, item.unpaidAmount)}
                                                                 >
                                                                     入金登録
                                                                 </Button>
@@ -556,6 +569,25 @@ const SalesManagement = () => {
                                 placeholder="例: 10月分として"
                             />
                         </div>
+
+                        {(() => {
+                            const unpaid = selectedCustomerForPayment.unpaidAmount;
+                            const entered = Number(paymentAmount);
+                            const diff = unpaid - entered;
+                            const showFee = entered > 0 && diff > 0 && diff <= 2000;
+                            if (!showFee) return null;
+                            return (
+                                <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.375rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
+                                        <input type="checkbox" checked={applyFeeAdjustment} onChange={e => setApplyFeeAdjustment(e.target.checked)} style={{ marginTop: '0.2rem' }} />
+                                        <span style={{ fontSize: '0.9rem', color: '#166534', lineHeight: 1.4 }}>
+                                            差額の <b>{formatCurrency(diff)}</b> を振込手数料として処理し、<b>{formatCurrency(unpaid)}</b> の入金として全額自動消込する
+                                        </span>
+                                    </label>
+                                </div>
+                            );
+                        })()}
+
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                             <Button variant="outline" onClick={() => setIsPaymentModalOpen(false)}>キャンセル</Button>
                             <Button variant="primary" onClick={handleSavePayment}>登録する</Button>
