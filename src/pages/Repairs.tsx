@@ -1174,14 +1174,14 @@ const Repairs: React.FC = () => {
                                     : '数量'
                                 }
                             </th>
-                            {(type !== 'labor' && type !== 'travel') && (
+                            {(type !== 'labor' && type !== 'travel' && type !== 'discount') && (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>原価単価</th>
                                     <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>原価計</th>
                                 </>
                             )}
-                            <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>請求単価</th>
-                            <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>請求額</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>{type === 'discount' ? '値引き額' : '請求単価'}</th>
+                            {type !== 'discount' && <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>請求額</th>}
 
                             {/* Remarks Header for Labor */}
                             {type === 'labor' && (
@@ -1516,7 +1516,7 @@ const Repairs: React.FC = () => {
                                             </select>
                                         </div>
                                     </td>
-                                    {(type !== 'labor' && type !== 'travel') && (
+                                    {(type !== 'labor' && type !== 'travel' && type !== 'discount') && (
                                         <>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
@@ -1529,11 +1529,22 @@ const Repairs: React.FC = () => {
                                     )}
                                     <td style={{ padding: '0.25rem' }}>
                                         <div className={styles.currencyWrapper}>
-                                            <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val: number | string) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                            <CurrencyInput 
+                                                className={styles.tableInput} 
+                                                style={{ textAlign: 'right', minWidth: '100px' }} 
+                                                value={type === 'discount' ? Math.abs(detail.unitPrice || 0) : detail.unitPrice} 
+                                                onChange={(val: number | string) => {
+                                                    let numericVal = Number(val);
+                                                    if (type === 'discount' && numericVal !== 0) {
+                                                        numericVal = -Math.abs(numericVal);
+                                                    }
+                                                    handleDetailChange(detail.originalIndex, 'unitPrice', numericVal);
+                                                }} 
+                                            />
                                             <span className={styles.currencyUnit}>円</span>
                                         </div>
                                     </td>
-                                    <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}円</td>
+                                    {type !== 'discount' && <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}円</td>}
 
                                     {/* Remarks Column for Labor */}
                                     {type === 'labor' && (
@@ -2501,7 +2512,7 @@ const Repairs: React.FC = () => {
                                             {renderDetailTable('諸経費', 'expense', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
 
                                             {/* Discount Section */}
-                                            {renderDetailTable('値引き', 'discount', undefined, false, '請求単価をマイナスで入力してください（例: -5000）')}
+                                            {renderDetailTable('値引き', 'discount', undefined, false, '値引き額はマイナスを付けずに入力してください。自動的に値引きとして計算されます。')}
 
                                             {renderDetailTable('その他', 'other', undefined, false, '請求単価0で登録した場合は、内容のみ明細に表示されます')}
                                         </>
