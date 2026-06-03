@@ -483,6 +483,13 @@ const Repairs: React.FC = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
     const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, targetId: number | null }>({ isOpen: false, targetId: null });
+    const [machineRegisterDialog, setMachineRegisterDialog] = useState<{ isOpen: boolean, resolve: ((value: boolean) => void) | null }>({ isOpen: false, resolve: null });
+
+    const confirmMachineRegistration = (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            setMachineRegisterDialog({ isOpen: true, resolve });
+        });
+    };
 
     const handleDeleteProject = async (id: number, e?: React.MouseEvent) => {
         e?.stopPropagation();
@@ -581,7 +588,7 @@ const Repairs: React.FC = () => {
                     }
                 } else {
                     // Not found, prompt user to register
-                    const shouldRegister = window.confirm(`入力された機種（${formState.machineModel}）とシリアル（${formState.serialNumber || 'なし'}）は機材台帳に登録されていません。\n機材台帳に新しく登録しますか？`);
+                    const shouldRegister = await confirmMachineRegistration();
                     if (shouldRegister) {
                         machine = await customerService.createMachine({
                             customerId: customer.id,
@@ -2615,6 +2622,43 @@ const Repairs: React.FC = () => {
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                                     <Button variant="secondary" onClick={() => setDeleteConfirmation({ isOpen: false, targetId: null })}>キャンセル</Button>
                                     <Button onClick={confirmDelete} style={{ backgroundColor: '#ef4444', border: 'none', color: 'white' }}>削除する</Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+            {
+                machineRegisterDialog.isOpen && (
+                    <div className={styles.modalOverlay} style={{ zIndex: 1100 }}>
+                        <div className={styles.modal} style={{ maxWidth: '500px', padding: '0' }}>
+                            <div className={styles.modalHeader} style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                <h2 style={{ color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem' }}>
+                                    <Wrench size={20} /> 機材台帳への登録確認
+                                </h2>
+                                <button className={styles.closeButton} onClick={() => {
+                                    if (machineRegisterDialog.resolve) machineRegisterDialog.resolve(false);
+                                    setMachineRegisterDialog({ isOpen: false, resolve: null });
+                                }}><X size={20} /></button>
+                            </div>
+                            <div style={{ padding: '1.5rem' }}>
+                                <p style={{ marginBottom: '1.5rem', color: '#334155', lineHeight: '1.6' }}>
+                                    入力された機種（<strong>{formState.machineModel}</strong>）とシリアル（<strong>{formState.serialNumber || 'なし'}</strong>）は機材台帳に登録されていません。<br />
+                                    機材台帳に新しく登録しますか？
+                                </p>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                    <Button type="button" variant="outline" onClick={() => {
+                                        if (machineRegisterDialog.resolve) machineRegisterDialog.resolve(false);
+                                        setMachineRegisterDialog({ isOpen: false, resolve: null });
+                                    }}>
+                                        登録しないで保存
+                                    </Button>
+                                    <Button type="button" onClick={() => {
+                                        if (machineRegisterDialog.resolve) machineRegisterDialog.resolve(true);
+                                        setMachineRegisterDialog({ isOpen: false, resolve: null });
+                                    }}>
+                                        登録して保存
+                                    </Button>
                                 </div>
                             </div>
                         </div>
