@@ -166,4 +166,18 @@ router.get('/payments/:customerId', async (req, res) => {
     }
 });
 
+// Delete Payment
+router.delete('/payment/:id', async (req, res) => {
+    try {
+        const paymentId = Number(req.params.id);
+        await prisma.payment.delete({
+            where: { id: paymentId }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting payment:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;

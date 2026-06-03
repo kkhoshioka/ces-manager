@@ -208,6 +208,24 @@ const SalesManagement = () => {
         }
     };
 
+    const handleDeletePayment = async (paymentId: number) => {
+        if (!window.confirm('この入金履歴を削除してもよろしいですか？\n※注意：自動消込された案件の「入金済」チェックは元に戻りません。必要に応じて一覧画面から直接チェックを外してください。')) return;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/billing/payment/${paymentId}`, {
+                method: 'DELETE'
+            });
+            if (!res.ok) throw new Error('Failed to delete payment');
+            
+            setPaymentHistory(prev => prev.filter(p => p.id !== paymentId));
+            fetchReport();
+            alert('入金履歴を削除しました。');
+        } catch (error) {
+            console.error(error);
+            alert('入金履歴の削除に失敗しました');
+        }
+    };
+
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
     const toggleExpand = (customerId: number) => {
@@ -569,6 +587,7 @@ const SalesManagement = () => {
                                             <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額</th>
                                             <th style={{ padding: '0.5rem', textAlign: 'center' }}>方法</th>
                                             <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
+                                            <th style={{ padding: '0.5rem', textAlign: 'center' }}>操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -578,6 +597,11 @@ const SalesManagement = () => {
                                                 <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(Number(p.amount))}</td>
                                                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>{p.method || '-'}</td>
                                                 <td style={{ padding: '0.5rem' }}>{p.notes || '-'}</td>
+                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                    <Button variant="danger" size="sm" onClick={() => handleDeletePayment(p.id)}>
+                                                        削除
+                                                    </Button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
