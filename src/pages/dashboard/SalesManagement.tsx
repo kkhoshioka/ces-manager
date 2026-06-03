@@ -47,6 +47,10 @@ const SalesManagement = () => {
     const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [paymentMethod, setPaymentMethod] = useState('振込');
     const [paymentNotes, setPaymentNotes] = useState('');
+    const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
+    const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<{ id: number, name: string } | null>(null);
+    const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const fetchReport = React.useCallback(async () => {
         setLoading(true);
@@ -184,6 +188,23 @@ const SalesManagement = () => {
         } catch (error) {
             console.error(error);
             alert('入金の登録に失敗しました');
+        }
+    };
+
+    const handleOpenPaymentHistory = async (customerId: number, customerName: string) => {
+        setSelectedCustomerForHistory({ id: customerId, name: customerName });
+        setIsPaymentHistoryModalOpen(true);
+        setLoadingHistory(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/billing/payments/${customerId}`);
+            if (!res.ok) throw new Error('Failed to fetch payment history');
+            const data = await res.json();
+            setPaymentHistory(data);
+        } catch (error) {
+            console.error(error);
+            alert('入金履歴の取得に失敗しました');
+        } finally {
+            setLoadingHistory(false);
         }
     };
 
@@ -379,6 +400,13 @@ const SalesManagement = () => {
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
+                                                                    onClick={() => handleOpenPaymentHistory(item.customerId, item.customerName)}
+                                                                >
+                                                                    入金履歴
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
                                                                     disabled={downloadingId === item.customerId}
                                                                     onClick={(e) => handleDownloadCustomerInvoice(item.customerId, item.customerName, e)}
                                                                 >
@@ -508,6 +536,53 @@ const SalesManagement = () => {
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                             <Button variant="outline" onClick={() => setIsPaymentModalOpen(false)}>キャンセル</Button>
                             <Button variant="primary" onClick={handleSavePayment}>登録する</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Payment History Modal */}
+            {isPaymentHistoryModalOpen && selectedCustomerForHistory && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: 'white', padding: '2rem', borderRadius: '8px', width: '600px', maxWidth: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
+                                入金履歴: {selectedCustomerForHistory.name}
+                            </h2>
+                            <Button variant="ghost" onClick={() => setIsPaymentHistoryModalOpen(false)}>閉じる</Button>
+                        </div>
+                        <div style={{ overflowY: 'auto', flex: 1 }}>
+                            {loadingHistory ? (
+                                <div style={{ padding: '2rem', textAlign: 'center' }}><LoadingSpinner /></div>
+                            ) : paymentHistory.length === 0 ? (
+                                <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>入金履歴がありません</div>
+                            ) : (
+                                <table className={styles.table} style={{ width: '100%', fontSize: '0.9rem' }}>
+                                    <thead>
+                                        <tr style={{ backgroundColor: '#f1f5f9' }}>
+                                            <th style={{ padding: '0.5rem', textAlign: 'left' }}>入金日</th>
+                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額</th>
+                                            <th style={{ padding: '0.5rem', textAlign: 'center' }}>方法</th>
+                                            <th style={{ padding: '0.5rem', textAlign: 'left' }}>備考</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {paymentHistory.map(p => (
+                                            <tr key={p.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                                <td style={{ padding: '0.5rem' }}>{format(new Date(p.paymentDate), 'yyyy/MM/dd')}</td>
+                                                <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(Number(p.amount))}</td>
+                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{p.method || '-'}</td>
+                                                <td style={{ padding: '0.5rem' }}>{p.notes || '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
                     </div>
                 </div>
