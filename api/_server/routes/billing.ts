@@ -166,6 +166,25 @@ router.get('/payments/:customerId', async (req, res) => {
     }
 });
 
+// Get Total Unpaid Amount for Customer
+router.get('/unpaid/:customerId', async (req, res) => {
+    try {
+        const customerId = Number(req.params.customerId);
+        const unpaidProjects = await prisma.project.findMany({
+            where: {
+                customerId,
+                isInvoiceIssued: true,
+                isPaymentReceived: false
+            }
+        });
+        const totalUnpaid = unpaidProjects.reduce((sum, p) => sum + Number(p.totalAmount), 0);
+        res.json({ unpaidAmount: totalUnpaid });
+    } catch (error) {
+        console.error('Error fetching unpaid amount:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Delete Payment
 router.delete('/payment/:id', async (req, res) => {
     try {

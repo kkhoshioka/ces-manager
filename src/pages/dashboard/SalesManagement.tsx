@@ -153,14 +153,24 @@ const SalesManagement = () => {
     };
 
 
-    const handleOpenPaymentModal = (customerId: number, customerName: string, unpaidAmount: number) => {
-        setSelectedCustomerForPayment({ id: customerId, name: customerName, unpaidAmount });
+    const handleOpenPaymentModal = async (customerId: number, customerName: string, fallbackUnpaidAmount: number) => {
+        setSelectedCustomerForPayment({ id: customerId, name: customerName, unpaidAmount: fallbackUnpaidAmount });
         setPaymentAmount('');
         setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
         setPaymentMethod('振込');
         setPaymentNotes('');
         setApplyFeeAdjustment(true);
         setIsPaymentModalOpen(true);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/billing/unpaid/${customerId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setSelectedCustomerForPayment(prev => prev ? { ...prev, unpaidAmount: data.unpaidAmount } : null);
+            }
+        } catch (e) {
+            console.error('Failed to fetch total unpaid amount', e);
+        }
     };
 
     const handleSavePayment = async () => {
