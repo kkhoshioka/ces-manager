@@ -492,7 +492,7 @@ export const generateInvoice = (project: Project) => {
                                 const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
 
                                 if (d.lineType === 'padding') {
-                                    if (d.description && d.description.startsWith('【案件')) {
+                                    if (d.description && d.description.startsWith('【')) {
                                         isNewProject = true;
                                         if (d.date) {
                                             currentProjectDateStr = formatDate(d.date);
