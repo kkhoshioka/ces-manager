@@ -115,6 +115,35 @@ router.post('/payment', async (req, res) => {
             }
         });
 
+        // 自動消込（入金額を使って古い未入金案件を「入金済」にする）
+        const unpaidProjects = await prisma.project.findMany({
+            where: {
+                customerId: Number(customerId),
+                isInvoiceIssued: true,
+                isPaymentReceived: false
+            },
+            orderBy: [
+                { completionDate: 'asc' },
+                { createdAt: 'asc' }
+            ]
+        });
+
+        let remainingAmount = Number(amount);
+        for (const project of unpaidProjects) {
+            const projectTotal = Number(project.totalAmount);
+            // 案件の合計額を全額カバーできる場合のみ入金済とする（端数・部分入金は対象外とする）
+            if (remainingAmount >= projectTotal && projectTotal > 0) {
+                await prisma.project.update({
+                    where: { id: project.id },
+                    data: {
+                        isPaymentReceived: true,
+                        paymentDate: new Date(paymentDate)
+                    }
+                });
+                remainingAmount -= projectTotal;
+            }
+        }
+
         res.json(payment);
     } catch (error) {
         console.error('Error creating payment:', error);
