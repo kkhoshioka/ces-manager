@@ -639,7 +639,7 @@ app.post('/api/projects', async (req, res) => {
                     actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : null,
                     rentalStatus: data.rentalStatus || null,
                     hourMeter,
-                    stockDeducted: isCompleted,
+                    stockDeducted: false, // Let handleProjectStock manage this
                     customerContactName: data.customerContactName || null,
                     customer: { connect: { id: Number(customerId) } },
                     ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
