@@ -568,7 +568,7 @@ export const handleProjectStock = async (tx: any, projectId: number, action: 'de
     const month = targetDate.getMonth() + 1;
 
     for (const detail of project.details) {
-        if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
+        if (detail.productId && (detail.lineType === 'part' || detail.lineType === 'inventory' || !detail.lineType)) {
             const quantity = Number(detail.quantity) || 0;
             if (quantity === 0) continue;
 
@@ -893,17 +893,7 @@ app.delete('/api/projects/:id', async (req, res) => {
 
         // Handle stock deduction reversion if project is deleted
         if (project.stockDeducted) {
-            const projectDetails = await prisma.projectDetail.findMany({
-                where: { projectId: Number(id) }
-            });
-            for (const detail of projectDetails) {
-                if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
-                    await prisma.product.update({
-                        where: { id: detail.productId },
-                        data: { stockQuantity: { increment: Number(detail.quantity) || 0 } }
-                    }).catch(e => console.error("Failed to revert stock on project delete:", e));
-                }
-            }
+            await handleProjectStock(prisma, Number(id), 'revert');
         }
 
         // Delete project (cascades to details and photo records)
