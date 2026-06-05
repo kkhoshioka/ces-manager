@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Edit } from 'lucide-react';
+import { Search, Plus, Edit, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import type { CustomerMachine } from '../../types/customer';
 import MachineForm from './MachineForm';
@@ -17,6 +17,11 @@ const MachineRegistry: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingMachine, setEditingMachine] = useState<CustomerMachine | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
+
+    type SortColumn = 'customer' | 'model' | null;
+    type SortDirection = 'asc' | 'desc';
+    const [sortColumn, setSortColumn] = useState<SortColumn>(null);
+    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
     const fetchMachines = useCallback(async () => {
         setIsLoading(true);
@@ -103,6 +108,43 @@ const MachineRegistry: React.FC = () => {
         }
     };
 
+    const handleSort = (column: SortColumn) => {
+        if (sortColumn === column) {
+            if (sortDirection === 'asc') setSortDirection('desc');
+            else {
+                setSortColumn(null);
+                setSortDirection('asc');
+            }
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    const sortedFilteredMachines = [...filteredMachines].sort((a, b) => {
+        if (!sortColumn) return 0;
+        
+        if (sortColumn === 'customer') {
+            const nameA = a.customer?.name || '';
+            const nameB = b.customer?.name || '';
+            return sortDirection === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        }
+        
+        if (sortColumn === 'model') {
+            const modelA = a.machineModel || '';
+            const modelB = b.machineModel || '';
+            return sortDirection === 'asc' ? modelA.localeCompare(modelB) : modelB.localeCompare(modelA);
+        }
+        
+        return 0;
+    });
+
+    const getSortIcon = (column: SortColumn) => {
+        if (sortColumn !== column) return <ArrowUpDown size={14} style={{ color: '#cbd5e1', marginLeft: '4px' }} />;
+        if (sortDirection === 'asc') return <ArrowUp size={14} style={{ color: '#3b82f6', marginLeft: '4px' }} />;
+        return <ArrowDown size={14} style={{ color: '#3b82f6', marginLeft: '4px' }} />;
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -132,8 +174,16 @@ const MachineRegistry: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th>顧客名</th>
-                            <th>機種名 (モデル)</th>
+                            <th onClick={() => handleSort('customer')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    顧客名 {getSortIcon('customer')}
+                                </div>
+                            </th>
+                            <th onClick={() => handleSort('model')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    機種名 (モデル) {getSortIcon('model')}
+                                </div>
+                            </th>
                             <th>シリアルNo</th>
                             <th>アワーメーター</th>
                             <th>年次点検期限</th>
@@ -149,13 +199,13 @@ const MachineRegistry: React.FC = () => {
                                     </div>
                                 </td>
                             </tr>
-                        ) : filteredMachines.length === 0 ? (
+                        ) : sortedFilteredMachines.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className={styles.emptyState}>データがありません</td>
                             </tr>
                         ) : (
 
-                            filteredMachines.map((machine) => {
+                            sortedFilteredMachines.map((machine) => {
                                 let isAlert = false;
                                 let isExpired = false;
                                 if (machine.nextInspectionDate) {
