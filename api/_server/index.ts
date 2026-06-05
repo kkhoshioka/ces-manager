@@ -2564,7 +2564,8 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
             },
             include: {
                 customer: true,
-                customerMachine: true
+                customerMachine: true,
+                details: true
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -2627,6 +2628,16 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                 };
             }
 
+            // Calculate Tax Included Amount
+            let taxableSubtotal = 0;
+            project.details?.forEach(d => {
+                if (!d.isTaxExempt && d.lineType !== 'padding') {
+                    taxableSubtotal += (Number(d.quantity) * Number(d.unitPrice));
+                }
+            });
+            const tax = Math.floor(taxableSubtotal * 0.1);
+            const totalWithTax = Number(project.totalAmount) + tax;
+
             // Formatting for FE
             const p = {
                 id: project.id,
@@ -2639,7 +2650,7 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                     project.type === 'maintenance' ? '整備' : '販売'
                 }`.trim(),
                 serialNumber: project.serialNumber || project.customerMachine?.serialNumber,
-                amount: Number(project.totalAmount),
+                amount: totalWithTax,
                 status: project.status,
                 isInvoiceIssued: project.isInvoiceIssued,
                 isPaymentReceived: project.isPaymentReceived,

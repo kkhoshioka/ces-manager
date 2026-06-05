@@ -122,6 +122,9 @@ router.post('/payment', async (req, res) => {
                 isInvoiceIssued: true,
                 isPaymentReceived: false
             },
+            include: {
+                details: true
+            },
             orderBy: [
                 { completionDate: 'asc' },
                 { createdAt: 'asc' }
@@ -130,9 +133,17 @@ router.post('/payment', async (req, res) => {
 
         let remainingAmount = Number(amount);
         for (const project of unpaidProjects) {
-            const projectTotal = Number(project.totalAmount);
+            let taxableSubtotal = 0;
+            project.details?.forEach(d => {
+                if (!d.isTaxExempt && d.lineType !== 'padding') {
+                    taxableSubtotal += (Number(d.quantity) * Number(d.unitPrice));
+                }
+            });
+            const tax = Math.floor(taxableSubtotal * 0.1);
+            const projectTotalWithTax = Number(project.totalAmount) + tax;
+
             // 案件の合計額を全額カバーできる場合のみ入金済とする（端数・部分入金は対象外とする）
-            if (remainingAmount >= projectTotal && projectTotal > 0) {
+            if (remainingAmount >= projectTotalWithTax && projectTotalWithTax > 0) {
                 await prisma.project.update({
                     where: { id: project.id },
                     data: {
@@ -140,7 +151,7 @@ router.post('/payment', async (req, res) => {
                         paymentDate: new Date(paymentDate)
                     }
                 });
-                remainingAmount -= projectTotal;
+                remainingAmount -= projectTotalWithTax;
             }
         }
 
@@ -175,9 +186,24 @@ router.get('/unpaid/:customerId', async (req, res) => {
                 customerId,
                 isInvoiceIssued: true,
                 isPaymentReceived: false
+            },
+            include: {
+                details: true
             }
         });
-        const totalUnpaid = unpaidProjects.reduce((sum, p) => sum + Number(p.totalAmount), 0);
+        
+        let totalUnpaid = 0;
+        unpaidProjects.forEach(p => {
+            let taxableSubtotal = 0;
+            p.details?.forEach(d => {
+                if (!d.isTaxExempt && d.lineType !== 'padding') {
+                    taxableSubtotal += (Number(d.quantity) * Number(d.unitPrice));
+                }
+            });
+            const tax = Math.floor(taxableSubtotal * 0.1);
+            totalUnpaid += Number(p.totalAmount) + tax;
+        });
+
         res.json({ unpaidAmount: totalUnpaid });
     } catch (error) {
         console.error('Error fetching unpaid amount:', error);

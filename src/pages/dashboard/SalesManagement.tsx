@@ -337,7 +337,7 @@ const SalesManagement = () => {
                             <div className={styles.iconWrapper} style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
                                 <FileText size={24} />
                             </div>
-                            <span className={styles.cardLabel}>当月売上総額 (請求予定)</span>
+                            <span className={styles.cardLabel}>当月売上総額 (税込)</span>
                         </div>
                         <div className={styles.cardBody}>
                             <div className={styles.value}>{formatCurrency(totalSales)}</div>
@@ -349,7 +349,7 @@ const SalesManagement = () => {
                             <div className={styles.iconWrapper} style={{ backgroundColor: '#fff7ed', color: '#c2410c' }}>
                                 <AlertCircle size={24} />
                             </div>
-                            <span className={styles.cardLabel}>未請求額</span>
+                            <span className={styles.cardLabel}>未請求額 (税込)</span>
                         </div>
                         <div className={styles.cardBody}>
                             <div className={styles.value} style={{ color: totalUnbilled > 0 ? '#ea580c' : 'inherit' }}>
@@ -363,7 +363,7 @@ const SalesManagement = () => {
                             <div className={styles.iconWrapper} style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}>
                                 <CheckCircle size={24} />
                             </div>
-                            <span className={styles.cardLabel}>請求済・未入金</span>
+                            <span className={styles.cardLabel}>請求済・未入金 (税込)</span>
                         </div>
                         <div className={styles.cardBody}>
                             <div className={styles.value} style={{ color: totalUnpaid > 0 ? '#dc2626' : 'inherit' }}>
@@ -381,9 +381,9 @@ const SalesManagement = () => {
                             <tr>
                                 <th>得意先名</th>
                                 <th className={styles.right}>案件数</th>
-                                <th className={styles.right}>売上合計</th>
-                                <th className={styles.right}>未請求</th>
-                                <th className={styles.right}>未入金</th>
+                                <th className={styles.right}>売上合計(税込)</th>
+                                <th className={styles.right}>未請求(税込)</th>
+                                <th className={styles.right}>未入金(税込)</th>
                                 <th className={styles.right} style={{ color: '#16a34a' }}>入金</th>
                                 <th style={{ width: '50px' }}></th>
                             </tr>
@@ -473,7 +473,7 @@ const SalesManagement = () => {
                                                                     <tr style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>完了日/登録日</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'left' }}>件名 / S/N</th>
-                                                                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額</th>
+                                                                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>金額(税込)</th>
                                                                         <th style={{ padding: '0.5rem', textAlign: 'center' }}>
                                                                             請求書発行
                                                                             <div style={{ fontSize: '0.65rem', fontWeight: 'normal', color: '#64748b' }}>発行済フラグ</div>
