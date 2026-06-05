@@ -15,6 +15,7 @@ const Inventory: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [prevMonthStockMap, setPrevMonthStockMap] = useState<Record<number, number>>({});
 
     // Filter states
     const [sectionFilter, setSectionFilter] = useState<string>('');
@@ -47,12 +48,14 @@ const Inventory: React.FC = () => {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [partsData, categoriesData] = await Promise.all([
+            const [partsData, categoriesData, prevStockMap] = await Promise.all([
                 InventoryService.getAll(),
-                InventoryService.getCategories()
+                InventoryService.getCategories(),
+                InventoryService.getPreviousMonthSnapshot().catch(() => ({}))
             ]);
             setParts(partsData);
             setCategories(categoriesData);
+            setPrevMonthStockMap(prevStockMap);
         } catch (error) {
             console.error('Failed to load data', error);
         } finally {
@@ -366,10 +369,11 @@ const Inventory: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th style={{ width: '8%' }}>部門</th>
-                            <th style={{ width: '12%' }}>種別</th>
+                            <th style={{ width: '7%' }}>部門</th>
+                            <th style={{ width: '10%' }}>種別</th>
                             <th style={{ width: '15%' }}>部品番号 / 品番</th>
-                            <th style={{ width: '25%' }}>部品名称</th>
+                            <th style={{ width: '20%' }}>部品名称</th>
+                            <th style={{ width: '8%' }}>前月在庫</th>
                             <th style={{ width: '10%' }}>在庫数</th>
                             <th style={{ width: '10%' }}>標準売価</th>
                             <th style={{ width: '10%' }}>標準原価</th>
@@ -379,7 +383,7 @@ const Inventory: React.FC = () => {
                     <tbody>
                         {isLoading ? (
                             <tr>
-                                <td colSpan={8}>
+                                <td colSpan={9}>
                                     <div style={{ padding: '2rem' }}>
                                         <LoadingSpinner />
                                     </div>
@@ -387,7 +391,7 @@ const Inventory: React.FC = () => {
                             </tr>
                         ) : filteredParts.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className={styles.emptyState}>
+                                <td colSpan={9} className={styles.emptyState}>
                                     データがありません
                                 </td>
                             </tr>
@@ -407,6 +411,11 @@ const Inventory: React.FC = () => {
                                                 <AlertTriangle size={14} />
                                             </span>
                                         )}
+                                    </td>
+                                    <td>
+                                        <span style={{ color: '#64748b' }}>
+                                            {prevMonthStockMap[part.id] !== undefined ? `${formatNumber(prevMonthStockMap[part.id])} ${part.unit || '個'}` : '-'}
+                                        </span>
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

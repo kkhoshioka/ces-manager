@@ -15,6 +15,12 @@ export const InventoryService = {
         return response.json();
     },
 
+    getPreviousMonthSnapshot: async (): Promise<Record<number, number>> => {
+        const response = await fetch(`${API_BASE_URL}/inventory/previous-month`);
+        if (!response.ok) throw new Error('Failed to fetch previous month snapshot');
+        return response.json();
+    },
+
     getById: async (id: number): Promise<Part | undefined> => {
         // We might need to implement GET /products/:id in backend if needed
         const parts = await InventoryService.getAll();

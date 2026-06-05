@@ -461,6 +461,33 @@ app.get('/api/inventory/snapshot/:year/:month', async (req, res) => {
     }
 });
 
+app.get('/api/inventory/previous-month', async (req, res) => {
+    try {
+        const now = new Date();
+        let year = now.getFullYear();
+        let month = now.getMonth(); // 0-indexed, so getMonth() is the previous month (1-12)
+        if (month === 0) {
+            year -= 1;
+            month = 12;
+        }
+
+        const snapshots = await prisma.monthlyInventorySnapshot.findMany({
+            where: { year, month },
+            select: { productId: true, stockQuantity: true }
+        });
+
+        const stockMap = snapshots.reduce((acc, curr) => {
+            acc[curr.productId] = curr.stockQuantity;
+            return acc;
+        }, {} as Record<number, number>);
+
+        res.json(stockMap);
+    } catch (error) {
+        console.error('Failed to fetch previous month snapshot:', error);
+        res.status(500).json({ error: 'Failed to fetch previous month snapshot' });
+    }
+});
+
 app.get('/api/inventory/snapshot/:year/:month/pdf', async (req, res) => {
     try {
         const { year, month } = req.params;
@@ -523,6 +550,76 @@ app.get('/api/projects', async (req, res) => {
     }
 });
 
+// --- Shared Inventory Stock Logic ---
+export const handleProjectStock = async (tx: any, projectId: number, action: 'deduct' | 'revert') => {
+    const project = await tx.project.findUnique({
+        where: { id: projectId },
+        include: { details: true }
+    });
+    if (!project) return;
+
+    // Prevent double deduction or double revert
+    if (action === 'deduct' && project.stockDeducted) return;
+    if (action === 'revert' && !project.stockDeducted) return;
+
+    // Determine target year/month from completionDate or createdAt
+    const targetDate = project.completionDate ? new Date(project.completionDate) : new Date(project.createdAt);
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth() + 1;
+
+    for (const detail of project.details) {
+        if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
+            const quantity = Number(detail.quantity) || 0;
+            if (quantity === 0) continue;
+
+            // 1. Update Real-time Stock (Product)
+            if (action === 'deduct') {
+                await tx.product.update({
+                    where: { id: detail.productId },
+                    data: { stockQuantity: { decrement: quantity } }
+                }).catch((e: any) => console.error('Failed to deduct stock Product', e));
+            } else {
+                await tx.product.update({
+                    where: { id: detail.productId },
+                    data: { stockQuantity: { increment: quantity } }
+                }).catch((e: any) => console.error('Failed to revert stock Product', e));
+            }
+
+            // 2. Update Snapshot if exists
+            const snapshot = await tx.monthlyInventorySnapshot.findUnique({
+                where: { year_month_productId: { year, month, productId: detail.productId } }
+            });
+
+            if (snapshot) {
+                if (action === 'deduct') {
+                    await tx.monthlyInventorySnapshot.update({
+                        where: { id: snapshot.id },
+                        data: { 
+                            stockQuantity: { decrement: quantity },
+                            totalCostValue: { decrement: quantity * Number(snapshot.standardCost) }
+                        }
+                    }).catch((e: any) => console.error('Failed to deduct stock Snapshot', e));
+                } else {
+                    await tx.monthlyInventorySnapshot.update({
+                        where: { id: snapshot.id },
+                        data: { 
+                            stockQuantity: { increment: quantity },
+                            totalCostValue: { increment: quantity * Number(snapshot.standardCost) }
+                        }
+                    }).catch((e: any) => console.error('Failed to revert stock Snapshot', e));
+                }
+            }
+        }
+    }
+
+    // Update flag
+    await tx.project.update({
+        where: { id: projectId },
+        data: { stockDeducted: action === 'deduct' }
+    });
+};
+// -------------------------------------
+
 app.post('/api/projects', async (req, res) => {
     try {
         const { customerId, customerMachineId, details, hourMeter, ...data } = req.body;
@@ -558,14 +655,7 @@ app.post('/api/projects', async (req, res) => {
 
             // Deduct stock if necessary
             if (isCompleted && details) {
-                for (const detail of createdProject.details) {
-                    if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
-                        await tx.product.update({
-                            where: { id: detail.productId },
-                            data: { stockQuantity: { decrement: Number(detail.quantity) || 0 } }
-                        }).catch(e => console.error('Failed to deduct stock on creation', e));
-                    }
-                }
+                await handleProjectStock(tx, createdProject.id, 'deduct');
             }
 
             // Auto-update Link Machine Hour Meter
@@ -647,14 +737,7 @@ app.put('/api/projects/:id', async (req, res) => {
 
             // If stock was previously deducted, revert it first
             if (existingProject.stockDeducted) {
-                for (const detail of existingProject.details) {
-                    if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
-                        await tx.product.update({
-                            where: { id: detail.productId },
-                            data: { stockQuantity: { increment: Number(detail.quantity) || 0 } }
-                        });
-                    }
-                }
+                await handleProjectStock(tx, existingProject.id, 'revert');
             }
 
             // Determine if we should deduct stock with the new status
@@ -662,7 +745,7 @@ app.put('/api/projects/:id', async (req, res) => {
             const shouldDeduct = newStatus === 'completed' || newStatus === 'delivered';
 
             // 1. Update main project fields
-            const projectUpdateData: any = { ...data, stockDeducted: shouldDeduct };
+            const projectUpdateData: any = { ...data, stockDeducted: false }; // Let handleProjectStock manage it
             let cmid: number | null = null;
 
             // Handle relation fields only if they are provided
@@ -750,18 +833,7 @@ app.put('/api/projects/:id', async (req, res) => {
 
             // Deduct stock if necessary
             if (shouldDeduct) {
-                for (const detail of detailsToDeduct) {
-                    if (detail.productId && (detail.lineType === 'part' || !detail.lineType)) {
-                        // Check if product exists to avoid relation errors
-                        const product = await tx.product.findUnique({ where: { id: detail.productId } });
-                        if (product) {
-                            await tx.product.update({
-                                where: { id: detail.productId },
-                                data: { stockQuantity: { decrement: Number(detail.quantity) || 0 } }
-                            });
-                        }
-                    }
-                }
+                await handleProjectStock(tx, Number(id), 'deduct');
                 console.log('[DEBUG] Stock deducted');
             }
 
@@ -1006,10 +1078,13 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
         if (type === 'invoice') {
             const pdfDoc = generateInvoice(projectForPdf);
             
-            // 請求書発行フラグを更新
-            await prisma.project.update({
-                where: { id: Number(id) },
-                data: { isInvoiceIssued: true }
+            // 請求書発行フラグを更新し、在庫を引き落とす
+            await prisma.$transaction(async (tx) => {
+                await tx.project.update({
+                    where: { id: Number(id) },
+                    data: { isInvoiceIssued: true }
+                });
+                await handleProjectStock(tx, Number(id), 'deduct');
             });
 
             // 顧客の月次請求ステータスを同期
@@ -2039,10 +2114,13 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
                 pdfDoc = generateQuotation(pdfData);
             } else {
                 pdfDoc = generateInvoice(pdfData);
-                // 請求書発行フラグを更新
-                await prisma.project.update({
-                    where: { id: Number(id) },
-                    data: { isInvoiceIssued: true }
+                // 請求書発行フラグを更新し、在庫を引き落とす
+                await prisma.$transaction(async (tx) => {
+                    await tx.project.update({
+                        where: { id: Number(id) },
+                        data: { isInvoiceIssued: true }
+                    });
+                    await handleProjectStock(tx, Number(id), 'deduct');
                 });
 
                 // 顧客の月次請求ステータスを同期
@@ -2122,9 +2200,14 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
 
         // Auto-update status to "Issued" for Sales Management
         const projectIds = projects.map(p => p.id);
-        await prisma.project.updateMany({
-            where: { id: { in: projectIds } },
-            data: { isInvoiceIssued: true }
+        await prisma.$transaction(async (tx) => {
+            await tx.project.updateMany({
+                where: { id: { in: projectIds } },
+                data: { isInvoiceIssued: true }
+            });
+            for (const pid of projectIds) {
+                await handleProjectStock(tx, pid, 'deduct');
+            }
         });
 
         const archive = archiver('zip', {
@@ -2907,9 +2990,15 @@ app.put('/api/projects/:id/status', async (req, res) => {
         }
         if (paymentDate !== undefined) updateData.paymentDate = paymentDate;
 
-        const project = await prisma.project.update({
-            where: { id: Number(id) },
-            data: updateData
+        const project = await prisma.$transaction(async (tx) => {
+            const updated = await tx.project.update({
+                where: { id: Number(id) },
+                data: updateData
+            });
+            if (isInvoiceIssued) {
+                await handleProjectStock(tx, Number(id), 'deduct');
+            }
+            return updated;
         });
 
         res.json(project);
