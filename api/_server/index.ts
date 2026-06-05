@@ -573,16 +573,21 @@ export const handleProjectStock = async (tx: any, projectId: number, action: 'de
             if (quantity === 0) continue;
 
             // 1. Update Real-time Stock (Product)
-            if (action === 'deduct') {
-                await tx.product.update({
-                    where: { id: detail.productId },
-                    data: { stockQuantity: { decrement: quantity } }
-                }).catch((e: any) => console.error('Failed to deduct stock Product', e));
+            const product = await tx.product.findUnique({ where: { id: detail.productId } });
+            if (product) {
+                if (action === 'deduct') {
+                    await tx.product.update({
+                        where: { id: detail.productId },
+                        data: { stockQuantity: { decrement: quantity } }
+                    });
+                } else {
+                    await tx.product.update({
+                        where: { id: detail.productId },
+                        data: { stockQuantity: { increment: quantity } }
+                    });
+                }
             } else {
-                await tx.product.update({
-                    where: { id: detail.productId },
-                    data: { stockQuantity: { increment: quantity } }
-                }).catch((e: any) => console.error('Failed to revert stock Product', e));
+                console.warn(`Product ${detail.productId} not found, skipping real-time stock update`);
             }
 
             // 2. Update Snapshot if exists
@@ -598,7 +603,7 @@ export const handleProjectStock = async (tx: any, projectId: number, action: 'de
                             stockQuantity: { decrement: quantity },
                             totalCostValue: { decrement: quantity * Number(snapshot.standardCost) }
                         }
-                    }).catch((e: any) => console.error('Failed to deduct stock Snapshot', e));
+                    });
                 } else {
                     await tx.monthlyInventorySnapshot.update({
                         where: { id: snapshot.id },
@@ -606,7 +611,7 @@ export const handleProjectStock = async (tx: any, projectId: number, action: 'de
                             stockQuantity: { increment: quantity },
                             totalCostValue: { increment: quantity * Number(snapshot.standardCost) }
                         }
-                    }).catch((e: any) => console.error('Failed to revert stock Snapshot', e));
+                    });
                 }
             }
         }
