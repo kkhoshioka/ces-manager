@@ -232,6 +232,22 @@ const Inventory: React.FC = () => {
         }
     };
 
+    const handleUpdateQuantity = async (id: number, currentQuantity: number, change: number) => {
+        const newQuantity = Math.max(0, currentQuantity + change);
+        if (newQuantity === currentQuantity) return;
+
+        // Optimistic UI update
+        setParts(prev => prev.map(p => p.id === id ? { ...p, stockQuantity: newQuantity } : p));
+
+        try {
+            await InventoryService.update(id, { stockQuantity: newQuantity });
+        } catch (error) {
+            console.error('Failed to update quantity', error);
+            alert('数量の更新に失敗しました');
+            loadData(); // Revert on failure
+        }
+    };
+
     const filteredParts = parts.filter(part => {
         if (sectionFilter && part.productCategory?.section !== sectionFilter) return false;
         if (lowStockFilter) {
@@ -393,23 +409,23 @@ const Inventory: React.FC = () => {
                                         )}
                                     </td>
                                     <td>
-                                        {/* Display logic: Use 'category' string or relation if available */}
-                                        {/* If we updated backend fetch, we might have part.productCategory */}
-                                        {part.productCategory ? (
-                                            <>
-                                                <span style={{ color: '#666', fontSize: '0.9em' }}>
-                                                    [{part.productCategory.section}]
-                                                </span>{' '}
-                                                {part.productCategory.name}
-                                            </>
-                                        ) : (
-                                            part.category || '-'
-                                        )}
-                                    </td>
-                                    <td>
-                                        <span className={`${styles.stockCount} ${part.alertEnabled && part.stockQuantity <= (part.alertThreshold ?? 5) ? styles.lowStock : ''}`}>
-                                            {formatNumber(part.stockQuantity)} {part.unit || '個'}
-                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <button 
+                                                onClick={() => handleUpdateQuantity(part.id, part.stockQuantity, -1)}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', cursor: 'pointer', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#475569', fontWeight: 'bold' }}
+                                                disabled={part.stockQuantity <= 0}
+                                                title="減らす"
+                                            >-</button>
+                                            <span className={`${styles.stockCount} ${part.alertEnabled && part.stockQuantity <= (part.alertThreshold ?? 5) ? styles.lowStock : ''}`} style={{ minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>
+                                                {formatNumber(part.stockQuantity)}
+                                            </span>
+                                            <button 
+                                                onClick={() => handleUpdateQuantity(part.id, part.stockQuantity, 1)}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', cursor: 'pointer', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', color: '#475569', fontWeight: 'bold' }}
+                                                title="増やす"
+                                            >+</button>
+                                            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{part.unit || '個'}</span>
+                                        </div>
                                     </td>
                                     <td>{formatCurrency(part.standardPrice)}</td>
                                     <td>{formatCurrency(part.standardCost)}</td>
