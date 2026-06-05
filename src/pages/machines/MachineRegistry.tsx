@@ -18,7 +18,7 @@ const MachineRegistry: React.FC = () => {
     const [editingMachine, setEditingMachine] = useState<CustomerMachine | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
 
-    type SortColumn = 'customer' | 'model' | null;
+    type SortColumn = 'customer' | 'model' | 'inspection' | null;
     type SortDirection = 'asc' | 'desc';
     const [sortColumn, setSortColumn] = useState<SortColumn>(null);
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -136,6 +136,12 @@ const MachineRegistry: React.FC = () => {
             return sortDirection === 'asc' ? modelA.localeCompare(modelB) : modelB.localeCompare(modelA);
         }
         
+        if (sortColumn === 'inspection') {
+            const dateA = a.nextInspectionDate ? new Date(a.nextInspectionDate).getTime() : 0;
+            const dateB = b.nextInspectionDate ? new Date(b.nextInspectionDate).getTime() : 0;
+            return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+        
         return 0;
     });
 
@@ -186,7 +192,11 @@ const MachineRegistry: React.FC = () => {
                             </th>
                             <th>シリアルNo</th>
                             <th>アワーメーター</th>
-                            <th>年次点検期限</th>
+                            <th onClick={() => handleSort('inspection')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    年次点検期限 {getSortIcon('inspection')}
+                                </div>
+                            </th>
                             <th style={{ width: '80px' }}>操作</th>
                         </tr>
                     </thead>
