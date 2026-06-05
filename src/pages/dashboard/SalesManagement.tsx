@@ -613,7 +613,7 @@ const SalesManagement = () => {
                     backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
                 }}>
                     <div style={{
-                        backgroundColor: 'white', padding: '2rem', borderRadius: '8px', width: '600px', maxWidth: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column'
+                        backgroundColor: 'white', padding: '2rem', borderRadius: '8px', width: '800px', maxWidth: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
