@@ -634,7 +634,13 @@ async function checkBillingLock(tx: any, customerId: number, completionDate: Dat
         where: { customerId_year_month: { customerId, year, month } }
     });
     
-    if (billing && billing.isClosed) {
+    const billStatus = await tx.monthlyBillStatus.findUnique({
+        where: { year_month_customerId: { year, month, customerId } }
+    });
+    
+    const isClosed = (billing && billing.isClosed) || (billStatus && billStatus.status === 'issued');
+    
+    if (isClosed) {
         if (!allowReopenBilling) {
             throw {
                 isBillingLock: true,
@@ -653,23 +659,40 @@ async function checkBillingLock(tx: any, customerId: number, completionDate: Dat
                     ]
                 }
             });
-            if (newerBilling) {
+            const newerStatus = await tx.monthlyBillStatus.findFirst({
+                where: {
+                    customerId,
+                    status: 'issued',
+                    OR: [
+                        { year: { gt: year } },
+                        { year: year, month: { gt: month } }
+                    ]
+                }
+            });
+            
+            if (newerBilling || newerStatus) {
+                const ny = newerBilling ? newerBilling.year : newerStatus!.year;
+                const nm = newerBilling ? newerBilling.month : newerStatus!.month;
                 throw {
                     isBillingLock: true,
                     isHardLock: true,
-                    message: `より新しい月（${newerBilling.year}年${newerBilling.month}月）の請求が既に締められているため、${year}年${month}月の締めを解除できません。先に新しい月の締めを解除してください。`
+                    message: `より新しい月（${ny}年${nm}月）の請求が既に締められているため、${year}年${month}月の締めを解除できません。先に新しい月の締めを解除してください。`
                 };
             }
             
             // Reopen it
-            await tx.monthlyBilling.update({
-                where: { id: billing.id },
-                data: { isClosed: false }
-            });
-            await tx.monthlyBillStatus.updateMany({
-                where: { customerId, year, month },
-                data: { status: 'draft' }
-            });
+            if (billing) {
+                await tx.monthlyBilling.update({
+                    where: { id: billing.id },
+                    data: { isClosed: false }
+                });
+            }
+            if (billStatus) {
+                await tx.monthlyBillStatus.update({
+                    where: { year_month_customerId: { year, month, customerId } },
+                    data: { status: 'draft' }
+                });
+            }
         }
     }
 }
