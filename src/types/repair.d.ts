@@ -51,6 +51,7 @@ export interface Repair {
     isInvoiceIssued?: boolean;
     isDeliveryNoteIssued?: boolean;
     isPaymentReceived?: boolean;
+    allowReopenBilling?: boolean;
     createdAt: string;
     updatedAt: string;
     customer?: Customer;
