@@ -2664,7 +2664,7 @@ app.post('/api/invoices/batch-issue', async (req, res) => {
 
         const customers = await prisma.customer.findMany({
             where: whereClause,
-            select: { id: true }
+            select: { id: true, closingDate: true }
         });
 
         if (customers.length === 0) {
