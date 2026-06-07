@@ -27,7 +27,12 @@ export const RepairService = {
         });
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.details || error.error || 'Failed to add repair');
+            const err: any = new Error(error.message || error.details || error.error || 'Failed to add repair');
+            if (error.error === 'BILLING_CLOSED') {
+                err.isBillingLock = true;
+                err.isHardLock = error.isHardLock;
+            }
+            throw err;
         }
         return response.json();
     },
@@ -40,7 +45,12 @@ export const RepairService = {
         });
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.details || error.error || 'Failed to update repair');
+            const err: any = new Error(error.message || error.details || error.error || 'Failed to update repair');
+            if (error.error === 'BILLING_CLOSED') {
+                err.isBillingLock = true;
+                err.isHardLock = error.isHardLock;
+            }
+            throw err;
         }
         return response.json();
     },

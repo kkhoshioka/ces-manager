@@ -261,6 +261,19 @@ const MonthlyInvoicing = () => {
         return filtered;
     }, [data, selectedClosingDate]);
 
+    const isClosingDateCompleted = (cDate: string) => {
+        if (cDate === 'all') return false;
+        const customersInGroup = data.filter(c => {
+            if (cDate === 'others') {
+                return !['5', '10', '15', '20', '25', '99'].includes(c.closingDate || '');
+            }
+            return (c.closingDate || '99') === cDate;
+        });
+        const activeCustomers = customersInGroup.filter(c => c.projects && c.projects.length > 0);
+        if (activeCustomers.length === 0) return false;
+        return activeCustomers.every(c => c.monthlyStatus === 'issued');
+    };
+
     // Calculate totals for displayed data
     const totalAmount = groupedData.reduce((sum, item) => sum + item.totalAmount, 0);
     const totalCount = groupedData.reduce((sum, item) => sum + item.count, 0);
@@ -297,26 +310,33 @@ const MonthlyInvoicing = () => {
                         { id: '25', label: '25日締め' },
                         { id: '99', label: '末日締め' },
                         { id: 'others', label: 'その他/未設定' }
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setSelectedClosingDate(tab.id)}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: '9999px',
-                                border: '1px solid',
-                                borderColor: selectedClosingDate === tab.id ? '#2563eb' : '#e2e8f0',
-                                backgroundColor: selectedClosingDate === tab.id ? '#eff6ff' : 'white',
-                                color: selectedClosingDate === tab.id ? '#2563eb' : '#64748b',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+                    ].map(tab => {
+                        const isCompleted = isClosingDateCompleted(tab.id);
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setSelectedClosingDate(tab.id)}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '9999px',
+                                    border: '1px solid',
+                                    borderColor: selectedClosingDate === tab.id ? '#2563eb' : (isCompleted ? '#10b981' : '#e2e8f0'),
+                                    backgroundColor: selectedClosingDate === tab.id ? '#eff6ff' : (isCompleted ? '#f0fdf4' : 'white'),
+                                    color: selectedClosingDate === tab.id ? '#2563eb' : (isCompleted ? '#10b981' : '#64748b'),
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}
+                            >
+                                {tab.label}
+                                {isCompleted && <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>(締済)</span>}
+                            </button>
+                        );
+                    })}
 
                     {selectedClosingDate !== 'all' && selectedClosingDate !== 'others' && (
                         <Button

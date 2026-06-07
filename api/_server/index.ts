@@ -623,11 +623,61 @@ export const handleProjectStock = async (tx: any, projectId: number, action: 'de
         data: { stockDeducted: action === 'deduct' }
     });
 };
+
+async function checkBillingLock(tx: any, customerId: number, completionDate: Date | null, allowReopenBilling: boolean) {
+    if (!completionDate || !customerId) return;
+    
+    const year = completionDate.getFullYear();
+    const month = completionDate.getMonth() + 1;
+    
+    const billing = await tx.monthlyBilling.findUnique({
+        where: { customerId_year_month: { customerId, year, month } }
+    });
+    
+    if (billing && billing.isClosed) {
+        if (!allowReopenBilling) {
+            throw {
+                isBillingLock: true,
+                message: `この案件の完了月（${year}年${month}月）の請求は既に締められています。内容を変更するには締め処理を解除する必要があります。`,
+                details: { year, month, customerId }
+            };
+        } else {
+            // Check if there is ANY newer closed month
+            const newerBilling = await tx.monthlyBilling.findFirst({
+                where: {
+                    customerId,
+                    isClosed: true,
+                    OR: [
+                        { year: { gt: year } },
+                        { year: year, month: { gt: month } }
+                    ]
+                }
+            });
+            if (newerBilling) {
+                throw {
+                    isBillingLock: true,
+                    isHardLock: true,
+                    message: `より新しい月（${newerBilling.year}年${newerBilling.month}月）の請求が既に締められているため、${year}年${month}月の締めを解除できません。先に新しい月の締めを解除してください。`
+                };
+            }
+            
+            // Reopen it
+            await tx.monthlyBilling.update({
+                where: { id: billing.id },
+                data: { isClosed: false }
+            });
+            await tx.monthlyBillStatus.updateMany({
+                where: { customerId, year, month },
+                data: { status: 'draft' }
+            });
+        }
+    }
+}
 // -------------------------------------
 
 app.post('/api/projects', async (req, res) => {
     try {
-        const { customerId, customerMachineId, details, hourMeter, ...data } = req.body;
+        const { customerId, customerMachineId, details, hourMeter, allowReopenBilling, ...data } = req.body;
 
         if (!customerId || isNaN(Number(customerId))) {
             return res.status(400).json({ error: 'Valid Customer ID is required' });
@@ -636,6 +686,11 @@ app.post('/api/projects', async (req, res) => {
         const isCompleted = data.status === 'completed' || data.status === 'delivered';
 
         const project = await prisma.$transaction(async (tx) => {
+            if (isCompleted) {
+                const compDate = data.completionDate ? new Date(data.completionDate) : new Date();
+                await checkBillingLock(tx, Number(customerId), compDate, allowReopenBilling === true);
+            }
+
             const createdProject = await tx.project.create({
                 data: {
                     ...data,
@@ -675,7 +730,10 @@ app.post('/api/projects', async (req, res) => {
         });
 
         res.json(project);
-    } catch (error) {
+    } catch (error: any) {
+        if (error.isBillingLock) {
+            return res.status(409).json({ error: 'BILLING_CLOSED', message: error.message, isHardLock: error.isHardLock, details: error.details });
+        }
         console.error('Failed to create project', error);
         res.status(500).json({ error: 'Failed to create project' });
     }
@@ -704,7 +762,7 @@ app.put('/api/projects/:id', async (req, res) => {
     console.log(`[DEBUG] Update Project Start: ID=${req.params.id}`);
     try {
         const { id } = req.params;
-        const { customerId, customerMachineId, details, ...data } = req.body;
+        const { customerId, customerMachineId, details, allowReopenBilling, ...data } = req.body;
 
         // Validation: Check for Foreign Keys availability
         if (details && Array.isArray(details)) {
@@ -747,7 +805,22 @@ app.put('/api/projects/:id', async (req, res) => {
 
             // Determine if we should deduct stock with the new status
             const newStatus = data.status || existingProject.status;
-            const shouldDeduct = newStatus === 'completed' || newStatus === 'delivered';
+            const isNewCompleted = newStatus === 'completed' || newStatus === 'delivered';
+            const oldCompleted = existingProject.status === 'completed' || existingProject.status === 'delivered';
+            const newCompDate = data.completionDate ? new Date(data.completionDate) : existingProject.completionDate;
+            const shouldDeduct = isNewCompleted;
+
+            // Billing Lock Validation
+            const custIdForLock = customerId !== undefined ? Number(customerId) : existingProject.customerId;
+            if (oldCompleted && existingProject.completionDate) {
+                await checkBillingLock(tx, existingProject.customerId, existingProject.completionDate, allowReopenBilling === true);
+            }
+            if (isNewCompleted && newCompDate) {
+                // Check if new date is different and also locked
+                if (!oldCompleted || !existingProject.completionDate || newCompDate.getTime() !== existingProject.completionDate.getTime() || custIdForLock !== existingProject.customerId) {
+                    await checkBillingLock(tx, custIdForLock, newCompDate, allowReopenBilling === true);
+                }
+            }
 
             // 1. Update main project fields
             const projectUpdateData: any = { ...data, stockDeducted: false }; // Let handleProjectStock manage it
@@ -855,7 +928,10 @@ app.put('/api/projects/:id', async (req, res) => {
         });
 
         res.json(project);
-    } catch (error) {
+    } catch (error: any) {
+        if (error.isBillingLock) {
+            return res.status(409).json({ error: 'BILLING_CLOSED', message: error.message, isHardLock: error.isHardLock, details: error.details });
+        }
         console.error('[DEBUG] ERROR:', error);
         res.status(500).json({
             error: 'Failed to update project',

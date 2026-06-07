@@ -703,13 +703,35 @@ const Repairs: React.FC = () => {
 
             let projectId = selectedProjectId;
 
-            if (selectedProjectId) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await RepairService.update(selectedProjectId, projectData as any);
-            } else {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const newProject = await RepairService.add(projectData as any);
-                projectId = newProject.id;
+            const trySave = async (data: any) => {
+                if (selectedProjectId) {
+                    await RepairService.update(selectedProjectId, data);
+                    return selectedProjectId;
+                } else {
+                    const newProject = await RepairService.add(data);
+                    return newProject.id;
+                }
+            };
+
+            try {
+                projectId = await trySave(projectData);
+            } catch (err: any) {
+                if (err.isBillingLock) {
+                    if (err.isHardLock) {
+                        alert(err.message);
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    const shouldReopen = window.confirm(`${err.message}\n\n今すぐ締め処理を解除して保存を続行しますか？\n（※注意：すでに発行済みの請求書がある場合は、再発行して送付し直す必要があります）`);
+                    if (shouldReopen) {
+                        projectId = await trySave({ ...projectData, allowReopenBilling: true });
+                    } else {
+                        setIsSubmitting(false);
+                        return;
+                    }
+                } else {
+                    throw err;
+                }
             }
 
             // Upload pending photos if any
@@ -1976,10 +1998,23 @@ const Repairs: React.FC = () => {
                                                             try {
                                                                 await RepairService.update(project.id, { status: 'completed' });
                                                                 setProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: 'completed' } : p));
-                                                            } catch (error) {
-                                                                console.error('Failed to update status', error);
-                                                                alert('ステータスの更新に失敗しました。');
-                                                                return;
+                                                            } catch (error: any) {
+                                                                if (error.isBillingLock) {
+                                                                    if (error.isHardLock) {
+                                                                        alert(error.message);
+                                                                        return;
+                                                                    }
+                                                                    if (window.confirm(`${error.message}\n\n今すぐ締め処理を解除してステータスを変更しますか？`)) {
+                                                                        await RepairService.update(project.id, { status: 'completed', allowReopenBilling: true });
+                                                                        setProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: 'completed' } : p));
+                                                                    } else {
+                                                                        return;
+                                                                    }
+                                                                } else {
+                                                                    console.error('Failed to update status', error);
+                                                                    alert('ステータスの更新に失敗しました。');
+                                                                    return;
+                                                                }
                                                             }
                                                         } else {
                                                             return;
@@ -2534,10 +2569,23 @@ const Repairs: React.FC = () => {
                                                             try {
                                                                 await RepairService.update(selectedProjectId!, { status: 'completed' });
                                                                 setFormState(prev => ({ ...prev, status: 'completed' }));
-                                                            } catch (error) {
-                                                                console.error('Failed to update status', error);
-                                                                alert('ステータスの更新に失敗しました。');
-                                                                return;
+                                                            } catch (error: any) {
+                                                                if (error.isBillingLock) {
+                                                                    if (error.isHardLock) {
+                                                                        alert(error.message);
+                                                                        return;
+                                                                    }
+                                                                    if (window.confirm(`${error.message}\n\n今すぐ締め処理を解除してステータスを変更しますか？`)) {
+                                                                        await RepairService.update(selectedProjectId!, { status: 'completed', allowReopenBilling: true });
+                                                                        setFormState(prev => ({ ...prev, status: 'completed' }));
+                                                                    } else {
+                                                                        return;
+                                                                    }
+                                                                } else {
+                                                                    console.error('Failed to update status', error);
+                                                                    alert('ステータスの更新に失敗しました。');
+                                                                    return;
+                                                                }
                                                             }
                                                         } else {
                                                             return;
