@@ -894,7 +894,9 @@ const Repairs: React.FC = () => {
                             rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : '',
                             rentalBasicFee: Number(d.rentalBasicFee) || 0,
                             rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
-                            rentalCompensationDays: Number(d.rentalCompensationDays) || 0
+                            rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
+                            productId: d.productId || null,
+                            isTaxExempt: d.isTaxExempt || false
                         } as DetailItem;
                     }));
                 } else {
