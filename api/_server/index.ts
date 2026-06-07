@@ -696,6 +696,82 @@ async function checkBillingLock(tx: any, customerId: number, completionDate: Dat
         }
     }
 }
+
+async function calculateBillingSnapshotForCustomer(tx: any, customerId: number, year: number, month: number, closingDateStr: string | null) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    const projects = await tx.project.findMany({
+        where: {
+            customerId,
+            OR: [
+                { completionDate: { gte: startDate, lte: endDate } },
+                { createdAt: { gte: startDate, lte: endDate } }
+            ]
+        },
+        include: { details: true }
+    });
+
+    let closingDay = 99;
+    if (closingDateStr && !isNaN(Number(closingDateStr))) {
+        closingDay = Number(closingDateStr);
+    }
+    const getClosingDate = (y: number, m: number, day: number) => {
+        if (day >= 28) {
+            return new Date(y, m, 0, 23, 59, 59, 999);
+        }
+        return new Date(y, m - 1, day, 23, 59, 59, 999);
+    };
+    const currentClosingDate = getClosingDate(year, month, closingDay);
+    
+    let prevYear = year;
+    let prevMonth = month - 1;
+    if (prevMonth === 0) {
+        prevYear--;
+        prevMonth = 12;
+    }
+    const previousClosingDate = getClosingDate(prevYear, prevMonth, closingDay);
+    const billStartDate = new Date(previousClosingDate.getTime() + 1);
+
+    const previousBilling = await tx.monthlyBilling.findUnique({
+        where: { customerId_year_month: { customerId, year: prevYear, month: prevMonth } }
+    });
+    const previousBalance = previousBilling?.currentBilling || 0;
+
+    const payments = await tx.payment.findMany({
+        where: {
+            customerId,
+            paymentDate: { gt: billStartDate, lte: currentClosingDate }
+        }
+    });
+    const paymentReceived = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const carryForward = Number(previousBalance) - paymentReceived;
+
+    let currentSales = 0;
+    for (const project of projects) {
+        for (const d of project.details) {
+            if ((d as any).isTaxExempt) continue;
+            currentSales += (Number((d as any).quantity || 0) * Number((d as any).unitPrice || 0));
+        }
+    }
+    const taxAmount = Math.floor(currentSales * 0.1);
+    const currentBilling = carryForward + currentSales + taxAmount;
+
+    await tx.monthlyBilling.upsert({
+        where: { customerId_year_month: { customerId, year, month } },
+        create: {
+            customerId, year, month,
+            previousBalance, paymentReceived, carryForward, currentSales, taxAmount, currentBilling,
+            closingDate: currentClosingDate, isClosed: true
+        },
+        update: {
+            previousBalance, paymentReceived, carryForward, currentSales, taxAmount, currentBilling,
+            closingDate: currentClosingDate, isClosed: true
+        }
+    });
+
+    return { previousBalance: Number(previousBalance), paymentReceived, carryForward };
+}
 // -------------------------------------
 
 app.post('/api/projects', async (req, res) => {
@@ -750,7 +826,7 @@ app.post('/api/projects', async (req, res) => {
             }
 
             return createdProject;
-        });
+        }, { maxWait: 15000, timeout: 30000 });
 
         res.json(project);
     } catch (error: any) {
@@ -948,7 +1024,7 @@ app.put('/api/projects/:id', async (req, res) => {
                     photos: true
                 }
             });
-        });
+        }, { maxWait: 15000, timeout: 30000 });
 
         res.json(project);
     } catch (error: any) {
@@ -2302,7 +2378,7 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
             for (const pid of projectIds) {
                 await handleProjectStock(tx, pid, 'deduct');
             }
-        });
+        }, { maxWait: 15000, timeout: 60000 });
 
         const archive = archiver('zip', {
             zlib: { level: 9 }
@@ -2394,6 +2470,10 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                 }
             }
 
+            const snapshot = await prisma.$transaction(async (tx) => {
+                return await calculateBillingSnapshotForCustomer(tx, Number(custId), Number(year), Number(month), customer.closingDate);
+            });
+
             // Create a pseudo-project for the PDF generation
             const pdfData = {
                 id: custProjects.map(p => p.id).join(', '), // List IDs or just leave blank. Let's use first project ID for No. or just rely on customer.
@@ -2401,7 +2481,12 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
                 machineModel: '複数案件合算',
                 serialNumber: '-',
                 details: combinedDetails,
-                notes: '' // Could combine notes if needed
+                notes: '',
+                billingSnapshot: {
+                    previousBalance: snapshot.previousBalance,
+                    paymentReceived: snapshot.paymentReceived,
+                    carryForward: snapshot.carryForward
+                }
             };
 
             // Override the ID display to show something like YYYYMM-CUSTID
@@ -2519,51 +2604,9 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
 
         const customId = `${year}${String(month).padStart(2, '0')}-${customer.id}`;
         
-        // --- Calculate Billing Snapshot for this month ---
-        let closingDay = 99;
-        if (customer.closingDate && !isNaN(Number(customer.closingDate))) {
-            closingDay = Number(customer.closingDate);
-        }
-        const getClosingDate = (y: number, m: number, day: number) => {
-            if (day >= 28) {
-                return new Date(y, m, 0, 23, 59, 59, 999);
-            }
-            return new Date(y, m - 1, day, 23, 59, 59, 999);
-        };
-        const currentClosingDate = getClosingDate(Number(year), Number(month), closingDay);
-        
-        let prevYear = Number(year);
-        let prevMonth = Number(month) - 1;
-        if (prevMonth === 0) {
-            prevYear--;
-            prevMonth = 12;
-        }
-        const previousClosingDate = getClosingDate(prevYear, prevMonth, closingDay);
-        const billStartDate = new Date(previousClosingDate.getTime() + 1);
-
-        const previousBilling = await prisma.monthlyBilling.findUnique({
-            where: {
-                customerId_year_month: {
-                    customerId: Number(customerId),
-                    year: prevYear,
-                    month: prevMonth
-                }
-            }
+        const snapshot = await prisma.$transaction(async (tx) => {
+            return await calculateBillingSnapshotForCustomer(tx, Number(customerId), Number(year), Number(month), customer.closingDate);
         });
-        const previousBalance = previousBilling?.currentBilling || 0;
-
-        const payments = await prisma.payment.findMany({
-            where: {
-                customerId: Number(customerId),
-                paymentDate: {
-                    gt: billStartDate,
-                    lte: currentClosingDate
-                }
-            }
-        });
-        const paymentReceived = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-        const carryForward = Number(previousBalance) - paymentReceived;
-        // --- End of Billing Snapshot ---
 
         const pdfData = {
             id: customId,
@@ -2573,57 +2616,11 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
             details: combinedDetails,
             notes: '',
             billingSnapshot: {
-                previousBalance: Number(previousBalance),
-                paymentReceived,
-                carryForward
+                previousBalance: snapshot.previousBalance,
+                paymentReceived: snapshot.paymentReceived,
+                carryForward: snapshot.carryForward
             }
         };
-
-        // Calculate totals for MonthlyBilling snapshot
-        let currentSales = 0;
-        let taxAmount = 0;
-        for (const project of projects) {
-            const details = project.details;
-            for (const d of details) {
-                if ((d as any).isTaxExempt) continue;
-                currentSales += (Number((d as any).quantity || 0) * Number((d as any).unitPrice || 0));
-            }
-        }
-        taxAmount = Math.floor(currentSales * 0.1);
-        const currentBilling = carryForward + currentSales + taxAmount;
-
-        await prisma.monthlyBilling.upsert({
-            where: {
-                customerId_year_month: {
-                    customerId: Number(customerId),
-                    year: Number(year),
-                    month: Number(month)
-                }
-            },
-            create: {
-                customerId: Number(customerId),
-                year: Number(year),
-                month: Number(month),
-                previousBalance,
-                paymentReceived,
-                carryForward,
-                currentSales,
-                taxAmount,
-                currentBilling,
-                closingDate: currentClosingDate,
-                isClosed: true
-            },
-            update: {
-                previousBalance,
-                paymentReceived,
-                carryForward,
-                currentSales,
-                taxAmount,
-                currentBilling,
-                closingDate: currentClosingDate,
-                isClosed: true
-            }
-        });
 
         const pdfDoc = generateInvoice(pdfData);
 
@@ -2674,28 +2671,30 @@ app.post('/api/invoices/batch-issue', async (req, res) => {
             return res.json({ count: 0, message: 'No customers found' });
         }
 
-        // 2. Upsert Bill Status
-        const ops = customers.map(c =>
-            prisma.monthlyBillStatus.upsert({
-                where: {
-                    year_month_customerId: {
+        // 2. Upsert Bill Status and calculate snapshots
+        await prisma.$transaction(async (tx) => {
+            for (const c of customers) {
+                await tx.monthlyBillStatus.upsert({
+                    where: {
+                        year_month_customerId: {
+                            year: y,
+                            month: m,
+                            customerId: c.id
+                        }
+                    },
+                    update: { status: 'issued', issuedAt: new Date() },
+                    create: {
                         year: y,
                         month: m,
-                        customerId: c.id
+                        customerId: c.id,
+                        status: 'issued',
+                        issuedAt: new Date()
                     }
-                },
-                update: { status: 'issued', issuedAt: new Date() },
-                create: {
-                    year: y,
-                    month: m,
-                    customerId: c.id,
-                    status: 'issued',
-                    issuedAt: new Date()
-                }
-            })
-        );
+                });
 
-        await prisma.$transaction(ops);
+                await calculateBillingSnapshotForCustomer(tx, c.id, y, m, c.closingDate);
+            }
+        }, { maxWait: 15000, timeout: 60000 });
 
         res.json({ success: true, count: customers.length });
     } catch (error) {
