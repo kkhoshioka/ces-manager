@@ -31,8 +31,21 @@ const MachineRegistry: React.FC = () => {
 
     const handleActualPrint = useReactToPrint({
         contentRef: printComponentRef,
-        documentTitle: printDocTitle,
-        onAfterPrint: () => setIsPrinting(false),
+        // Omit documentTitle here to prevent react-to-print from resetting it too early
+        onAfterPrint: () => {
+            setIsPrinting(false);
+            
+            // Revert original document title on user interaction or after a long timeout
+            const originalTitle = 'CES Manager';
+            const restoreTitle = () => {
+                document.title = originalTitle;
+                window.removeEventListener('mousemove', restoreTitle);
+                window.removeEventListener('focus', restoreTitle);
+            };
+            window.addEventListener('mousemove', restoreTitle);
+            window.addEventListener('focus', restoreTitle);
+            setTimeout(restoreTitle, 30000);
+        },
     });
 
     type SortColumn = 'customer' | 'model' | 'inspection' | null;
@@ -116,7 +129,9 @@ const MachineRegistry: React.FC = () => {
         const dd = String(now.getDate()).padStart(2, '0');
         const HH = String(now.getHours()).padStart(2, '0');
         const mm = String(now.getMinutes()).padStart(2, '0');
-        setPrintDocTitle(`機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`);
+        const newTitle = `機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`;
+        setPrintDocTitle(newTitle);
+        document.title = newTitle; // Force main document title manually
 
         setTimeout(() => {
             handleActualPrint();
