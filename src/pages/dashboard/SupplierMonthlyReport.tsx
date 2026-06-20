@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save } from 'lucide-react';
 import styles from '../Dashboard.module.css';
 import { formatCurrency } from '../../utils/formatting';
 
@@ -25,6 +25,8 @@ interface SupplierDetail {
     amount: number;
     isInvoiceReceived: boolean;
     isPaid: boolean;
+    isPurchase?: boolean;
+    purchaseId?: number;
 }
 
 const SupplierMonthlyReport = () => {
@@ -37,6 +39,74 @@ const SupplierMonthlyReport = () => {
     const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
     const [detailData, setDetailData] = useState<SupplierDetail[]>([]);
     const [detailLoading, setDetailLoading] = useState(false);
+
+    // Purchase Modal State
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+    const [purchaseForm, setPurchaseForm] = useState({
+        id: null as number | null,
+        date: new Date().toISOString().split('T')[0],
+        supplierId: '' as number | '',
+        supplierName: '',
+        description: '',
+        category: '仕入販売',
+        quantity: 1,
+        unitCost: 0,
+        isInvoiceReceived: false,
+        isPaid: false,
+        projectId: '' as number | '',
+        productId: '' as number | ''
+    });
+
+    const [suppliersList, setSuppliersList] = useState<any[]>([]);
+    const [projectsList, setProjectsList] = useState<any[]>([]);
+    const [productsList, setProductsList] = useState<any[]>([]);
+
+    useEffect(() => {
+        // Fetch data for options
+        const fetchOptions = async () => {
+            try {
+                const [supRes, projRes, prodRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/suppliers`),
+                    fetch(`${API_BASE_URL}/projects`),
+                    fetch(`${API_BASE_URL}/products`)
+                ]);
+                if (supRes.ok) setSuppliersList(await supRes.json());
+                if (projRes.ok) {
+                    const projs = await projRes.json();
+                    // Show only recent or active projects for easier selection
+                    setProjectsList(projs.slice(0, 100)); // Just a simple limit for now
+                }
+                if (prodRes.ok) setProductsList(await prodRes.json());
+            } catch (err) {
+                console.error('Error fetching options', err);
+            }
+        };
+        fetchOptions();
+    }, []);
+
+    const handlePurchaseSave = async () => {
+        try {
+            const method = purchaseForm.id ? 'PUT' : 'POST';
+            const url = purchaseForm.id ? `${API_BASE_URL}/purchases/${purchaseForm.id}` : `${API_BASE_URL}/purchases`;
+            
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(purchaseForm)
+            });
+            
+            if (!res.ok) throw new Error('Failed to save purchase');
+            
+            setIsPurchaseModalOpen(false);
+            fetchReport(); // Refresh
+            if (selectedSupplier) {
+                handleRowClick(selectedSupplier); // Refresh drill-down if open
+            }
+        } catch (err) {
+            console.error(err);
+            alert('保存に失敗しました');
+        }
+    };
 
     const fetchReport = React.useCallback(async () => {
         setLoading(true);
@@ -58,25 +128,46 @@ const SupplierMonthlyReport = () => {
         fetchReport();
     }, [fetchReport]);
 
-    const handleDetailStatusChange = async (detailId: number, field: 'isInvoiceReceived' | 'isPaid', value: boolean) => {
+    const handleEditPurchase = (detail: SupplierDetail) => {
+        if (!detail.isPurchase || !detail.purchaseId) return;
+        // Fetch purchase details and open modal
+        fetch(`${API_BASE_URL}/purchases?id=${detail.purchaseId}`)
+            .then(res => res.json())
+            .then(data => {
+                const purchase = Array.isArray(data) ? data.find(p => p.id === detail.purchaseId) : data;
+                if (purchase) {
+                    setPurchaseForm({
+                        id: purchase.id,
+                        date: new Date(purchase.date).toISOString().split('T')[0],
+                        supplierId: purchase.supplierId || '',
+                        supplierName: purchase.supplierName || '',
+                        description: purchase.description,
+                        category: purchase.category,
+                        quantity: Number(purchase.quantity),
+                        unitCost: Number(purchase.unitCost),
+                        isInvoiceReceived: purchase.isInvoiceReceived,
+                        isPaid: purchase.isPaid,
+                        projectId: purchase.projectId || '',
+                        productId: purchase.productId || ''
+                    });
+                    setIsPurchaseModalOpen(true);
+                }
+            })
+            .catch(err => console.error(err));
+    };
+
+    const handleDetailStatusChange = async (detailId: number | string, field: 'isInvoiceReceived' | 'isPaid', value: boolean, isPurchase?: boolean, purchaseId?: number) => {
         // Optimistic update
         setDetailData(prev => prev.map(item =>
             item.id === detailId ? { ...item, [field]: value } : item
         ));
 
         try {
-            const currentItem = detailData.find(item => item.id === detailId);
-            if (!currentItem) return;
-
-            const payload = {
-                isInvoiceReceived: field === 'isInvoiceReceived' ? value : currentItem.isInvoiceReceived,
-                isPaid: field === 'isPaid' ? value : currentItem.isPaid
-            };
-
-            const response = await fetch(`${API_BASE_URL}/project-details/${detailId}/status`, {
+            const endpoint = isPurchase ? `${API_BASE_URL}/purchases/${purchaseId}/status` : `${API_BASE_URL}/project-details/${detailId}/status`;
+            const response = await fetch(endpoint, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ [field]: value })
             });
 
             if (!response.ok) throw new Error('Failed to update status');
@@ -96,15 +187,12 @@ const SupplierMonthlyReport = () => {
             await Promise.all(targetItems.map(async (item) => {
                 if (item[field] === value) return;
                 
-                const payload = {
-                    isInvoiceReceived: field === 'isInvoiceReceived' ? value : item.isInvoiceReceived,
-                    isPaid: field === 'isPaid' ? value : item.isPaid
-                };
-
-                return fetch(`${API_BASE_URL}/project-details/${item.id}/status`, {
+                const endpoint = item.isPurchase ? `${API_BASE_URL}/purchases/${item.purchaseId}/status` : `${API_BASE_URL}/project-details/${item.id}/status`;
+                
+                return fetch(endpoint, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ [field]: value })
                 });
             }));
 
@@ -176,9 +264,14 @@ const SupplierMonthlyReport = () => {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>原価管理 (仕入集計)</h1>
-                    <p className={styles.subtitle}>仕入先ごとの原価発生状況を月次で確認</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                    <div>
+                        <h1 className={styles.title}>仕入・原価管理</h1>
+                        <p className={styles.subtitle}>仕入登録および仕入先ごとの原価発生状況を月次で確認</p>
+                    </div>
+                    <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', description: '', category: '仕入販売', quantity: 1, unitCost: 0, isInvoiceReceived: false, isPaid: false, projectId: '', productId: '' }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
+                        新規仕入登録
+                    </Button>
                 </div>
                 <div className={styles.filters}>
                     <div className={styles.filterGroup}>
@@ -194,6 +287,88 @@ const SupplierMonthlyReport = () => {
                     </div>
                 </div>
             </div>
+
+            {isPurchaseModalOpen && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modal}>
+                        <div className={styles.modalHeader}>
+                            <h3>{purchaseForm.id ? '仕入編集' : '新規仕入登録'}</h3>
+                            <button onClick={() => setIsPurchaseModalOpen(false)}><X size={20} /></button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <div className={styles.formGroup}>
+                                <label>日付</label>
+                                <input type="date" value={purchaseForm.date} onChange={e => setPurchaseForm({...purchaseForm, date: e.target.value})} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className={styles.formGroup}>
+                                    <label>仕入先</label>
+                                    <select value={purchaseForm.supplierId} onChange={e => {
+                                        const id = Number(e.target.value);
+                                        const sup = suppliersList.find(s => s.id === id);
+                                        setPurchaseForm({...purchaseForm, supplierId: id || '', supplierName: sup ? sup.name : ''});
+                                    }}>
+                                        <option value="">選択してください</option>
+                                        {suppliersList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>カテゴリ</label>
+                                    <select value={purchaseForm.category} onChange={e => setPurchaseForm({...purchaseForm, category: e.target.value})}>
+                                        <option value="仕入販売">仕入販売</option>
+                                        <option value="外注費">外注費</option>
+                                        <option value="在庫">在庫</option>
+                                        <option value="その他">その他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>内容</label>
+                                <input type="text" value={purchaseForm.description} onChange={e => setPurchaseForm({...purchaseForm, description: e.target.value})} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className={styles.formGroup}>
+                                    <label>数量</label>
+                                    <input type="number" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: Number(e.target.value)})} />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>単価</label>
+                                    <input type="number" value={purchaseForm.unitCost} onChange={e => setPurchaseForm({...purchaseForm, unitCost: Number(e.target.value)})} />
+                                </div>
+                            </div>
+                            
+                            <hr style={{ margin: '1rem 0', borderColor: '#e2e8f0', borderStyle: 'solid' }} />
+                            <h4 style={{ marginBottom: '0.5rem', color: '#475569' }}>紐付け設定（任意）</h4>
+                            <div className={styles.formGroup}>
+                                <label>案件に紐付け</label>
+                                <select 
+                                    value={purchaseForm.projectId} 
+                                    onChange={e => setPurchaseForm({...purchaseForm, projectId: e.target.value ? Number(e.target.value) : '', productId: ''})}
+                                    disabled={!!purchaseForm.productId}
+                                >
+                                    <option value="">未紐付（案件を選択）</option>
+                                    {projectsList.map(p => <option key={p.id} value={p.id}>ID:{p.id} {p.customer?.name} - {p.machineModel || '不明'}</option>)}
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>在庫機材に紐付け (入庫)</label>
+                                <select 
+                                    value={purchaseForm.productId} 
+                                    onChange={e => setPurchaseForm({...purchaseForm, productId: e.target.value ? Number(e.target.value) : '', projectId: ''})}
+                                    disabled={!!purchaseForm.projectId}
+                                >
+                                    <option value="">未紐付（在庫機材を選択）</option>
+                                    {productsList.map(p => <option key={p.id} value={p.id}>{p.name} (在庫: {p.stockQuantity})</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <Button variant="secondary" onClick={() => setIsPurchaseModalOpen(false)}>キャンセル</Button>
+                            <Button variant="primary" onClick={handlePurchaseSave} icon={<Save size={16} />}>保存</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className={styles.legendCard} style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
                 <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

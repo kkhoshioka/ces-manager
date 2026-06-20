@@ -81,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
             >
               <PieChart size={20} />
-              <span className={styles.navText}>原価管理</span>
+              <span className={styles.navText}>仕入・原価管理</span>
             </NavLink>
 
 

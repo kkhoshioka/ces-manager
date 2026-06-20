@@ -61,6 +61,7 @@ model Product {
   updatedAt      DateTime @updatedAt
 
   projectDetails ProjectDetail[]
+  purchases      Purchase[]
   productCategory ProductCategory? @relation(fields: [categoryId], references: [id])
 }
 
@@ -162,6 +163,7 @@ model Project {
   details           ProjectDetail[]
   photos            ProjectPhoto[]
   quotations        Quotation[]
+  purchases         Purchase[]
 }
 
 // 5. Project Details
@@ -216,6 +218,8 @@ model ProjectDetail {
 
   isInvoiceReceived Boolean  @default(false)
   isPaid            Boolean  @default(false)
+
+  purchase          Purchase?
 }
 
 // 6. Project Photos
@@ -228,6 +232,33 @@ model ProjectPhoto {
   uploadedAt  DateTime @default(now())
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// 6.5 Purchases
+model Purchase {
+  id                Int      @id @default(autoincrement())
+  date              DateTime // 仕入日
+  supplierId        Int?
+  supplierName      String?
+  description       String
+  category          String   // 仕入販売, 外注費, 在庫, その他
+  quantity          Decimal
+  unitCost          Decimal
+  amount            Decimal
+  isInvoiceReceived Boolean  @default(false)
+  isPaid            Boolean  @default(false)
+
+  projectId         Int?
+  projectDetailId   Int?     @unique
+  productId         Int?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  project           Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectDetail     ProjectDetail? @relation(fields: [projectDetailId], references: [id], onDelete: Cascade)
+  product           Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  supplierObj       Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 }
 
 // 7. Masters
@@ -318,6 +349,7 @@ model Supplier {
   updatedAt     DateTime @updatedAt
 
   projectDetails ProjectDetail[]
+  purchases      Purchase[]
 }
 
 // 9. User Profiles (Auth)

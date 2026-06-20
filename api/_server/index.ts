@@ -2018,6 +2018,279 @@ app.delete('/api/suppliers/:id', async (req, res) => {
     }
 });
 
+// ==============================================
+// Purchase Endpoints
+// ==============================================
+
+app.get('/api/purchases', async (req, res) => {
+    try {
+        const { year, month } = req.query;
+        let whereClause = {};
+
+        if (year) {
+            const startYear = Number(year);
+            const startMonth = month ? Number(month) : 1;
+            const startDate = new Date(startYear, startMonth - 1, 1);
+            const endDate = month
+                ? new Date(startYear, startMonth, 0, 23, 59, 59)
+                : new Date(startYear, 11, 31, 23, 59, 59);
+            
+            whereClause = {
+                date: { gte: startDate, lte: endDate }
+            };
+        }
+
+        const purchases = await prisma.purchase.findMany({
+            where: whereClause,
+            include: {
+                supplierObj: true,
+                project: {
+                    include: {
+                        customer: true,
+                        customerMachine: true
+                    }
+                },
+                product: true
+            },
+            orderBy: { date: 'desc' }
+        });
+
+        res.json(purchases);
+    } catch (error) {
+        console.error('Fetch Purchases Error:', error);
+        res.status(500).json({ error: 'Failed to fetch purchases' });
+    }
+});
+
+app.post('/api/purchases', async (req, res) => {
+    try {
+        const data = req.body;
+        
+        let newProjectDetailId: number | null = null;
+
+        await prisma.$transaction(async (tx) => {
+            // 1. If linking to Inventory (productId)
+            if (data.productId && data.quantity) {
+                await tx.product.update({
+                    where: { id: data.productId },
+                    data: { stockQuantity: { increment: Number(data.quantity) } }
+                });
+            }
+
+            // 2. If linking to Project (projectId), create ProjectDetail
+            if (data.projectId) {
+                const pd = await tx.projectDetail.create({
+                    data: {
+                        projectId: data.projectId,
+                        lineType: 'part', // default
+                        description: data.description,
+                        supplier: data.supplierName,
+                        supplierId: data.supplierId,
+                        quantity: data.quantity,
+                        unitCost: data.unitCost,
+                        unitPrice: 0, // Needs manual update from project screen
+                        amountCost: Number(data.quantity) * Number(data.unitCost),
+                        date: new Date(data.date),
+                        isInvoiceReceived: data.isInvoiceReceived || false,
+                        isPaid: data.isPaid || false
+                    }
+                });
+                newProjectDetailId = pd.id;
+            }
+
+            // 3. Create Purchase
+            await tx.purchase.create({
+                data: {
+                    date: new Date(data.date),
+                    supplierId: data.supplierId,
+                    supplierName: data.supplierName,
+                    description: data.description,
+                    category: data.category,
+                    quantity: data.quantity,
+                    unitCost: data.unitCost,
+                    amount: Number(data.quantity) * Number(data.unitCost),
+                    isInvoiceReceived: data.isInvoiceReceived || false,
+                    isPaid: data.isPaid || false,
+                    projectId: data.projectId,
+                    productId: data.productId,
+                    projectDetailId: newProjectDetailId
+                }
+            });
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Create Purchase Error:', error);
+        res.status(500).json({ error: 'Failed to create purchase' });
+    }
+});
+
+app.put('/api/purchases/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const data = req.body;
+
+        await prisma.$transaction(async (tx) => {
+            const oldPurchase = await tx.purchase.findUnique({ where: { id: Number(id) } });
+            if (!oldPurchase) throw new Error('Purchase not found');
+
+            // Handle Inventory changes
+            if (oldPurchase.productId !== data.productId) {
+                // Remove from old
+                if (oldPurchase.productId) {
+                    await tx.product.update({
+                        where: { id: oldPurchase.productId },
+                        data: { stockQuantity: { decrement: Number(oldPurchase.quantity) } }
+                    });
+                }
+                // Add to new
+                if (data.productId) {
+                    await tx.product.update({
+                        where: { id: data.productId },
+                        data: { stockQuantity: { increment: Number(data.quantity) } }
+                    });
+                }
+            } else if (data.productId && Number(oldPurchase.quantity) !== Number(data.quantity)) {
+                // Quantity changed
+                const diff = Number(data.quantity) - Number(oldPurchase.quantity);
+                await tx.product.update({
+                    where: { id: data.productId },
+                    data: { stockQuantity: { increment: diff } }
+                });
+            }
+
+            let currentProjectDetailId = oldPurchase.projectDetailId;
+
+            // Handle Project changes
+            if (oldPurchase.projectId !== data.projectId) {
+                // Remove old ProjectDetail
+                if (currentProjectDetailId) {
+                    await tx.projectDetail.delete({ where: { id: currentProjectDetailId } });
+                    currentProjectDetailId = null;
+                }
+                
+                // Create new ProjectDetail
+                if (data.projectId) {
+                    const pd = await tx.projectDetail.create({
+                        data: {
+                            projectId: data.projectId,
+                            lineType: 'part',
+                            description: data.description,
+                            supplier: data.supplierName,
+                            supplierId: data.supplierId,
+                            quantity: data.quantity,
+                            unitCost: data.unitCost,
+                            unitPrice: 0,
+                            amountCost: Number(data.quantity) * Number(data.unitCost),
+                            date: new Date(data.date),
+                            isInvoiceReceived: data.isInvoiceReceived || false,
+                            isPaid: data.isPaid || false
+                        }
+                    });
+                    currentProjectDetailId = pd.id;
+                }
+            } else if (currentProjectDetailId) {
+                // Update existing ProjectDetail to keep in sync
+                await tx.projectDetail.update({
+                    where: { id: currentProjectDetailId },
+                    data: {
+                        description: data.description,
+                        supplier: data.supplierName,
+                        supplierId: data.supplierId,
+                        quantity: data.quantity,
+                        unitCost: data.unitCost,
+                        amountCost: Number(data.quantity) * Number(data.unitCost),
+                        date: new Date(data.date),
+                        isInvoiceReceived: data.isInvoiceReceived,
+                        isPaid: data.isPaid
+                    }
+                });
+            }
+
+            // Update Purchase
+            await tx.purchase.update({
+                where: { id: Number(id) },
+                data: {
+                    date: new Date(data.date),
+                    supplierId: data.supplierId,
+                    supplierName: data.supplierName,
+                    description: data.description,
+                    category: data.category,
+                    quantity: data.quantity,
+                    unitCost: data.unitCost,
+                    amount: Number(data.quantity) * Number(data.unitCost),
+                    isInvoiceReceived: data.isInvoiceReceived || false,
+                    isPaid: data.isPaid || false,
+                    projectId: data.projectId,
+                    productId: data.productId,
+                    projectDetailId: currentProjectDetailId
+                }
+            });
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Update Purchase Error:', error);
+        res.status(500).json({ error: 'Failed to update purchase' });
+    }
+});
+
+app.delete('/api/purchases/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        await prisma.$transaction(async (tx) => {
+            const purchase = await tx.purchase.findUnique({ where: { id: Number(id) } });
+            if (!purchase) return;
+
+            if (purchase.productId) {
+                await tx.product.update({
+                    where: { id: purchase.productId },
+                    data: { stockQuantity: { decrement: Number(purchase.quantity) } }
+                });
+            }
+
+            if (purchase.projectDetailId) {
+                await tx.projectDetail.delete({ where: { id: purchase.projectDetailId } });
+            }
+
+            await tx.purchase.delete({ where: { id: Number(id) } });
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete Purchase Error:', error);
+        res.status(500).json({ error: 'Failed to delete purchase' });
+    }
+});
+
+// Update Purchase Status (Invoice/Payment)
+app.put('/api/purchases/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isInvoiceReceived, isPaid } = req.body;
+
+        await prisma.$transaction(async (tx) => {
+            const purchase = await tx.purchase.update({
+                where: { id: Number(id) },
+                data: { isInvoiceReceived, isPaid }
+            });
+
+            if (purchase.projectDetailId) {
+                await tx.projectDetail.update({
+                    where: { id: purchase.projectDetailId },
+                    data: { isInvoiceReceived, isPaid }
+                });
+            }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Update Purchase Status Error:', error);
+        res.status(500).json({ error: 'Failed to update purchase status' });
+    }
+});
+
 // Report: Supplier Monthly Costs
 app.get('/api/dashboard/supplier-costs', async (req, res) => {
     try {
@@ -2068,6 +2341,32 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             });
         });
 
+        // 2. Fetch unlinked Purchases (or purchases where project details are NOT in the above list?
+        // Actually, it's safer to just fetch Purchases where projectId is null, 
+        // because if it has projectId, it generated a ProjectDetail, which is already counted above.)
+        const unlinkedPurchases = await prisma.purchase.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate },
+                projectId: null // Only unlinked
+            },
+            include: {
+                supplierObj: true
+            }
+        });
+
+        unlinkedPurchases.forEach(purchase => {
+            const name = purchase.supplierObj?.name || purchase.supplierName;
+            if (name && Number(purchase.unitCost) > 0) {
+                if (!supplierStats[name]) {
+                    supplierStats[name] = { totalCost: 0, count: 0 };
+                }
+                const qty = Number(purchase.quantity);
+                const cost = Number(purchase.unitCost);
+                supplierStats[name].totalCost += (qty * cost);
+                supplierStats[name].count += 1;
+            }
+        });
+
         const result = Object.entries(supplierStats)
             .map(([name, stats]) => ({
                 name,
@@ -2096,6 +2395,12 @@ app.put('/api/project-details/:id/status', async (req, res) => {
                 isInvoiceReceived,
                 isPaid
             }
+        });
+
+        // Sync to Purchase if linked
+        await prisma.purchase.updateMany({
+            where: { projectDetailId: Number(id) },
+            data: { isInvoiceReceived, isPaid }
         });
 
         res.json(detail);
@@ -2130,7 +2435,7 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                 customerMachine: true,
                 details: {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    include: { supplierObj: true } as any
+                    include: { supplierObj: true, purchase: true } as any
                 }
             }
         });
@@ -2145,6 +2450,8 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                 if (name === supplier && Number(detail.unitCost) > 0) {
                     details.push({
                         id: detail.id,
+                        isPurchase: !!(detail as any).purchase,
+                        purchaseId: (detail as any).purchase?.id || null,
                         date: project.createdAt, // Or completionDate? Using createdAt for consistency
                         customerName: project.customer?.name || '不明',
                         machineModel: project.machineModel || project.customerMachine?.machineModel || '-',
@@ -2158,6 +2465,36 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                     });
                 }
             });
+        });
+
+        // Also fetch unlinked Purchases for this supplier
+        const unlinkedPurchases = await prisma.purchase.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate },
+                projectId: null
+            },
+            include: { supplierObj: true }
+        });
+
+        unlinkedPurchases.forEach(purchase => {
+            const name = purchase.supplierObj?.name || purchase.supplierName;
+            if (name === supplier && Number(purchase.unitCost) > 0) {
+                details.push({
+                    id: `purchase_${purchase.id}`, // prefix to avoid id collision in UI if needed, but UI uses detailId for status update
+                    isPurchase: true, // flag for UI to know it's an unlinked purchase
+                    purchaseId: purchase.id,
+                    date: purchase.date,
+                    customerName: '（未紐付 / ' + (purchase.productId ? '在庫' : purchase.category) + '）',
+                    machineModel: '-',
+                    serialNumber: '-',
+                    description: purchase.description,
+                    quantity: Number(purchase.quantity),
+                    unitCost: Number(purchase.unitCost),
+                    amount: Number(purchase.quantity) * Number(purchase.unitCost),
+                    isInvoiceReceived: purchase.isInvoiceReceived,
+                    isPaid: purchase.isPaid
+                });
+            }
         });
 
         // Sort by date desc
