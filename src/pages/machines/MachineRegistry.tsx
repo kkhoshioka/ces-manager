@@ -6,6 +6,9 @@ import { Search, Plus, Edit, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-reac
 import { format } from 'date-fns';
 import type { CustomerMachine } from '../../types/customer';
 import MachineForm from './MachineForm';
+import MachinePrintModal from './MachinePrintModal';
+import PrintableMachineList from './PrintableMachineList';
+import { Printer } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import styles from './MachineRegistry.module.css';
 import { API_BASE_URL } from '../../config';
@@ -17,6 +20,10 @@ const MachineRegistry: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingMachine, setEditingMachine] = useState<CustomerMachine | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const [printData, setPrintData] = useState<CustomerMachine[]>([]);
+    const [printTitle, setPrintTitle] = useState('');
 
     type SortColumn = 'customer' | 'model' | 'inspection' | null;
     type SortDirection = 'asc' | 'desc';
@@ -85,6 +92,19 @@ const MachineRegistry: React.FC = () => {
     const handleAdd = () => {
         setEditingMachine(undefined);
         setIsFormOpen(true);
+    };
+
+    const handlePrintExecute = (machinesToPrint: CustomerMachine[], title: string) => {
+        setPrintData(machinesToPrint);
+        setPrintTitle(title);
+        setIsPrintModalOpen(false);
+        setIsPrinting(true);
+        
+        // Allow React to render the printable component, then print
+        setTimeout(() => {
+            window.print();
+            setIsPrinting(false);
+        }, 300);
     };
 
     const handleSave = () => {
@@ -158,9 +178,14 @@ const MachineRegistry: React.FC = () => {
                     <h1 className={styles.title}>機材台帳</h1>
                     <p className={styles.subtitle}>顧客保有機材の管理・登録</p>
                 </div>
-                <Button icon={<Plus size={18} />} onClick={handleAdd}>
-                    新規登録
-                </Button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Button icon={<Printer size={18} />} onClick={() => setIsPrintModalOpen(true)} variant="outline">
+                        印刷
+                    </Button>
+                    <Button icon={<Plus size={18} />} onClick={handleAdd}>
+                        新規登録
+                    </Button>
+                </div>
             </div>
 
             <div className={styles.controls}>
@@ -288,6 +313,21 @@ const MachineRegistry: React.FC = () => {
                     onClose={() => setIsFormOpen(false)}
                     onSave={handleSave}
                     machine={editingMachine}
+                />
+            )}
+
+            <MachinePrintModal
+                isOpen={isPrintModalOpen}
+                onClose={() => setIsPrintModalOpen(false)}
+                currentFilteredMachines={sortedFilteredMachines}
+                allMachines={machines}
+                onPrintExecute={handlePrintExecute}
+            />
+
+            {isPrinting && (
+                <PrintableMachineList 
+                    machines={printData} 
+                    printTitle={printTitle} 
                 />
             )}
         </div>
