@@ -111,8 +111,18 @@ const MachineRegistry: React.FC = () => {
         document.title = `機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`;
 
         const handleAfterPrint = () => {
-            document.title = originalTitle;
             setIsPrinting(false);
+            
+            // Revert title on user interaction or timeout to avoid breaking OS Save As dialog
+            const restoreTitle = () => {
+                document.title = originalTitle;
+                window.removeEventListener('mousemove', restoreTitle);
+                window.removeEventListener('focus', restoreTitle);
+            };
+            window.addEventListener('mousemove', restoreTitle);
+            window.addEventListener('focus', restoreTitle);
+            setTimeout(restoreTitle, 10000);
+
             window.removeEventListener('afterprint', handleAfterPrint);
         };
         window.addEventListener('afterprint', handleAfterPrint);
