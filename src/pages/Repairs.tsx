@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown } from 'lucide-react';
+import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown, Copy } from 'lucide-react';
 import type { Repair } from '../types/repair';
 import { RepairService } from '../utils/repairService';
 import { customerService } from '../utils/customerService';
@@ -365,6 +365,15 @@ const Repairs: React.FC = () => {
 
     const removeDetail = (index: number) => {
         setDetails(details.filter((_, i) => i !== index));
+    };
+
+    const duplicateDetail = (index: number) => {
+        setDetails(prev => {
+            const newDetails = [...prev];
+            const item = { ...newDetails[index], originalIndex: Date.now() + Math.random() };
+            newDetails.splice(index + 1, 0, item);
+            return newDetails;
+        });
     };
 
     const handleDetailChange = (index: number, field: keyof DetailItem, value: number | string | boolean | null) => {
@@ -913,6 +922,127 @@ const Repairs: React.FC = () => {
         }
     };
 
+    const handleDuplicateProject = async (id: number) => {
+        if (!confirm('この案件を複製して新規作成しますか？')) return;
+        setIsFormLoading(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/projects/${id}/duplicate`, { method: 'POST' });
+            if (!response.ok) throw new Error('Failed to duplicate project');
+            const newProject = await response.json();
+            
+            await loadProjects();
+            alert('案件を複製しました。');
+            handleRowClick(newProject);
+        } catch (error) {
+            console.error(error);
+            alert('案件の複製に失敗しました。');
+        } finally {
+            setIsFormLoading(false);
+        }
+    };
+
+    const [isPastProjectsModalOpen, setIsPastProjectsModalOpen] = useState(false);
+    const [pastProjects, setPastProjects] = useState<Repair[]>([]);
+    const [isPastProjectsLoading, setIsPastProjectsLoading] = useState(false);
+
+    const openPastProjectsModal = async () => {
+        if (!formState.customerName) {
+            alert('顧客を選択してください');
+            return;
+        }
+        setIsPastProjectsModalOpen(true);
+        setIsPastProjectsLoading(true);
+        try {
+            const customer = customers.find(c => c.name === formState.customerName);
+            if (!customer) throw new Error('Customer not found');
+            const data = await RepairService.getAll({ customerId: customer.id, limit: 100 });
+            setPastProjects(data.filter(p => p.id !== selectedProjectId));
+        } catch (error) {
+            console.error('Failed to load past projects', error);
+            alert('過去の案件の読み込みに失敗しました');
+        } finally {
+            setIsPastProjectsLoading(false);
+        }
+    };
+
+    const copyDetailsFromPastProject = async (pastProjectId: number) => {
+        if (!confirm('この過去案件から明細をコピーしますか？現在の明細の後ろに追加されます。')) return;
+        setIsPastProjectsLoading(true);
+        try {
+            const fullProject = await RepairService.getById(pastProjectId);
+            if (fullProject && fullProject.details) {
+                const newDetails = fullProject.details.map((d: any) => {
+                    let tType: 'time' | 'distance' | 'area' | undefined = undefined;
+                    let pCode = '';
+                    let desc = d.description;
+
+                    if (d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel')) {
+                        if (desc.startsWith('【地区指定】')) {
+                            tType = 'area';
+                            desc = desc.replace('【地区指定】', '');
+                        } else if (desc.startsWith('【移動時間】')) {
+                            tType = 'time';
+                            desc = desc.replace('【移動時間】', '');
+                        } else if (desc.startsWith('【移動距離】')) {
+                            tType = 'distance';
+                            desc = desc.replace('【移動距離】', '');
+                        } else if (desc === '移動時間' || desc === '移動時間(H)' || desc === '出張費(時間)') {
+                            tType = 'time';
+                            desc = '';
+                        } else if (desc === '移動距離' || desc === '移動距離(km)' || desc === '出張費(距離)') {
+                            tType = 'distance';
+                            desc = '';
+                        } else {
+                            tType = 'time';
+                        }
+                    } else if (d.lineType === 'part' || d.lineType === 'inventory') {
+                        const codeMatch = desc.match(/^【(.*?)】(.*)/);
+                        if (codeMatch) {
+                            pCode = codeMatch[1];
+                            desc = codeMatch[2];
+                        }
+                    }
+
+                    return {
+                        lineType: d.lineType,
+                        travelType: tType,
+                        productCode: pCode,
+                        description: desc,
+                        supplier: d.supplier || '',
+                        supplierId: d.supplierId || null,
+                        remarks: d.remarks || '',
+                        quantity: Number(d.quantity),
+                        unitPrice: Number(d.unitPrice),
+                        unitCost: Number(d.unitCost),
+                        productCategoryId: d.productCategoryId || (d.product ? d.product.categoryId : null),
+                        section: d.category ? d.category.section : (d.product && d.product.productCategory ? d.product.productCategory.section : ''),
+                        outsourcingDetailType: d.outsourcingDetailType,
+                        laborType: d.laborType as 'time' | 'fixed' | undefined,
+                        machineModel: d.machineModel || '',
+                        serialNumber: d.serialNumber || '',
+                        rentalBillingType: d.rentalBillingType as 'daily' | 'monthly' | undefined,
+                        rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate).toISOString().split('T')[0] : '',
+                        rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : '',
+                        rentalBasicFee: Number(d.rentalBasicFee) || 0,
+                        rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
+                        rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
+                        productId: d.productId || null,
+                        isTaxExempt: d.isTaxExempt || false,
+                        originalIndex: Date.now() + Math.random()
+                    } as DetailItem;
+                });
+                setDetails(prev => [...prev, ...newDetails]);
+                setIsPastProjectsModalOpen(false);
+                alert('明細をコピーしました。');
+            }
+        } catch (error) {
+            console.error('Failed to copy details', error);
+            alert('明細のコピーに失敗しました。');
+        } finally {
+            setIsPastProjectsLoading(false);
+        }
+    };
+
     const handleRowClick = async (project: Repair) => {
         // Optimistic UI: Open immediately with loading state
         setIsFormOpen(true);
@@ -1061,9 +1191,14 @@ const Repairs: React.FC = () => {
                                             </div>
                                         </td>
                                         <td style={{ padding: '0.25rem', textAlign: 'center' }}>
-                                            <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', padding: '0.25rem' }}>
-                                                <Trash2 size={16} />
-                                            </Button>
+                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6', padding: '0.25rem' }} title="明細を複製">
+                                                    <Copy size={16} />
+                                                </Button>
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', padding: '0.25rem' }} title="削除">
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -1585,9 +1720,14 @@ const Repairs: React.FC = () => {
                                     )}
 
                                     <td style={{ padding: '0.25rem', textAlign: 'center' }}>
-                                        <button type="button" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                                            <button type="button" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }} title="明細を複製">
+                                                <Copy size={16} />
+                                            </button>
+                                            <button type="button" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }} title="削除">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -1819,9 +1959,14 @@ const Repairs: React.FC = () => {
                                     </td>
                                 )}
                                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                    <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444' }}>
-                                        <Trash2 size={16} />
-                                    </Button>
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                                        <Button type="button" variant="ghost" size="sm" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6' }} title="明細を複製">
+                                            <Copy size={16} />
+                                        </Button>
+                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444' }} title="削除">
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -2086,7 +2231,14 @@ const Repairs: React.FC = () => {
                                     '新規修理受付'
                                 )}
                             </h2>
-                            <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                {selectedProjectId && (
+                                    <Button variant="outline" size="sm" onClick={() => handleDuplicateProject(selectedProjectId)}>
+                                        <Copy size={16} style={{ marginRight: '0.25rem' }} /> 複製して新規作成
+                                    </Button>
+                                )}
+                                <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
+                            </div>
                         </div>
 
                         {/* Tab Navigation */}
@@ -2726,6 +2878,44 @@ const Repairs: React.FC = () => {
                     </div>
                 )
             }
+            {/* Past Projects Modal */}
+            {isPastProjectsModalOpen && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent} style={{ maxWidth: '800px', width: '90%' }}>
+                        <div className={styles.modalHeader}>
+                            <h2>過去の案件から明細をコピー</h2>
+                            <button className={styles.closeButton} onClick={() => setIsPastProjectsModalOpen(false)}><X size={24} /></button>
+                        </div>
+                        <div className={styles.modalBody} style={{ maxHeight: '60vh', overflowY: 'auto', padding: '1rem' }}>
+                            {isPastProjectsLoading ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                                    <LoadingSpinner />
+                                </div>
+                            ) : pastProjects.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>過去の案件が見つかりません。</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {pastProjects.map((p) => (
+                                        <div key={p.id} style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                                    {p.machineModel} {p.serialNumber ? `(S/N: ${p.serialNumber})` : ''}
+                                                </div>
+                                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                                    受付日: {new Date(p.createdAt).toLocaleDateString()} / {p.notes ? (p.notes.length > 30 ? p.notes.substring(0, 30) + '...' : p.notes) : '備考なし'}
+                                                </div>
+                                            </div>
+                                            <Button type="button" size="sm" onClick={() => copyDetailsFromPastProject(p.id)}>
+                                                コピー
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

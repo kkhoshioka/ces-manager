@@ -2,10 +2,11 @@ import type { Repair, NewRepair, ProjectPhoto } from '../types/repair';
 import { API_BASE_URL } from '../config';
 
 export const RepairService = {
-    getAll: async (options?: { limit?: number, search?: string }): Promise<Repair[]> => {
+    getAll: async (options?: { limit?: number, search?: string, customerId?: number }): Promise<Repair[]> => {
         const params = new URLSearchParams();
         if (options?.limit) params.append('limit', String(options.limit));
         if (options?.search) params.append('search', options.search);
+        if (options?.customerId) params.append('customerId', String(options.customerId));
 
         const response = await fetch(`${API_BASE_URL}/projects?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch repairs');

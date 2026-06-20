@@ -3,6 +3,7 @@ export declare const RepairService: {
     getAll: (options?: {
         limit?: number;
         search?: string;
+        customerId?: number;
     }) => Promise<Repair[]>;
     getById: (id: number) => Promise<Repair | undefined>;
     add: (repair: NewRepair) => Promise<Repair>;

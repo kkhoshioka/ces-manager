@@ -515,10 +515,14 @@ app.get('/api/inventory/snapshot/:year/:month/pdf', async (req, res) => {
 // --- Projects (Repairs) ---
 app.get('/api/projects', async (req, res) => {
     try {
-        const { limit, search } = req.query;
+        const { limit, search, customerId } = req.query;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const where: any = {};
+
+        if (customerId) {
+            where.customerId = Number(customerId);
+        }
 
         if (search) {
             const searchStr = String(search);
@@ -835,6 +839,61 @@ app.post('/api/projects', async (req, res) => {
         }
         console.error('Failed to create project', error);
         res.status(500).json({ error: 'Failed to create project' });
+    }
+});
+
+app.post('/api/projects/:id/duplicate', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const originalProject = await prisma.project.findUnique({
+            where: { id: Number(id) },
+            include: { details: true }
+        });
+
+        if (!originalProject) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        // Prepare details data (remove ids and projectIds)
+        const newDetails = originalProject.details.map(detail => {
+            const { id, projectId, createdAt, updatedAt, purchase, isInvoiceReceived, isPaid, ...detailData } = detail as any;
+            return {
+                ...detailData,
+                isInvoiceReceived: false,
+                isPaid: false
+            };
+        });
+
+        const { id: _, createdAt, updatedAt, ...projectData } = originalProject;
+        
+        const newProject = await prisma.project.create({
+            data: {
+                ...projectData,
+                status: 'received',
+                isInvoiceIssued: false,
+                isDeliveryNoteIssued: false,
+                isPaymentReceived: false,
+                paymentDate: null,
+                stockDeducted: false,
+                orderDate: new Date(),
+                completionDate: null,
+                actualReturnDate: null,
+                details: {
+                    create: newDetails
+                }
+            },
+            include: {
+                customer: true,
+                customerMachine: true,
+                details: { orderBy: { id: 'asc' } },
+                photos: true
+            }
+        });
+
+        res.json(newProject);
+    } catch (error) {
+        console.error('Failed to duplicate project', error);
+        res.status(500).json({ error: 'Failed to duplicate project' });
     }
 });
 
