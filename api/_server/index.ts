@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 import 'dotenv/config';
-import { generateInvoice, generateDeliveryNote, generateQuotation, generateMonthlyInventoryPdf } from './pdfService';
+import { generateInvoice, generateDeliveryNote, generateQuotation, generateMonthlyInventoryPdf, generateMachineRegistryPdf } from './pdfService';
 import systemSettingsRouter from './routes/systemSettings';
 import quotationRouter from './routes/quotations';
 import travelExpenseRouter from './routes/travelExpenses';
@@ -196,6 +196,34 @@ app.post('/api/machines', async (req, res) => {
             },
             include: { customer: true, category: true }
         });
+
+
+app.post('/api/machines/pdf', async (req, res) => {
+    try {
+        const { machines, title } = req.body;
+        
+        const pdfDoc = generateMachineRegistryPdf(machines, title);
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        
+        // This makes sure res.send can take the chunks
+        let chunks: any[] = [];
+        pdfDoc.on('data', (chunk: any) => {
+            chunks.push(chunk);
+        });
+        
+        pdfDoc.on('end', () => {
+            const result = Buffer.concat(chunks);
+            res.send(result);
+        });
+        
+        pdfDoc.end();
+        
+    } catch (error) {
+        console.error('Failed to generate machine registry pdf:', error);
+        res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+});
         res.json(machine);
     } catch (error) {
         console.error('Failed to create machine:', error);

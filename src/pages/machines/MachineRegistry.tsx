@@ -7,8 +7,6 @@ import { format } from 'date-fns';
 import type { CustomerMachine } from '../../types/customer';
 import MachineForm from './MachineForm';
 import MachinePrintModal from './MachinePrintModal';
-import PrintableMachineList from './PrintableMachineList';
-import { useReactToPrint } from 'react-to-print';
 import { useRef } from 'react';
 import { Printer } from 'lucide-react';
 import Button from '../../components/ui/Button';
@@ -23,30 +21,7 @@ const MachineRegistry: React.FC = () => {
     const [editingMachine, setEditingMachine] = useState<CustomerMachine | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-    const [isPrinting, setIsPrinting] = useState(false);
-    const [printData, setPrintData] = useState<CustomerMachine[]>([]);
-    const [printTitle, setPrintTitle] = useState('');
-    const printComponentRef = useRef<HTMLDivElement>(null);
-    const [printDocTitle, setPrintDocTitle] = useState('機材台帳');
-
-    const handleActualPrint = useReactToPrint({
-        contentRef: printComponentRef,
-        // Omit documentTitle here to prevent react-to-print from resetting it too early
-        onAfterPrint: () => {
-            setIsPrinting(false);
-            
-            // Revert original document title on user interaction or after a long timeout
-            const originalTitle = 'CES Manager';
-            const restoreTitle = () => {
-                document.title = originalTitle;
-                window.removeEventListener('mousemove', restoreTitle);
-                window.removeEventListener('focus', restoreTitle);
-            };
-            window.addEventListener('mousemove', restoreTitle);
-            window.addEventListener('focus', restoreTitle);
-            setTimeout(restoreTitle, 30000);
-        },
-    });
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
 
     type SortColumn = 'customer' | 'model' | 'inspection' | null;
     type SortDirection = 'asc' | 'desc';
@@ -117,25 +92,46 @@ const MachineRegistry: React.FC = () => {
         setIsFormOpen(true);
     };
 
-    const handlePrintExecute = (machinesToPrint: CustomerMachine[], title: string) => {
-        setPrintData(machinesToPrint);
-        setPrintTitle(title);
+    const handlePrintExecute = async (machinesToPrint: CustomerMachine[], title: string) => {
         setIsPrintModalOpen(false);
-        setIsPrinting(true);
-        
-        const now = new Date();
-        const yyyy = now.getFullYear();
-        const MM = String(now.getMonth() + 1).padStart(2, '0');
-        const dd = String(now.getDate()).padStart(2, '0');
-        const HH = String(now.getHours()).padStart(2, '0');
-        const mm = String(now.getMinutes()).padStart(2, '0');
-        const newTitle = `機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`;
-        setPrintDocTitle(newTitle);
-        document.title = newTitle; // Force main document title manually
+        setIsPdfLoading(true);
+        try {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const MM = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const HH = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const filenameDate = `${yyyy}${MM}${dd}_${HH}${mm}`;
+            const filename = `機材台帳_${filenameDate}.pdf`;
 
-        setTimeout(() => {
-            handleActualPrint();
-        }, 100);
+            const res = await fetch(`${API_BASE_URL}/machines/pdf`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ machines: machinesToPrint, title })
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to generate PDF');
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            alert('PDFの生成に失敗しました。');
+        } finally {
+            setIsPdfLoading(false);
+        }
     };
 
     const handleSave = () => {
@@ -355,13 +351,7 @@ const MachineRegistry: React.FC = () => {
                 onPrintExecute={handlePrintExecute}
             />
 
-            <div style={{ display: 'none' }}>
-                <PrintableMachineList 
-                    ref={printComponentRef}
-                    machines={printData} 
-                    printTitle={printTitle} 
-                />
-            </div>
+            
         </div>
     );
 };
