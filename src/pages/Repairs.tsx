@@ -952,7 +952,10 @@ const Repairs: React.FC = () => {
         try {
             const customer = customers.find(c => c.name === formState.customerName);
             if (!customer) throw new Error('Customer not found');
-            const data = await RepairService.getAll({ customerId: customer.id, limit: 100, search: searchText || undefined });
+            let fetchOptions: any = { limit: 20, search: searchText || undefined };
+            // If no search text, default to current customer's projects to be helpful, or if they want 20 latest overall we can omit customerId.
+            // Since the user asked for "latest 20", let's just fetch latest 20 overall if search is empty, or maybe they just meant "limit to 20". Let's show all latest 20 globally to fulfill "search by customer name" easily.
+            const data = await RepairService.getAll({ limit: 20, search: searchText || undefined });
             setPastProjects(data.filter(p => p.id !== selectedProjectId));
         } catch (error) {
             console.error('Failed to load past projects', error);
@@ -2915,7 +2918,7 @@ const Repairs: React.FC = () => {
                             <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
                                 <input 
                                     type="text" 
-                                    placeholder="機種、シリアル、備考などで検索..." 
+                                    placeholder="顧客名、機種、シリアル、備考などで検索..." 
                                     value={pastProjectsSearchText}
                                     onChange={(e) => setPastProjectsSearchText(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && searchPastProjects()}
@@ -2937,7 +2940,8 @@ const Repairs: React.FC = () => {
                                     {pastProjects.map((p) => (
                                         <div key={p.id} style={{ border: '1px solid #cbd5e1', borderRadius: '4px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
-                                                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem', color: '#0f172a' }}>
+                                                    <span style={{ color: '#0369a1', marginRight: '0.5rem' }}>[{p.customer?.name || '顧客未設定'}]</span>
                                                     {p.machineModel} {p.serialNumber ? `(S/N: ${p.serialNumber})` : ''}
                                                 </div>
                                                 <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
