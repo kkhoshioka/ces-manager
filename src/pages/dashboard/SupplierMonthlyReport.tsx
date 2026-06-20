@@ -83,7 +83,8 @@ const SupplierMonthlyReport = () => {
                 if (supRes.ok) setSuppliersList(await supRes.json());
                 if (projRes.ok) {
                     const projs = await projRes.json();
-                    setProjectsList(projs.slice(0, 100));
+                    const activeProjs = projs.filter((p: any) => p.status !== 'completed' && p.status !== 'delivered');
+                    setProjectsList(activeProjs.slice(0, 100));
                 }
                 if (prodRes.ok) setProductsList(await prodRes.json());
                 if (catRes.ok) setCategoriesList(await catRes.json());
@@ -407,7 +408,14 @@ const SupplierMonthlyReport = () => {
                                             style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', backgroundColor: !!purchaseForm.productId ? '#f1f5f9' : '#fff' }}
                                         >
                                             <option value="">未紐付（案件を選択）</option>
-                                            {projectsList.map(p => <option key={p.id} value={p.id}>ID:{p.id} {p.customer?.name} - {p.machineModel || '不明'}</option>)}
+                                            {projectsList.map(p => {
+                                                const contentSnippet = p.notes ? (p.notes.length > 12 ? p.notes.substring(0, 12) + '...' : p.notes) : '-';
+                                                return (
+                                                    <option key={p.id} value={p.id}>
+                                                        【案件】{new Date(p.orderDate || p.createdAt).toLocaleDateString()} / {p.customer?.name} / {p.machineModel || '不明'} / {contentSnippet}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                     </div>
                                     <div className={styles.formGroup}>
