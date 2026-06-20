@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import type { CustomerMachine } from '../../types/customer';
 import { format } from 'date-fns';
 
@@ -7,33 +7,24 @@ interface PrintableMachineListProps {
     printTitle: string;
 }
 
-const PrintableMachineList: React.FC<PrintableMachineListProps> = ({ machines, printTitle }) => {
+const PrintableMachineList = forwardRef<HTMLDivElement, PrintableMachineListProps>(({ machines, printTitle }, ref) => {
     return (
-        <div className="printable-container" style={{ display: 'none' }}>
+        <div ref={ref} className="printable-container" style={{ padding: '20px' }}>
             <style>
                 {`
                 @media print {
-                    /* Hide everything else */
-                    body * {
-                        visibility: hidden;
-                    }
-                    /* Show only printable container */
-                    .printable-container, .printable-container * {
-                        visibility: visible;
-                    }
-                    .printable-container {
-                        display: block !important;
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        background: white;
-                        color: black;
-                        font-family: sans-serif;
-                    }
                     @page {
                         size: A4 portrait;
                         margin: 10mm;
+                    }
+                    body {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .printable-container {
+                        font-family: sans-serif;
+                        color: black;
+                        background: white;
                     }
                     table {
                         width: 100%;
@@ -47,8 +38,6 @@ const PrintableMachineList: React.FC<PrintableMachineListProps> = ({ machines, p
                     }
                     th {
                         background-color: #f0f0f0 !important;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
                         text-align: left;
                         font-weight: bold;
                     }
@@ -63,7 +52,6 @@ const PrintableMachineList: React.FC<PrintableMachineListProps> = ({ machines, p
                         font-size: 9pt;
                         margin-bottom: 5px;
                     }
-                    /* Force page breaks for headers if needed */
                     thead { display: table-header-group; }
                     tfoot { display: table-footer-group; }
                     tr { page-break-inside: avoid; }
@@ -103,6 +91,6 @@ const PrintableMachineList: React.FC<PrintableMachineListProps> = ({ machines, p
             </table>
         </div>
     );
-};
+});
 
 export default PrintableMachineList;

@@ -4,5 +4,5 @@ interface PrintableMachineListProps {
     machines: CustomerMachine[];
     printTitle: string;
 }
-declare const PrintableMachineList: React.FC<PrintableMachineListProps>;
+declare const PrintableMachineList: React.ForwardRefExoticComponent<PrintableMachineListProps & React.RefAttributes<HTMLDivElement>>;
 export default PrintableMachineList;

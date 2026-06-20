@@ -8,6 +8,8 @@ import type { CustomerMachine } from '../../types/customer';
 import MachineForm from './MachineForm';
 import MachinePrintModal from './MachinePrintModal';
 import PrintableMachineList from './PrintableMachineList';
+import { useReactToPrint } from 'react-to-print';
+import { useRef } from 'react';
 import { Printer } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import styles from './MachineRegistry.module.css';
@@ -24,6 +26,14 @@ const MachineRegistry: React.FC = () => {
     const [isPrinting, setIsPrinting] = useState(false);
     const [printData, setPrintData] = useState<CustomerMachine[]>([]);
     const [printTitle, setPrintTitle] = useState('');
+    const printComponentRef = useRef<HTMLDivElement>(null);
+    const [printDocTitle, setPrintDocTitle] = useState('機材台帳');
+
+    const handleActualPrint = useReactToPrint({
+        contentRef: printComponentRef,
+        documentTitle: printDocTitle,
+        onAfterPrint: () => setIsPrinting(false),
+    });
 
     type SortColumn = 'customer' | 'model' | 'inspection' | null;
     type SortDirection = 'asc' | 'desc';
@@ -100,36 +110,17 @@ const MachineRegistry: React.FC = () => {
         setIsPrintModalOpen(false);
         setIsPrinting(true);
         
-        // Allow React to render the printable component, then print
-        const originalTitle = document.title;
         const now = new Date();
         const yyyy = now.getFullYear();
         const MM = String(now.getMonth() + 1).padStart(2, '0');
         const dd = String(now.getDate()).padStart(2, '0');
         const HH = String(now.getHours()).padStart(2, '0');
         const mm = String(now.getMinutes()).padStart(2, '0');
-        document.title = `機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`;
-
-        const handleAfterPrint = () => {
-            setIsPrinting(false);
-            
-            // Revert title on user interaction or timeout to avoid breaking OS Save As dialog
-            const restoreTitle = () => {
-                document.title = originalTitle;
-                window.removeEventListener('mousemove', restoreTitle);
-                window.removeEventListener('focus', restoreTitle);
-            };
-            window.addEventListener('mousemove', restoreTitle);
-            window.addEventListener('focus', restoreTitle);
-            setTimeout(restoreTitle, 10000);
-
-            window.removeEventListener('afterprint', handleAfterPrint);
-        };
-        window.addEventListener('afterprint', handleAfterPrint);
+        setPrintDocTitle(`機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`);
 
         setTimeout(() => {
-            window.print();
-        }, 500);
+            handleActualPrint();
+        }, 100);
     };
 
     const handleSave = () => {
@@ -349,12 +340,13 @@ const MachineRegistry: React.FC = () => {
                 onPrintExecute={handlePrintExecute}
             />
 
-            {isPrinting && (
+            <div style={{ display: 'none' }}>
                 <PrintableMachineList 
+                    ref={printComponentRef}
                     machines={printData} 
                     printTitle={printTitle} 
                 />
-            )}
+            </div>
         </div>
     );
 };
