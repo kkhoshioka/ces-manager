@@ -944,6 +944,24 @@ const Repairs: React.FC = () => {
     const [isPastProjectsModalOpen, setIsPastProjectsModalOpen] = useState(false);
     const [pastProjects, setPastProjects] = useState<Repair[]>([]);
     const [isPastProjectsLoading, setIsPastProjectsLoading] = useState(false);
+    const [pastProjectsSearchText, setPastProjectsSearchText] = useState('');
+
+    const searchPastProjects = async (searchText: string = pastProjectsSearchText) => {
+        if (!formState.customerName) return;
+        setIsPastProjectsLoading(true);
+        try {
+            const customer = customers.find(c => c.name === formState.customerName);
+            if (!customer) throw new Error('Customer not found');
+            const data = await RepairService.getAll({ customerId: customer.id, limit: 100, search: searchText || undefined });
+            setPastProjects(data.filter(p => p.id !== selectedProjectId));
+        } catch (error) {
+            console.error('Failed to load past projects', error);
+            alert('過去の案件の読み込みに失敗しました');
+        } finally {
+            setIsPastProjectsLoading(false);
+        }
+    };
+
 
     const openPastProjectsModal = async () => {
         if (!formState.customerName) {
@@ -952,6 +970,7 @@ const Repairs: React.FC = () => {
         }
         setIsPastProjectsModalOpen(true);
         setIsPastProjectsLoading(true);
+        setPastProjectsSearchText('');
         try {
             const customer = customers.find(c => c.name === formState.customerName);
             if (!customer) throw new Error('Customer not found');
@@ -2886,13 +2905,27 @@ const Repairs: React.FC = () => {
             }
             {/* Past Projects Modal */}
             {isPastProjectsModalOpen && (
-                <div className={styles.modalOverlay}>
-                    <div className={styles.modalContent} style={{ maxWidth: '800px', width: '90%' }}>
+                <div className={styles.modalOverlay} style={{ zIndex: 1100 }}>
+                    <div className={styles.modal} style={{ maxWidth: '800px', width: '90%' }}>
                         <div className={styles.modalHeader}>
                             <h2>過去の案件から明細をコピー</h2>
                             <button className={styles.closeButton} onClick={() => setIsPastProjectsModalOpen(false)}><X size={24} /></button>
                         </div>
-                        <div className={styles.modalBody} style={{ maxHeight: '60vh', overflowY: 'auto', padding: '1rem' }}>
+                        <div className={styles.modalBody} style={{ maxHeight: '60vh', overflowY: 'auto', padding: '1.5rem', backgroundColor: '#f8fafc' }}>
+                            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                <input 
+                                    type="text" 
+                                    placeholder="機種、シリアル、備考などで検索..." 
+                                    value={pastProjectsSearchText}
+                                    onChange={(e) => setPastProjectsSearchText(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && searchPastProjects()}
+                                    style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                />
+                                <Button type="button" onClick={() => searchPastProjects()}>
+                                    検索
+                                </Button>
+                            </div>
+
                             {isPastProjectsLoading ? (
                                 <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
                                     <LoadingSpinner />
