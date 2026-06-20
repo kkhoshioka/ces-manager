@@ -947,11 +947,8 @@ const Repairs: React.FC = () => {
     const [pastProjectsSearchText, setPastProjectsSearchText] = useState('');
 
     const searchPastProjects = async (searchText: string = pastProjectsSearchText) => {
-        if (!formState.customerName) return;
         setIsPastProjectsLoading(true);
         try {
-            const customer = customers.find(c => c.name === formState.customerName);
-            if (!customer) throw new Error('Customer not found');
             let fetchOptions: any = { limit: 20, search: searchText || undefined };
             // If no search text, default to current customer's projects to be helpful, or if they want 20 latest overall we can omit customerId.
             // Since the user asked for "latest 20", let's just fetch latest 20 overall if search is empty, or maybe they just meant "limit to 20". Let's show all latest 20 globally to fulfill "search by customer name" easily.
