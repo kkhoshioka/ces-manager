@@ -57,29 +57,32 @@ const SupplierMonthlyReport = () => {
         isInvoiceReceived: false,
         isPaid: false,
         projectId: '' as number | '',
-        productId: '' as number | ''
+        productId: '' as number | '',
+        productCategoryId: null as number | null
     });
 
     const [suppliersList, setSuppliersList] = useState<any[]>([]);
     const [projectsList, setProjectsList] = useState<any[]>([]);
     const [productsList, setProductsList] = useState<any[]>([]);
+    const [categoriesList, setCategoriesList] = useState<any[]>([]);
 
     useEffect(() => {
         // Fetch data for options
         const fetchOptions = async () => {
             try {
-                const [supRes, projRes, prodRes] = await Promise.all([
+                const [supRes, projRes, prodRes, catRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/suppliers`),
                     fetch(`${API_BASE_URL}/projects`),
-                    fetch(`${API_BASE_URL}/products`)
+                    fetch(`${API_BASE_URL}/products`),
+                    fetch(`${API_BASE_URL}/product-categories`)
                 ]);
                 if (supRes.ok) setSuppliersList(await supRes.json());
                 if (projRes.ok) {
                     const projs = await projRes.json();
-                    // Show only recent or active projects for easier selection
-                    setProjectsList(projs.slice(0, 100)); // Just a simple limit for now
+                    setProjectsList(projs.slice(0, 100));
                 }
                 if (prodRes.ok) setProductsList(await prodRes.json());
+                if (catRes.ok) setCategoriesList(await catRes.json());
             } catch (err) {
                 console.error('Error fetching options', err);
             }
@@ -147,14 +150,15 @@ const SupplierMonthlyReport = () => {
                         department: purchase.department || '',
                         description: purchase.description,
                         category: purchase.category,
-                        type: purchase.type || 'part',
+                        type: purchase.type || '',
                         partNumber: purchase.partNumber || '',
                         quantity: Number(purchase.quantity),
                         unitCost: Number(purchase.unitCost),
                         isInvoiceReceived: purchase.isInvoiceReceived,
                         isPaid: purchase.isPaid,
                         projectId: purchase.projectId || '',
-                        productId: purchase.productId || ''
+                        productId: purchase.productId || '',
+                        productCategoryId: purchase.projectDetail?.productCategoryId || null
                     });
                     setIsPurchaseModalOpen(true);
                 }
@@ -275,7 +279,7 @@ const SupplierMonthlyReport = () => {
                         <h1 className={styles.title}>仕入・原価管理</h1>
                         <p className={styles.subtitle}>仕入登録および仕入先ごとの原価発生状況を月次で確認</p>
                     </div>
-                    <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', department: '', description: '', category: '仕入販売', type: 'part', partNumber: '', quantity: 1, unitCost: 0, isInvoiceReceived: false, isPaid: false, projectId: '', productId: '' }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
+                    <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', department: '', description: '', category: '仕入販売', type: '', partNumber: '', quantity: 1, unitCost: 0, isInvoiceReceived: false, isPaid: false, projectId: '', productId: '', productCategoryId: null }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
                         新規仕入登録
                     </Button>
                 </div>
@@ -339,16 +343,22 @@ const SupplierMonthlyReport = () => {
                                     </div>
                                     <div className={styles.formGroup}>
                                         <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>部門</label>
-                                        <input type="text" placeholder="例: 整備部" value={purchaseForm.department} onChange={e => setPurchaseForm({...purchaseForm, department: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                                        <select value={purchaseForm.department} onChange={e => setPurchaseForm({...purchaseForm, department: e.target.value, productCategoryId: null, type: ''})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                                            <option value="">-</option>
+                                            {Array.from(new Set(categoriesList.map(c => c.section))).map(s => <option key={s as string} value={s as string}>{s as string}</option>)}
+                                        </select>
                                     </div>
                                     <div className={styles.formGroup}>
                                         <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>種別</label>
-                                        <select value={purchaseForm.type} onChange={e => setPurchaseForm({...purchaseForm, type: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                                            <option value="part">部品</option>
-                                            <option value="labor">工賃</option>
-                                            <option value="outsourcing">外注費</option>
-                                            <option value="travel">出張費</option>
-                                            <option value="other">その他</option>
+                                        <select value={purchaseForm.productCategoryId || ''} onChange={e => {
+                                            const val = e.target.value ? Number(e.target.value) : null;
+                                            const cat = categoriesList.find(c => c.id === val);
+                                            setPurchaseForm({...purchaseForm, productCategoryId: val, type: cat ? cat.name : ''});
+                                        }} disabled={!purchaseForm.department} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                                            <option value="">-</option>
+                                            {categoriesList.filter(c => c.section === purchaseForm.department).map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

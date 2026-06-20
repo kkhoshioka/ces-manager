@@ -2050,6 +2050,7 @@ app.get('/api/purchases', async (req, res) => {
                         customerMachine: true
                     }
                 },
+                projectDetail: true,
                 product: true
             },
             orderBy: { date: 'desc' }
@@ -2082,8 +2083,8 @@ app.post('/api/purchases', async (req, res) => {
                 const pd = await tx.projectDetail.create({
                     data: {
                         projectId: data.projectId,
-                        lineType: data.type || 'part', // use type or default
-                        department: data.department,
+                        lineType: data.category === '外注費' ? 'outsourcing' : 'part', // default to part or outsourcing
+                        department: data.department, // section
                         partNumber: data.partNumber,
                         description: data.description,
                         supplier: data.supplierName,
@@ -2094,7 +2095,8 @@ app.post('/api/purchases', async (req, res) => {
                         amountCost: Number(data.quantity) * Number(data.unitCost),
                         date: new Date(data.date),
                         isInvoiceReceived: data.isInvoiceReceived || false,
-                        isPaid: data.isPaid || false
+                        isPaid: data.isPaid || false,
+                        productCategoryId: data.productCategoryId || null
                     }
                 });
                 newProjectDetailId = pd.id;
@@ -2179,7 +2181,7 @@ app.put('/api/purchases/:id', async (req, res) => {
                     const pd = await tx.projectDetail.create({
                         data: {
                             projectId: data.projectId,
-                            lineType: data.type || 'part',
+                            lineType: data.category === '外注費' ? 'outsourcing' : 'part',
                             department: data.department,
                             partNumber: data.partNumber,
                             description: data.description,
@@ -2191,7 +2193,8 @@ app.put('/api/purchases/:id', async (req, res) => {
                             amountCost: Number(data.quantity) * Number(data.unitCost),
                             date: new Date(data.date),
                             isInvoiceReceived: data.isInvoiceReceived || false,
-                            isPaid: data.isPaid || false
+                            isPaid: data.isPaid || false,
+                            productCategoryId: data.productCategoryId || null
                         }
                     });
                     currentProjectDetailId = pd.id;
@@ -2201,7 +2204,7 @@ app.put('/api/purchases/:id', async (req, res) => {
                 await tx.projectDetail.update({
                     where: { id: currentProjectDetailId },
                     data: {
-                        lineType: data.type || 'part',
+                        lineType: data.category === '外注費' ? 'outsourcing' : 'part',
                         department: data.department,
                         partNumber: data.partNumber,
                         description: data.description,
@@ -2212,7 +2215,8 @@ app.put('/api/purchases/:id', async (req, res) => {
                         amountCost: Number(data.quantity) * Number(data.unitCost),
                         date: new Date(data.date),
                         isInvoiceReceived: data.isInvoiceReceived,
-                        isPaid: data.isPaid
+                        isPaid: data.isPaid,
+                        productCategoryId: data.productCategoryId || null
                     }
                 });
             }
