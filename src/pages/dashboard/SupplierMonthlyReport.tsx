@@ -398,7 +398,7 @@ const SupplierMonthlyReport = () => {
                             
                             <div style={{ backgroundColor: '#fff', border: '1px dashed #cbd5e1', padding: '1.25rem', borderRadius: '8px' }}>
                                 <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#334155', margin: '0 0 1rem 0' }}>プロジェクト・在庫 紐付け</h4>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
                                     <div className={styles.formGroup}>
                                         <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>案件に紐付け</label>
                                         <Select
@@ -429,6 +429,8 @@ const SupplierMonthlyReport = () => {
                                             isClearable
                                             placeholder="キーワードで案件を検索・選択..."
                                             noOptionsMessage={() => "案件が見つかりません"}
+                                            menuPosition="fixed"
+                                            menuPortalTarget={document.body}
                                             styles={{
                                                 control: (base) => ({
                                                     ...base,
@@ -441,10 +443,7 @@ const SupplierMonthlyReport = () => {
                                                         borderColor: '#94a3b8'
                                                     }
                                                 }),
-                                                menu: (base) => ({
-                                                    ...base,
-                                                    zIndex: 1050 // Ensure it floats above modal
-                                                })
+                                                menuPortal: (base) => ({ ...base, zIndex: 9999 })
                                             }}
                                         />
                                     </div>
@@ -474,6 +473,8 @@ const SupplierMonthlyReport = () => {
                                             isClearable
                                             placeholder="キーワードで在庫機材を検索・選択..."
                                             noOptionsMessage={() => "在庫機材が見つかりません"}
+                                            menuPosition="fixed"
+                                            menuPortalTarget={document.body}
                                             styles={{
                                                 control: (base) => ({
                                                     ...base,
@@ -486,10 +487,7 @@ const SupplierMonthlyReport = () => {
                                                         borderColor: '#94a3b8'
                                                     }
                                                 }),
-                                                menu: (base) => ({
-                                                    ...base,
-                                                    zIndex: 1050 // Ensure it floats above modal
-                                                })
+                                                menuPortal: (base) => ({ ...base, zIndex: 9999 })
                                             }}
                                         />
                                     </div>
