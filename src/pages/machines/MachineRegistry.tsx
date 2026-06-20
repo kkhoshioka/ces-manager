@@ -102,7 +102,18 @@ const MachineRegistry: React.FC = () => {
         
         // Allow React to render the printable component, then print
         setTimeout(() => {
+            const originalTitle = document.title;
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const MM = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const HH = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            document.title = `機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`;
+            
             window.print();
+            
+            document.title = originalTitle;
             setIsPrinting(false);
         }, 300);
     };
