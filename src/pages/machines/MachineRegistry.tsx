@@ -110,14 +110,15 @@ const MachineRegistry: React.FC = () => {
         const mm = String(now.getMinutes()).padStart(2, '0');
         document.title = `機材台帳_${yyyy}${MM}${dd}_${HH}${mm}`;
 
+        const handleAfterPrint = () => {
+            document.title = originalTitle;
+            setIsPrinting(false);
+            window.removeEventListener('afterprint', handleAfterPrint);
+        };
+        window.addEventListener('afterprint', handleAfterPrint);
+
         setTimeout(() => {
             window.print();
-            
-            // Revert after printing dialog closes
-            setTimeout(() => {
-                document.title = originalTitle;
-                setIsPrinting(false);
-            }, 500);
         }, 500);
     };
 
