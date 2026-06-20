@@ -7,7 +7,7 @@
     "dev": "vite --host",
     "server": "tsx api/_server/index.ts",
     "start": "tsx api/_server/index.ts",
-    "build": "tsc -b && vite build",
+    "build": "prisma db push --accept-data-loss && tsc -b && vite build",
     "lint": "eslint . || exit 0",
     "preview": "vite preview",
     "postinstall": "prisma generate",
