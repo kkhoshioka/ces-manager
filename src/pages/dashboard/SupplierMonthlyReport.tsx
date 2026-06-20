@@ -47,8 +47,11 @@ const SupplierMonthlyReport = () => {
         date: new Date().toISOString().split('T')[0],
         supplierId: '' as number | '',
         supplierName: '',
+        department: '',
         description: '',
         category: '仕入販売',
+        type: 'part',
+        partNumber: '',
         quantity: 1,
         unitCost: 0,
         isInvoiceReceived: false,
@@ -141,8 +144,11 @@ const SupplierMonthlyReport = () => {
                         date: new Date(purchase.date).toISOString().split('T')[0],
                         supplierId: purchase.supplierId || '',
                         supplierName: purchase.supplierName || '',
+                        department: purchase.department || '',
                         description: purchase.description,
                         category: purchase.category,
+                        type: purchase.type || 'part',
+                        partNumber: purchase.partNumber || '',
                         quantity: Number(purchase.quantity),
                         unitCost: Number(purchase.unitCost),
                         isInvoiceReceived: purchase.isInvoiceReceived,
@@ -269,7 +275,7 @@ const SupplierMonthlyReport = () => {
                         <h1 className={styles.title}>仕入・原価管理</h1>
                         <p className={styles.subtitle}>仕入登録および仕入先ごとの原価発生状況を月次で確認</p>
                     </div>
-                    <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', description: '', category: '仕入販売', quantity: 1, unitCost: 0, isInvoiceReceived: false, isPaid: false, projectId: '', productId: '' }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
+                    <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', department: '', description: '', category: '仕入販売', type: 'part', partNumber: '', quantity: 1, unitCost: 0, isInvoiceReceived: false, isPaid: false, projectId: '', productId: '' }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
                         新規仕入登録
                     </Button>
                 </div>
@@ -289,82 +295,118 @@ const SupplierMonthlyReport = () => {
             </div>
 
             {isPurchaseModalOpen && (
-                <div className={styles.modalOverlay}>
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h3>{purchaseForm.id ? '仕入編集' : '新規仕入登録'}</h3>
-                            <button onClick={() => setIsPurchaseModalOpen(false)}><X size={20} /></button>
+                <div className={styles.modalOverlay} style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)' }}>
+                    <div className={styles.modal} style={{ maxWidth: '650px', borderRadius: '12px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
+                        <div className={styles.modalHeader} style={{ backgroundColor: '#f8fafc', padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <FileText size={20} color="#3b82f6" />
+                                {purchaseForm.id ? '仕入明細の編集' : '新規仕入登録'}
+                            </h3>
+                            <button onClick={() => setIsPurchaseModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0.25rem' }}>
+                                <X size={20} />
+                            </button>
                         </div>
-                        <div className={styles.modalBody}>
-                            <div className={styles.formGroup}>
-                                <label>日付</label>
-                                <input type="date" value={purchaseForm.date} onChange={e => setPurchaseForm({...purchaseForm, date: e.target.value})} />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={styles.modalBody} style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                                 <div className={styles.formGroup}>
-                                    <label>仕入先</label>
+                                    <label style={{ fontSize: '0.875rem', fontWeight: '600', color: '#475569', marginBottom: '0.5rem', display: 'block' }}>仕入日</label>
+                                    <input type="date" value={purchaseForm.date} onChange={e => setPurchaseForm({...purchaseForm, date: e.target.value})} style={{ width: '100%', padding: '0.625rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', transition: 'border-color 0.2s' }} />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label style={{ fontSize: '0.875rem', fontWeight: '600', color: '#475569', marginBottom: '0.5rem', display: 'block' }}>仕入先</label>
                                     <select value={purchaseForm.supplierId} onChange={e => {
                                         const id = Number(e.target.value);
                                         const sup = suppliersList.find(s => s.id === id);
                                         setPurchaseForm({...purchaseForm, supplierId: id || '', supplierName: sup ? sup.name : ''});
-                                    }}>
+                                    }} style={{ width: '100%', padding: '0.625rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', backgroundColor: '#fff' }}>
                                         <option value="">選択してください</option>
                                         {suppliersList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>
-                                <div className={styles.formGroup}>
-                                    <label>カテゴリ</label>
-                                    <select value={purchaseForm.category} onChange={e => setPurchaseForm({...purchaseForm, category: e.target.value})}>
-                                        <option value="仕入販売">仕入販売</option>
-                                        <option value="外注費">外注費</option>
-                                        <option value="在庫">在庫</option>
-                                        <option value="その他">その他</option>
-                                    </select>
-                                </div>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label>内容</label>
-                                <input type="text" value={purchaseForm.description} onChange={e => setPurchaseForm({...purchaseForm, description: e.target.value})} />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div className={styles.formGroup}>
-                                    <label>数量</label>
-                                    <input type="number" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: Number(e.target.value)})} />
+                            
+                            <div style={{ backgroundColor: '#f1f5f9', padding: '1.25rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
+                                <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#334155', margin: '0 0 1rem 0' }}>明細情報</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>カテゴリ</label>
+                                        <select value={purchaseForm.category} onChange={e => setPurchaseForm({...purchaseForm, category: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                                            <option value="仕入販売">仕入販売</option>
+                                            <option value="外注費">外注費</option>
+                                            <option value="在庫">在庫</option>
+                                            <option value="その他">その他</option>
+                                        </select>
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>部門</label>
+                                        <input type="text" placeholder="例: 整備部" value={purchaseForm.department} onChange={e => setPurchaseForm({...purchaseForm, department: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>種別</label>
+                                        <select value={purchaseForm.type} onChange={e => setPurchaseForm({...purchaseForm, type: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                                            <option value="part">部品</option>
+                                            <option value="labor">工賃</option>
+                                            <option value="outsourcing">外注費</option>
+                                            <option value="travel">出張費</option>
+                                            <option value="other">その他</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div className={styles.formGroup}>
-                                    <label>単価</label>
-                                    <input type="number" value={purchaseForm.unitCost} onChange={e => setPurchaseForm({...purchaseForm, unitCost: Number(e.target.value)})} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>品番</label>
+                                        <input type="text" value={purchaseForm.partNumber} onChange={e => setPurchaseForm({...purchaseForm, partNumber: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>品名・内容</label>
+                                        <input type="text" value={purchaseForm.description} onChange={e => setPurchaseForm({...purchaseForm, description: e.target.value})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>数量</label>
+                                        <input type="number" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: Number(e.target.value)})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'right' }} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>単価</label>
+                                        <input type="number" value={purchaseForm.unitCost} onChange={e => setPurchaseForm({...purchaseForm, unitCost: Number(e.target.value)})} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'right' }} />
+                                    </div>
                                 </div>
                             </div>
                             
-                            <hr style={{ margin: '1rem 0', borderColor: '#e2e8f0', borderStyle: 'solid' }} />
-                            <h4 style={{ marginBottom: '0.5rem', color: '#475569' }}>紐付け設定（任意）</h4>
-                            <div className={styles.formGroup}>
-                                <label>案件に紐付け</label>
-                                <select 
-                                    value={purchaseForm.projectId} 
-                                    onChange={e => setPurchaseForm({...purchaseForm, projectId: e.target.value ? Number(e.target.value) : '', productId: ''})}
-                                    disabled={!!purchaseForm.productId}
-                                >
-                                    <option value="">未紐付（案件を選択）</option>
-                                    {projectsList.map(p => <option key={p.id} value={p.id}>ID:{p.id} {p.customer?.name} - {p.machineModel || '不明'}</option>)}
-                                </select>
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label>在庫機材に紐付け (入庫)</label>
-                                <select 
-                                    value={purchaseForm.productId} 
-                                    onChange={e => setPurchaseForm({...purchaseForm, productId: e.target.value ? Number(e.target.value) : '', projectId: ''})}
-                                    disabled={!!purchaseForm.projectId}
-                                >
-                                    <option value="">未紐付（在庫機材を選択）</option>
-                                    {productsList.map(p => <option key={p.id} value={p.id}>{p.name} (在庫: {p.stockQuantity})</option>)}
-                                </select>
+                            <div style={{ backgroundColor: '#fff', border: '1px dashed #cbd5e1', padding: '1.25rem', borderRadius: '8px' }}>
+                                <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#334155', margin: '0 0 1rem 0' }}>プロジェクト・在庫 紐付け</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>案件に紐付け</label>
+                                        <select 
+                                            value={purchaseForm.projectId} 
+                                            onChange={e => setPurchaseForm({...purchaseForm, projectId: e.target.value ? Number(e.target.value) : '', productId: ''})}
+                                            disabled={!!purchaseForm.productId}
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', backgroundColor: !!purchaseForm.productId ? '#f1f5f9' : '#fff' }}
+                                        >
+                                            <option value="">未紐付（案件を選択）</option>
+                                            {projectsList.map(p => <option key={p.id} value={p.id}>ID:{p.id} {p.customer?.name} - {p.machineModel || '不明'}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>在庫機材に紐付け (入庫)</label>
+                                        <select 
+                                            value={purchaseForm.productId} 
+                                            onChange={e => setPurchaseForm({...purchaseForm, productId: e.target.value ? Number(e.target.value) : '', projectId: ''})}
+                                            disabled={!!purchaseForm.projectId}
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', backgroundColor: !!purchaseForm.projectId ? '#f1f5f9' : '#fff' }}
+                                        >
+                                            <option value="">未紐付（在庫機材を選択）</option>
+                                            {productsList.map(p => <option key={p.id} value={p.id}>{p.name} (在庫: {p.stockQuantity})</option>)}
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className={styles.modalFooter}>
+                        <div className={styles.modalFooter} style={{ padding: '1.25rem 1.5rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                             <Button variant="secondary" onClick={() => setIsPurchaseModalOpen(false)}>キャンセル</Button>
-                            <Button variant="primary" onClick={handlePurchaseSave} icon={<Save size={16} />}>保存</Button>
+                            <Button variant="primary" onClick={handlePurchaseSave} icon={<Save size={16} />}>保存して適用</Button>
                         </div>
                     </div>
                 </div>

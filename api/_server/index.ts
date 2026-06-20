@@ -2082,7 +2082,9 @@ app.post('/api/purchases', async (req, res) => {
                 const pd = await tx.projectDetail.create({
                     data: {
                         projectId: data.projectId,
-                        lineType: 'part', // default
+                        lineType: data.type || 'part', // use type or default
+                        department: data.department,
+                        partNumber: data.partNumber,
                         description: data.description,
                         supplier: data.supplierName,
                         supplierId: data.supplierId,
@@ -2106,6 +2108,9 @@ app.post('/api/purchases', async (req, res) => {
                     supplierName: data.supplierName,
                     description: data.description,
                     category: data.category,
+                    department: data.department,
+                    type: data.type,
+                    partNumber: data.partNumber,
                     quantity: data.quantity,
                     unitCost: data.unitCost,
                     amount: Number(data.quantity) * Number(data.unitCost),
@@ -2174,7 +2179,9 @@ app.put('/api/purchases/:id', async (req, res) => {
                     const pd = await tx.projectDetail.create({
                         data: {
                             projectId: data.projectId,
-                            lineType: 'part',
+                            lineType: data.type || 'part',
+                            department: data.department,
+                            partNumber: data.partNumber,
                             description: data.description,
                             supplier: data.supplierName,
                             supplierId: data.supplierId,
@@ -2194,6 +2201,9 @@ app.put('/api/purchases/:id', async (req, res) => {
                 await tx.projectDetail.update({
                     where: { id: currentProjectDetailId },
                     data: {
+                        lineType: data.type || 'part',
+                        department: data.department,
+                        partNumber: data.partNumber,
                         description: data.description,
                         supplier: data.supplierName,
                         supplierId: data.supplierId,
@@ -2216,6 +2226,9 @@ app.put('/api/purchases/:id', async (req, res) => {
                     supplierName: data.supplierName,
                     description: data.description,
                     category: data.category,
+                    department: data.department,
+                    type: data.type,
+                    partNumber: data.partNumber,
                     quantity: data.quantity,
                     unitCost: data.unitCost,
                     amount: Number(data.quantity) * Number(data.unitCost),
