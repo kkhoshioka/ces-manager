@@ -2063,32 +2063,39 @@ app.get('/api/purchases', async (req, res) => {
     }
 });
 
+// Helper to parse empty string to null
+const parseId = (val: any) => (val === '' || val === null || val === undefined) ? null : Number(val);
+
 app.post('/api/purchases', async (req, res) => {
     try {
         const data = req.body;
+        const projectId = parseId(data.projectId);
+        const productId = parseId(data.productId);
+        const supplierId = parseId(data.supplierId);
+        const productCategoryId = parseId(data.productCategoryId);
         
         let newProjectDetailId: number | null = null;
 
         await prisma.$transaction(async (tx) => {
             // 1. If linking to Inventory (productId)
-            if (data.productId && data.quantity) {
+            if (productId && data.quantity) {
                 await tx.product.update({
-                    where: { id: data.productId },
+                    where: { id: productId },
                     data: { stockQuantity: { increment: Number(data.quantity) } }
                 });
             }
 
             // 2. If linking to Project (projectId), create ProjectDetail
-            if (data.projectId) {
+            if (projectId) {
                 const pd = await tx.projectDetail.create({
                     data: {
-                        projectId: data.projectId,
+                        projectId: projectId,
                         lineType: data.category === '外注費' ? 'outsourcing' : 'part', // default to part or outsourcing
                         department: data.department, // section
                         partNumber: data.partNumber,
                         description: data.description,
                         supplier: data.supplierName,
-                        supplierId: data.supplierId,
+                        supplierId: supplierId,
                         quantity: data.quantity,
                         unitCost: data.unitCost,
                         unitPrice: 0, // Needs manual update from project screen
@@ -2096,7 +2103,7 @@ app.post('/api/purchases', async (req, res) => {
                         date: new Date(data.date),
                         isInvoiceReceived: data.isInvoiceReceived || false,
                         isPaid: data.isPaid || false,
-                        productCategoryId: data.productCategoryId || null
+                        productCategoryId: productCategoryId
                     }
                 });
                 newProjectDetailId = pd.id;
@@ -2106,7 +2113,7 @@ app.post('/api/purchases', async (req, res) => {
             await tx.purchase.create({
                 data: {
                     date: new Date(data.date),
-                    supplierId: data.supplierId,
+                    supplierId: supplierId,
                     supplierName: data.supplierName,
                     description: data.description,
                     category: data.category,
@@ -2118,8 +2125,8 @@ app.post('/api/purchases', async (req, res) => {
                     amount: Number(data.quantity) * Number(data.unitCost),
                     isInvoiceReceived: data.isInvoiceReceived || false,
                     isPaid: data.isPaid || false,
-                    projectId: data.projectId,
-                    productId: data.productId,
+                    projectId: projectId,
+                    productId: productId,
                     projectDetailId: newProjectDetailId
                 }
             });
@@ -2136,13 +2143,17 @@ app.put('/api/purchases/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const data = req.body;
+        const projectId = parseId(data.projectId);
+        const productId = parseId(data.productId);
+        const supplierId = parseId(data.supplierId);
+        const productCategoryId = parseId(data.productCategoryId);
 
         await prisma.$transaction(async (tx) => {
             const oldPurchase = await tx.purchase.findUnique({ where: { id: Number(id) } });
             if (!oldPurchase) throw new Error('Purchase not found');
 
             // Handle Inventory changes
-            if (oldPurchase.productId !== data.productId) {
+            if (oldPurchase.productId !== productId) {
                 // Remove from old
                 if (oldPurchase.productId) {
                     await tx.product.update({
@@ -2151,17 +2162,17 @@ app.put('/api/purchases/:id', async (req, res) => {
                     });
                 }
                 // Add to new
-                if (data.productId) {
+                if (productId) {
                     await tx.product.update({
-                        where: { id: data.productId },
+                        where: { id: productId },
                         data: { stockQuantity: { increment: Number(data.quantity) } }
                     });
                 }
-            } else if (data.productId && Number(oldPurchase.quantity) !== Number(data.quantity)) {
+            } else if (productId && Number(oldPurchase.quantity) !== Number(data.quantity)) {
                 // Quantity changed
                 const diff = Number(data.quantity) - Number(oldPurchase.quantity);
                 await tx.product.update({
-                    where: { id: data.productId },
+                    where: { id: productId },
                     data: { stockQuantity: { increment: diff } }
                 });
             }
@@ -2169,7 +2180,7 @@ app.put('/api/purchases/:id', async (req, res) => {
             let currentProjectDetailId = oldPurchase.projectDetailId;
 
             // Handle Project changes
-            if (oldPurchase.projectId !== data.projectId) {
+            if (oldPurchase.projectId !== projectId) {
                 // Remove old ProjectDetail
                 if (currentProjectDetailId) {
                     await tx.projectDetail.delete({ where: { id: currentProjectDetailId } });
@@ -2177,16 +2188,16 @@ app.put('/api/purchases/:id', async (req, res) => {
                 }
                 
                 // Create new ProjectDetail
-                if (data.projectId) {
+                if (projectId) {
                     const pd = await tx.projectDetail.create({
                         data: {
-                            projectId: data.projectId,
+                            projectId: projectId,
                             lineType: data.category === '外注費' ? 'outsourcing' : 'part',
                             department: data.department,
                             partNumber: data.partNumber,
                             description: data.description,
                             supplier: data.supplierName,
-                            supplierId: data.supplierId,
+                            supplierId: supplierId,
                             quantity: data.quantity,
                             unitCost: data.unitCost,
                             unitPrice: 0,
@@ -2194,7 +2205,7 @@ app.put('/api/purchases/:id', async (req, res) => {
                             date: new Date(data.date),
                             isInvoiceReceived: data.isInvoiceReceived || false,
                             isPaid: data.isPaid || false,
-                            productCategoryId: data.productCategoryId || null
+                            productCategoryId: productCategoryId
                         }
                     });
                     currentProjectDetailId = pd.id;
@@ -2209,14 +2220,14 @@ app.put('/api/purchases/:id', async (req, res) => {
                         partNumber: data.partNumber,
                         description: data.description,
                         supplier: data.supplierName,
-                        supplierId: data.supplierId,
+                        supplierId: supplierId,
                         quantity: data.quantity,
                         unitCost: data.unitCost,
                         amountCost: Number(data.quantity) * Number(data.unitCost),
                         date: new Date(data.date),
                         isInvoiceReceived: data.isInvoiceReceived,
                         isPaid: data.isPaid,
-                        productCategoryId: data.productCategoryId || null
+                        productCategoryId: productCategoryId
                     }
                 });
             }
@@ -2226,7 +2237,7 @@ app.put('/api/purchases/:id', async (req, res) => {
                 where: { id: Number(id) },
                 data: {
                     date: new Date(data.date),
-                    supplierId: data.supplierId,
+                    supplierId: supplierId,
                     supplierName: data.supplierName,
                     description: data.description,
                     category: data.category,
@@ -2238,8 +2249,8 @@ app.put('/api/purchases/:id', async (req, res) => {
                     amount: Number(data.quantity) * Number(data.unitCost),
                     isInvoiceReceived: data.isInvoiceReceived || false,
                     isPaid: data.isPaid || false,
-                    projectId: data.projectId,
-                    productId: data.productId,
+                    projectId: projectId,
+                    productId: productId,
                     projectDetailId: currentProjectDetailId
                 }
             });
