@@ -197,7 +197,6 @@ app.post('/api/machines', async (req, res) => {
             include: { customer: true, category: true }
         });
 
-
 app.post('/api/machines/pdf', async (req, res) => {
     try {
         const { machines, title } = req.body;
@@ -212,7 +211,9 @@ app.post('/api/machines/pdf', async (req, res) => {
             chunks.push(chunk);
         });
         
-        pdfDoc.on('end', () => {
+        
+
+pdfDoc.on('end', () => {
             const result = Buffer.concat(chunks);
             res.send(result);
         });
