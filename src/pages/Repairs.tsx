@@ -967,24 +967,9 @@ const Repairs: React.FC = () => {
 
 
     const openPastProjectsModal = async () => {
-        if (!formState.customerName) {
-            alert('顧客を選択してください');
-            return;
-        }
         setIsPastProjectsModalOpen(true);
-        setIsPastProjectsLoading(true);
         setPastProjectsSearchText('');
-        try {
-            const customer = customers.find(c => c.name === formState.customerName);
-            if (!customer) throw new Error('Customer not found');
-            const data = await RepairService.getAll({ customerId: customer.id, limit: 100 });
-            setPastProjects(data.filter(p => p.id !== selectedProjectId));
-        } catch (error) {
-            console.error('Failed to load past projects', error);
-            alert('過去の案件の読み込みに失敗しました');
-        } finally {
-            setIsPastProjectsLoading(false);
-        }
+        searchPastProjects('');
     };
 
     const copyDetailsFromPastProject = async (pastProjectId: number) => {
