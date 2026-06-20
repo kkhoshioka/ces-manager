@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save, DollarSign } from 'lucide-react';
+import Select from 'react-select';
 import styles from '../Dashboard.module.css';
 import { formatCurrency } from '../../utils/formatting';
 
@@ -400,34 +401,97 @@ const SupplierMonthlyReport = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                                     <div className={styles.formGroup}>
                                         <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>案件に紐付け</label>
-                                        <select 
-                                            value={purchaseForm.projectId} 
-                                            onChange={e => setPurchaseForm({...purchaseForm, projectId: e.target.value ? Number(e.target.value) : '', productId: ''})}
-                                            disabled={!!purchaseForm.productId}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', backgroundColor: !!purchaseForm.productId ? '#f1f5f9' : '#fff' }}
-                                        >
-                                            <option value="">未紐付（案件を選択）</option>
-                                            {projectsList.map(p => {
+                                        <Select
+                                            options={projectsList.map(p => {
                                                 const contentSnippet = p.notes ? (p.notes.length > 12 ? p.notes.substring(0, 12) + '...' : p.notes) : '-';
-                                                return (
-                                                    <option key={p.id} value={p.id}>
-                                                        {new Date(p.orderDate || p.createdAt).toLocaleDateString()} / {p.customer?.name} / {p.machineModel || '不明'} / {contentSnippet}
-                                                    </option>
-                                                );
+                                                return {
+                                                    value: p.id,
+                                                    label: `${new Date(p.orderDate || p.createdAt).toLocaleDateString()} / ${p.customer?.name} / ${p.machineModel || '不明'} / ${contentSnippet}`
+                                                };
                                             })}
-                                        </select>
+                                            value={purchaseForm.projectId ? {
+                                                value: purchaseForm.projectId,
+                                                label: (() => {
+                                                    const p = projectsList.find(proj => proj.id === purchaseForm.projectId);
+                                                    if (!p) return `ID: ${purchaseForm.projectId}`;
+                                                    const contentSnippet = p.notes ? (p.notes.length > 12 ? p.notes.substring(0, 12) + '...' : p.notes) : '-';
+                                                    return `${new Date(p.orderDate || p.createdAt).toLocaleDateString()} / ${p.customer?.name} / ${p.machineModel || '不明'} / ${contentSnippet}`;
+                                                })()
+                                            } : null}
+                                            onChange={(selectedOption) => {
+                                                setPurchaseForm({
+                                                    ...purchaseForm,
+                                                    projectId: selectedOption ? selectedOption.value : '',
+                                                    productId: ''
+                                                });
+                                            }}
+                                            isDisabled={!!purchaseForm.productId}
+                                            isClearable
+                                            placeholder="キーワードで案件を検索・選択..."
+                                            noOptionsMessage={() => "案件が見つかりません"}
+                                            styles={{
+                                                control: (base) => ({
+                                                    ...base,
+                                                    borderColor: '#cbd5e1',
+                                                    backgroundColor: !!purchaseForm.productId ? '#f1f5f9' : '#fff',
+                                                    minHeight: '38px',
+                                                    borderRadius: '4px',
+                                                    boxShadow: 'none',
+                                                    '&:hover': {
+                                                        borderColor: '#94a3b8'
+                                                    }
+                                                }),
+                                                menu: (base) => ({
+                                                    ...base,
+                                                    zIndex: 1050 // Ensure it floats above modal
+                                                })
+                                            }}
+                                        />
                                     </div>
                                     <div className={styles.formGroup}>
                                         <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>在庫機材に紐付け (入庫)</label>
-                                        <select 
-                                            value={purchaseForm.productId} 
-                                            onChange={e => setPurchaseForm({...purchaseForm, productId: e.target.value ? Number(e.target.value) : '', projectId: ''})}
-                                            disabled={!!purchaseForm.projectId}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', backgroundColor: !!purchaseForm.projectId ? '#f1f5f9' : '#fff' }}
-                                        >
-                                            <option value="">未紐付（在庫機材を選択）</option>
-                                            {productsList.map(p => <option key={p.id} value={p.id}>{p.name} (在庫: {p.stockQuantity})</option>)}
-                                        </select>
+                                        <Select
+                                            options={productsList.map(p => ({
+                                                value: p.id,
+                                                label: `${p.name} (在庫: ${p.stockQuantity})`
+                                            }))}
+                                            value={purchaseForm.productId ? {
+                                                value: purchaseForm.productId,
+                                                label: (() => {
+                                                    const p = productsList.find(prod => prod.id === purchaseForm.productId);
+                                                    if (!p) return `ID: ${purchaseForm.productId}`;
+                                                    return `${p.name} (在庫: ${p.stockQuantity})`;
+                                                })()
+                                            } : null}
+                                            onChange={(selectedOption) => {
+                                                setPurchaseForm({
+                                                    ...purchaseForm,
+                                                    productId: selectedOption ? selectedOption.value : '',
+                                                    projectId: ''
+                                                });
+                                            }}
+                                            isDisabled={!!purchaseForm.projectId}
+                                            isClearable
+                                            placeholder="キーワードで在庫機材を検索・選択..."
+                                            noOptionsMessage={() => "在庫機材が見つかりません"}
+                                            styles={{
+                                                control: (base) => ({
+                                                    ...base,
+                                                    borderColor: '#cbd5e1',
+                                                    backgroundColor: !!purchaseForm.projectId ? '#f1f5f9' : '#fff',
+                                                    minHeight: '38px',
+                                                    borderRadius: '4px',
+                                                    boxShadow: 'none',
+                                                    '&:hover': {
+                                                        borderColor: '#94a3b8'
+                                                    }
+                                                }),
+                                                menu: (base) => ({
+                                                    ...base,
+                                                    zIndex: 1050 // Ensure it floats above modal
+                                                })
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </div>
