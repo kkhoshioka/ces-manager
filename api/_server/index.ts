@@ -2349,7 +2349,7 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
         });
 
         // Aggregate
-        const supplierStats: Record<string, { totalCost: number; count: number }> = {};
+        const supplierStats: Record<string, { totalCost: number; count: number; unreceivedCount: number; unreceivedCost: number; unpaidCount: number; unpaidCost: number }> = {};
 
         projects.forEach(project => {
             project.details.forEach(detail => {
@@ -2357,21 +2357,29 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
 
                 if (name && Number(detail.unitCost) > 0) {
                     if (!supplierStats[name]) {
-                        supplierStats[name] = { totalCost: 0, count: 0 };
+                        supplierStats[name] = { totalCost: 0, count: 0, unreceivedCount: 0, unreceivedCost: 0, unpaidCount: 0, unpaidCost: 0 };
                     }
 
                     const qty = Number(detail.quantity);
                     const cost = Number(detail.unitCost);
+                    const amount = qty * cost;
 
-                    supplierStats[name].totalCost += (qty * cost);
+                    supplierStats[name].totalCost += amount;
                     supplierStats[name].count += 1;
+
+                    if (!detail.isInvoiceReceived) {
+                        supplierStats[name].unreceivedCount += 1;
+                        supplierStats[name].unreceivedCost += amount;
+                    }
+                    if (!detail.isPaid) {
+                        supplierStats[name].unpaidCount += 1;
+                        supplierStats[name].unpaidCost += amount;
+                    }
                 }
             });
         });
 
-        // 2. Fetch unlinked Purchases (or purchases where project details are NOT in the above list?
-        // Actually, it's safer to just fetch Purchases where projectId is null, 
-        // because if it has projectId, it generated a ProjectDetail, which is already counted above.)
+        // 2. Fetch unlinked Purchases
         const unlinkedPurchases = await prisma.purchase.findMany({
             where: {
                 date: { gte: startDate, lte: endDate },
@@ -2386,12 +2394,23 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             const name = purchase.supplierObj?.name || purchase.supplierName;
             if (name && Number(purchase.unitCost) > 0) {
                 if (!supplierStats[name]) {
-                    supplierStats[name] = { totalCost: 0, count: 0 };
+                    supplierStats[name] = { totalCost: 0, count: 0, unreceivedCount: 0, unreceivedCost: 0, unpaidCount: 0, unpaidCost: 0 };
                 }
                 const qty = Number(purchase.quantity);
                 const cost = Number(purchase.unitCost);
-                supplierStats[name].totalCost += (qty * cost);
+                const amount = qty * cost;
+
+                supplierStats[name].totalCost += amount;
                 supplierStats[name].count += 1;
+
+                if (!purchase.isInvoiceReceived) {
+                    supplierStats[name].unreceivedCount += 1;
+                    supplierStats[name].unreceivedCost += amount;
+                }
+                if (!purchase.isPaid) {
+                    supplierStats[name].unpaidCount += 1;
+                    supplierStats[name].unpaidCost += amount;
+                }
             }
         });
 
@@ -2399,7 +2418,11 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
             .map(([name, stats]) => ({
                 name,
                 totalCost: stats.totalCost,
-                count: stats.count
+                count: stats.count,
+                unreceivedCount: stats.unreceivedCount,
+                unreceivedCost: stats.unreceivedCost,
+                unpaidCount: stats.unpaidCount,
+                unpaidCost: stats.unpaidCost
             }))
             .sort((a, b) => b.totalCost - a.totalCost);
 

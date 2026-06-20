@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save, DollarSign } from 'lucide-react';
 import styles from '../Dashboard.module.css';
 import { formatCurrency } from '../../utils/formatting';
 
@@ -11,6 +11,10 @@ interface SupplierCost {
     name: string;
     totalCost: number;
     count: number;
+    unreceivedCount: number;
+    unreceivedCost: number;
+    unpaidCount: number;
+    unpaidCost: number;
 }
 
 interface SupplierDetail {
@@ -455,8 +459,42 @@ const SupplierMonthlyReport = () => {
 
                     <div className={styles.card}>
                         <div className={styles.cardHeader}>
-                            <div className={styles.iconWrapper} style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>
+                            <div className={styles.iconWrapper} style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
                                 <FileText size={24} />
+                            </div>
+                            <span className={styles.cardLabel}>⚠️ 請求書未受領</span>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <div className={styles.value} style={{ color: '#b45309' }}>
+                                {data.reduce((sum, item) => sum + (item.unreceivedCount || 0), 0)} <span className={styles.subtitle}>件</span>
+                            </div>
+                            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                {formatCurrency(data.reduce((sum, item) => sum + (item.unreceivedCost || 0), 0))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}>
+                                <DollarSign size={24} />
+                            </div>
+                            <span className={styles.cardLabel}>⚠️ 支払未完了</span>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <div className={styles.value} style={{ color: '#b91c1c' }}>
+                                {data.reduce((sum, item) => sum + (item.unpaidCount || 0), 0)} <span className={styles.subtitle}>件</span>
+                            </div>
+                            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                {formatCurrency(data.reduce((sum, item) => sum + (item.unpaidCost || 0), 0))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.iconWrapper} style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>
+                                <Settings size={24} />
                             </div>
                             <span className={styles.cardLabel}>取引先数</span>
                         </div>
@@ -500,7 +538,19 @@ const SupplierMonthlyReport = () => {
                                             onClick={() => handleRowClick(item.name)}
                                             style={{ cursor: 'pointer', backgroundColor: selectedSupplier === item.name ? '#eff6ff' : undefined }}
                                         >
-                                            <td style={{ fontWeight: 500 }}>{item.name}</td>
+                                            <td style={{ fontWeight: 500 }}>
+                                                {item.name}
+                                                {item.unreceivedCount > 0 && (
+                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#b45309', backgroundColor: '#fef3c7', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                        <FileText size={12} /> 未受領
+                                                    </span>
+                                                )}
+                                                {item.unpaidCount > 0 && (
+                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                        <DollarSign size={12} /> 未払
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className={styles.right}>{item.count} 回</td>
                                             <td className={styles.right} style={{ fontWeight: 'bold' }}>
                                                 {formatCurrency(item.totalCost)}
