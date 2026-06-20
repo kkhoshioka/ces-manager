@@ -118,10 +118,12 @@ const SupplierMonthlyReport = () => {
         }
     };
 
-    const fetchReport = React.useCallback(async () => {
-        setLoading(true);
-        setSelectedSupplier(null); // Reset selection on month change
-        setDetailData([]);
+    const fetchReport = React.useCallback(async (preserveState: boolean = false) => {
+        if (!preserveState) {
+            setLoading(true);
+            setSelectedSupplier(null); // Reset selection on month change
+            setDetailData([]);
+        }
         try {
             const response = await fetch(`${API_BASE_URL}/dashboard/supplier-costs?year=${year}&month=${month}`);
             if (!response.ok) throw new Error('Failed to fetch data');
@@ -130,7 +132,9 @@ const SupplierMonthlyReport = () => {
         } catch (error) {
             console.error(error);
         } finally {
-            setLoading(false);
+            if (!preserveState) {
+                setLoading(false);
+            }
         }
     }, [year, month]);
 
@@ -185,6 +189,7 @@ const SupplierMonthlyReport = () => {
             });
 
             if (!response.ok) throw new Error('Failed to update status');
+            fetchReport(true); // Sync global counts silently
 
         } catch (error) {
             console.error(error);
@@ -210,6 +215,9 @@ const SupplierMonthlyReport = () => {
                 });
             }));
 
+            // Sync global counts silently
+            fetchReport(true);
+
             // Refresh details
             if (selectedSupplier) {
                 const response = await fetch(`${API_BASE_URL}/dashboard/supplier-details?year=${year}&month=${month}&supplier=${encodeURIComponent(selectedSupplier)}`);
@@ -225,7 +233,6 @@ const SupplierMonthlyReport = () => {
             console.error(error);
             alert('一括更新に失敗しました');
         } finally {
-            setDetailLoading(true);
             setTimeout(() => setDetailLoading(false), 300);
         }
     };
