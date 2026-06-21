@@ -2452,48 +2452,6 @@ const Repairs: React.FC = () => {
                                             </>
                                         )}
 
-                                        {/* Rental Details - Moved to match other fields */}
-                                        {formType === 'rental' && (
-                                            <>
-                                                <Input
-                                                    label="貸出日"
-                                                    type="date"
-                                                    name="rentalStartDate"
-                                                    value={formState.rentalStartDate}
-                                                    onChange={handleInputChange}
-                                                    required
-                                                />
-                                                <Input
-                                                    label="返却予定日"
-                                                    type="date"
-                                                    name="rentalEndDate"
-                                                    value={formState.rentalEndDate}
-                                                    onChange={handleInputChange}
-                                                    required
-                                                />
-                                                <Input
-                                                    label="実際の返却日"
-                                                    type="date"
-                                                    name="actualReturnDate"
-                                                    value={formState.actualReturnDate}
-                                                    onChange={handleInputChange}
-                                                />
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">レンタルステータス</label>
-                                                    <select
-                                                        name="rentalStatus"
-                                                        value={formState.rentalStatus}
-                                                        onChange={handleInputChange}
-                                                        className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                                                    >
-                                                        <option value="reserved">予約中</option>
-                                                        <option value="rented_out">貸出中</option>
-                                                        <option value="returned">返却済</option>
-                                                        <option value="cancelled">キャンセル</option>
-                                                    </select>
-                                                </div>
-                                            </>
-                                        )}
 
                                     </div>
                                     
