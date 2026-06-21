@@ -64,7 +64,7 @@ const Repairs: React.FC = () => {
     const [editingQuotationId, setEditingQuotationId] = useState<number | null>(null);
 
     // Form State
-    const [formType, setFormType] = useState<'repair' | 'sales' | 'inspection' | 'maintenance' | 'rental'>('repair');
+    const [formType, setFormType] = useState<'repair' | 'sales' | 'inspection' | 'maintenance' | 'rental' | 'other'>('repair');
     const [formState, setFormState] = useState<{
         customerName: string;
         customerContactName: string; // New field
@@ -792,7 +792,7 @@ const Repairs: React.FC = () => {
         setFormType('repair'); // Default reset
     };
 
-    const openNewForm = async (type: 'repair' | 'sales' | 'rental') => {
+    const openNewForm = async (type: 'repair' | 'sales' | 'rental' | 'inspection' | 'other') => {
         await loadFormData(); // Load masters before opening
         resetForm();
         setFormType(type);
