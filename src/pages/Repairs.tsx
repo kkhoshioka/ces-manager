@@ -1977,8 +1977,8 @@ const Repairs: React.FC = () => {
                     </tbody>
                     <tfoot>
                         <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                            <td colSpan={isWRental ? 8 : 7} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
-                            <td colSpan={isWRental ? 5 : 5} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
+                            <td colSpan={isWRental ? 7 : 6} style={{ padding: '0.5rem', textAlign: 'right' }}>小計:</td>
+                            <td colSpan={4} style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                             {isWRental && <td style={{ padding: '0.5rem', textAlign: 'right', color: '#ef4444' }}>{subtotalCost.toLocaleString()}円 (原価)</td>}
                             <td></td>
                         </tr>
