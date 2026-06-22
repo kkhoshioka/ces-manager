@@ -73,6 +73,7 @@ const CustomerMaster: React.FC = () => {
             const res = await fetch(`${API_BASE_URL}/customers`);
             if (res.ok) {
                 const data = await res.json();
+                data.sort((a: Customer, b: Customer) => a.code.localeCompare(b.code));
                 setCustomers(data);
                 setFilteredCustomers(data);
             }
@@ -210,11 +211,11 @@ const CustomerMaster: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th>コード</th>
+                            <th>顧客コード</th>
                             <th>顧客名</th>
-                            <th>種別</th>
                             <th>電話番号</th>
                             <th>住所</th>
+                            <th>締め日</th>
                             <th style={{ width: '100px' }}>アクション</th>
                         </tr>
                     </thead>
@@ -228,22 +229,9 @@ const CustomerMaster: React.FC = () => {
                                 <tr key={customer.id}>
                                     <td className={styles.partNumber}>{customer.code}</td>
                                     <td>{customer.name}</td>
-                                    <td>
-                                        {customer.type && (
-                                            <span style={{
-                                                fontSize: '0.75rem',
-                                                padding: '2px 6px',
-                                                borderRadius: '4px',
-                                                backgroundColor: '#f1f5f9',
-                                                color: '#475569',
-                                                border: '1px solid #e2e8f0'
-                                            }}>
-                                                {customer.type}
-                                            </span>
-                                        )}
-                                    </td>
                                     <td>{customer.phone || '-'}</td>
                                     <td>{customer.address || '-'}</td>
+                                    <td>{customer.closingDate === '99' ? '末日' : (customer.closingDate ? `${customer.closingDate}日` : '-')}</td>
                                     <td>
                                         <div className={styles.actions}>
                                             <button className={styles.actionButton} onClick={() => openEdit(customer)}>
