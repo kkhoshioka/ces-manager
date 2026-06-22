@@ -2003,7 +2003,7 @@ const Repairs: React.FC = () => {
                     <Button icon={<ShoppingCart size={18} />} onClick={() => openNewForm('rental')} style={{ backgroundColor: '#10b981', border: 'none' }}>
                         レンタル登録
                     </Button>
-                    <Button icon={<Wrench size={18} />} onClick={() => openNewForm('repair')}>
+                    <Button icon={<Wrench size={18} />} onClick={() => openNewForm('repair')} style={{ backgroundColor: '#f59e0b', border: 'none' }}>
                         新規修理受付
                     </Button>
                     <Button icon={<Wrench size={18} />} onClick={() => openNewForm('inspection')} style={{ backgroundColor: '#8b5cf6', border: 'none' }}>
