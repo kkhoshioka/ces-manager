@@ -45,6 +45,7 @@ const SupplierMaster: React.FC = () => {
     const [currentSupplier, setCurrentSupplier] = useState<Partial<Supplier>>({});
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     const fetchSuppliers = useCallback(async () => {
         setIsLoading(true);
@@ -111,7 +112,13 @@ const SupplierMaster: React.FC = () => {
         s.name.includes(searchQuery) ||
         (s.code && s.code.includes(searchQuery)) ||
         (s.contactPerson && s.contactPerson.includes(searchQuery))
-    );
+    ).sort((a, b) => {
+        if (!a.code) return 1;
+        if (!b.code) return -1;
+        return sortOrder === 'asc' 
+            ? a.code.localeCompare(b.code)
+            : b.code.localeCompare(a.code);
+    });
 
     return (
         <div>
@@ -135,7 +142,12 @@ const SupplierMaster: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th>コード</th>
+                            <th 
+                                style={{ cursor: 'pointer', userSelect: 'none', width: '150px' }}
+                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                            >
+                                仕入先コード {sortOrder === 'asc' ? '▲' : '▼'}
+                            </th>
                             <th>仕入先名</th>
                             <th>担当者</th>
                             <th>電話番号</th>
