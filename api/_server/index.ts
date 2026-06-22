@@ -313,6 +313,24 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
+app.put('/api/categories/section/rename', async (req, res) => {
+    try {
+        const { oldSection, newSection } = req.body;
+        if (!oldSection || !newSection) {
+            return res.status(400).json({ error: '部門名が指定されていません' });
+        }
+        
+        await prisma.productCategory.updateMany({
+            where: { section: oldSection },
+            data: { section: newSection }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to rename section', error);
+        res.status(500).json({ error: '部門名の変更に失敗しました' });
+    }
+});
+
 // Reorder Categories
 app.put('/api/categories/reorder', async (req, res) => {
     try {

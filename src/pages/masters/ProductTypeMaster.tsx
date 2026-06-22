@@ -35,6 +35,7 @@ const ProductTypeMaster: React.FC = () => {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [formData, setFormData] = useState({ section: '', code: '', name: '' });
     const [isLoading, setIsLoading] = useState(false);
+    const [renameSectionModal, setRenameSectionModal] = useState<{ isOpen: boolean; oldSection: string; newSection: string }>({ isOpen: false, oldSection: '', newSection: '' });
 
     // Unique sections for suggestion/dropdown
     const sections = Array.from(new Set(categories.map(c => c.section)));
@@ -83,6 +84,31 @@ const ProductTypeMaster: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to save category', error);
+            alert('エラーが発生しました');
+        }
+    };
+
+    const handleRenameSectionSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!renameSectionModal.newSection.trim()) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/categories/section/rename`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    oldSection: renameSectionModal.oldSection, 
+                    newSection: renameSectionModal.newSection 
+                })
+            });
+
+            if (res.ok) {
+                setRenameSectionModal({ isOpen: false, oldSection: '', newSection: '' });
+                fetchCategories();
+            } else {
+                alert('部門名の変更に失敗しました');
+            }
+        } catch (error) {
+            console.error('Failed to rename section', error);
             alert('エラーが発生しました');
         }
     };
@@ -194,6 +220,14 @@ const ProductTypeMaster: React.FC = () => {
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                                     <span>{section}</span>
+                                                    <button 
+                                                        className={styles.actionButton} 
+                                                        onClick={() => setRenameSectionModal({ isOpen: true, oldSection: section, newSection: section })}
+                                                        title="部門名を変更"
+                                                        style={{ padding: '4px', background: 'white' }}
+                                                    >
+                                                        <Edit size={14} />
+                                                    </button>
                                                     {section === 'メンテナンス' && (
                                                         <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'normal' }}>
                                                             ※ここに登録された種別名は、修理案件の「自社工賃」の費目として選択できるようになります。
@@ -304,6 +338,33 @@ const ProductTypeMaster: React.FC = () => {
 
                             <div className={styles.formActions}>
                                 <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+                                    キャンセル
+                                </Button>
+                                <Button type="submit">保存</Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {renameSectionModal.isOpen && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modal} style={{ maxWidth: '400px' }}>
+                        <div className={styles.modalHeader}>
+                            <h2>部門名の変更</h2>
+                            <button type="button" className={styles.closeButton} onClick={() => setRenameSectionModal({ isOpen: false, oldSection: '', newSection: '' })}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleRenameSectionSubmit} className={styles.form}>
+                            <Input
+                                label="新しい部門名"
+                                value={renameSectionModal.newSection}
+                                onChange={e => setRenameSectionModal(prev => ({ ...prev, newSection: e.target.value }))}
+                                required
+                            />
+                            <div className={styles.formActions}>
+                                <Button type="button" variant="secondary" onClick={() => setRenameSectionModal({ isOpen: false, oldSection: '', newSection: '' })}>
                                     キャンセル
                                 </Button>
                                 <Button type="submit">保存</Button>
