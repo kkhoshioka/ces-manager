@@ -159,6 +159,37 @@ const ProductTypeMaster: React.FC = () => {
         }
     };
 
+    const handleSectionMove = async (section: string, direction: 'up' | 'down') => {
+        const sectionIndex = sections.indexOf(section);
+        if (direction === 'up' && sectionIndex <= 0) return;
+        if (direction === 'down' && sectionIndex >= sections.length - 1) return;
+
+        const targetSectionIndex = direction === 'up' ? sectionIndex - 1 : sectionIndex + 1;
+
+        const newSections = [...sections];
+        [newSections[sectionIndex], newSections[targetSectionIndex]] = [newSections[targetSectionIndex], newSections[sectionIndex]];
+
+        let newCategories: ProductCategory[] = [];
+        newSections.forEach(sec => {
+            newCategories = [...newCategories, ...categories.filter(c => c.section === sec)];
+        });
+
+        const updatedWithOrders = newCategories.map((c, i) => ({ ...c, sortOrder: i }));
+        setCategories(updatedWithOrders);
+
+        try {
+            await fetch(`${API_BASE_URL}/categories/reorder`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orders: updatedWithOrders.map(c => ({ id: c.id, sortOrder: c.sortOrder }))
+                })
+            });
+        } catch (error) {
+            console.error('Failed to save order', error);
+        }
+    };
+
     const openEdit = (category: ProductCategory) => {
         setEditingId(category.id);
         setFormData({
@@ -213,12 +244,32 @@ const ProductTypeMaster: React.FC = () => {
                         ) : categories.length === 0 ? (
                             <tr><td colSpan={4} className={styles.emptyState}>データがありません</td></tr>
                         ) : (
-                            sections.map(section => (
+                            sections.map((section, sectionIndex) => (
                                 <React.Fragment key={section}>
                                     <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
                                         <td colSpan={4} style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: '#1e293b' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <div style={{ display: 'flex', gap: '2px' }}>
+                                                        <button 
+                                                            className={styles.actionButton} 
+                                                            onClick={() => handleSectionMove(section, 'up')}
+                                                            disabled={sectionIndex === 0}
+                                                            style={{ opacity: sectionIndex === 0 ? 0.3 : 1, padding: '2px', background: 'white' }}
+                                                            title="部門を上に移動"
+                                                        >
+                                                            <ArrowUp size={14} />
+                                                        </button>
+                                                        <button 
+                                                            className={styles.actionButton} 
+                                                            onClick={() => handleSectionMove(section, 'down')}
+                                                            disabled={sectionIndex === sections.length - 1}
+                                                            style={{ opacity: sectionIndex === sections.length - 1 ? 0.3 : 1, padding: '2px', background: 'white' }}
+                                                            title="部門を下に移動"
+                                                        >
+                                                            <ArrowDown size={14} />
+                                                        </button>
+                                                    </div>
                                                     <span>{section}</span>
                                                     <button 
                                                         className={styles.actionButton} 
