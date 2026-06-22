@@ -2065,7 +2065,8 @@ app.get('/api/dashboard/details', async (req, res) => {
 app.get('/api/suppliers', async (req, res) => {
     try {
         const suppliers = await prisma.supplier.findMany({
-            orderBy: { id: 'desc' }
+            orderBy: { id: 'desc' },
+            include: { contacts: true }
         });
         res.json(suppliers);
     } catch (error) {
@@ -2077,9 +2078,18 @@ app.get('/api/suppliers', async (req, res) => {
 // Create supplier
 app.post('/api/suppliers', async (req, res) => {
     try {
-        const { name, code, contactPerson, email, phone, address } = req.body;
+        const { id, createdAt, updatedAt, contacts, ...supplierData } = req.body;
         const supplier = await prisma.supplier.create({
-            data: { name, code, contactPerson, email, phone, address }
+            data: {
+                ...supplierData,
+                contacts: contacts && Array.isArray(contacts) && contacts.length > 0 ? {
+                    create: contacts.map((c: any) => ({
+                        name: c.name,
+                        position: c.position,
+                        mobile: c.mobile
+                    }))
+                } : undefined
+            }
         });
         res.json(supplier);
     } catch (error) {
@@ -2092,10 +2102,20 @@ app.post('/api/suppliers', async (req, res) => {
 app.put('/api/suppliers/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, code, contactPerson, email, phone, address } = req.body;
+        const { id: bodyId, createdAt, updatedAt, contacts, ...supplierData } = req.body;
         const supplier = await prisma.supplier.update({
             where: { id: Number(id) },
-            data: { name, code, contactPerson, email, phone, address }
+            data: {
+                ...supplierData,
+                contacts: contacts && Array.isArray(contacts) ? {
+                    deleteMany: {},
+                    create: contacts.map((c: any) => ({
+                        name: c.name,
+                        position: c.position,
+                        mobile: c.mobile
+                    }))
+                } : undefined
+            }
         });
         res.json(supplier);
     } catch (error) {

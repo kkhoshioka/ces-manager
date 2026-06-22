@@ -352,12 +352,16 @@ model Supplier {
   id            Int      @id @default(autoincrement())
   name          String
   code          String?  @unique
-  contactPerson String?
+  contactPerson String?  // (deprecated, migrating to contacts)
   email         String?
   phone         String?
+  postalCode    String?
   address       String?
   
   // New fields
+  representativeName        String?
+  representativePhone       String?
+  closingDate               String? // 締め日
   fax                       String?
   invoiceRegistrationNumber String?
   // Split Bank Info
@@ -373,6 +377,20 @@ model Supplier {
 
   projectDetails ProjectDetail[]
   purchases      Purchase[]
+  contacts       SupplierContact[]
+}
+
+model SupplierContact {
+  id         Int      @id @default(autoincrement())
+  supplierId Int
+  name       String
+  position   String?  // 役職
+  mobile     String?  // 携帯電話番号
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 }
 
 // 9. User Profiles (Auth)
