@@ -850,7 +850,7 @@ const Repairs: React.FC = () => {
                     setDetails(fullProject.details.map((d: any) => {
                         let tType: 'time' | 'distance' | 'area' | undefined = undefined;
                         let pCode = '';
-                        let desc = d.description;
+                        let desc = d.description || '';
 
                         if (d.lineType === 'travel' || (d.lineType === 'outsourcing' && d.outsourcingDetailType === 'travel')) {
                             if (desc.startsWith('【地区指定】')) {
@@ -916,7 +916,7 @@ const Repairs: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to fetch project details', error);
-            alert('詳細データの取得に失敗しました。');
+            alert(`詳細データの取得に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsFormLoading(false);
         }
