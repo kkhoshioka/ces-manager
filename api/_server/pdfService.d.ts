@@ -42,4 +42,5 @@ export declare const generateInvoice: (project: Project) => PDFKit.PDFDocument;
 export declare const generateDeliveryNote: (project: Project) => PDFKit.PDFDocument;
 export declare const generateQuotation: (project: Project) => PDFKit.PDFDocument;
 export declare const generateMonthlyInventoryPdf: (snapshots: any[], year: number, month: number) => PDFKit.PDFDocument;
+export declare const generateMachineRegistryPdf: (machines: any[], title: string) => PDFKit.PDFDocument;
 export {};

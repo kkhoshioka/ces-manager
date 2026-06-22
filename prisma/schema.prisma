@@ -23,8 +23,12 @@ model Customer {
   type      String?  // 'ユーザー', '修理業者', '機械メーカー', etc.
   
   // New fields
+  representativeName        String?
+  representativePhone       String?
+  postalCode                String?
   fax                       String?
   invoiceRegistrationNumber String? // T+13digits
+  invoicePostalCode         String?
   invoiceMailingAddress     String?
   paymentTerms              String? // 支払条件
   contactPerson             String? // 担当者名
@@ -37,6 +41,20 @@ model Customer {
   monthlyBillStatuses MonthlyBillStatus[]
   payments         Payment[]
   monthlyBillings  MonthlyBilling[]
+  contacts         CustomerContact[]
+}
+
+model CustomerContact {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  name       String
+  position   String?  // 役職
+  mobile     String?  // 携帯電話番号
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
 
 // 2. Products/Services Master
