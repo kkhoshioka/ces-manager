@@ -211,9 +211,9 @@ const CustomerMaster: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th>顧客コード</th>
+                            <th style={{ width: '120px' }}>顧客コード</th>
                             <th>顧客名</th>
-                            <th>電話番号</th>
+                            <th style={{ whiteSpace: 'nowrap' }}>電話番号</th>
                             <th>住所</th>
                             <th>締め日</th>
                             <th style={{ width: '100px' }}>アクション</th>
