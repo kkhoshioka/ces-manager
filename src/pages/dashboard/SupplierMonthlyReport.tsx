@@ -286,21 +286,19 @@ const SupplierMonthlyReport = () => {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
-                    <div>
-                        <h1 className={styles.title}>仕入・原価管理</h1>
-                        <p className={styles.subtitle}>仕入登録および仕入先ごとの原価発生状況を月次で確認</p>
-                    </div>
+                <div>
+                    <h1 className={styles.title}>仕入・原価管理</h1>
+                    <p className={styles.subtitle}>仕入登録および仕入先ごとの原価発生状況を月次で確認</p>
+                </div>
+                <div className={styles.filters}>
                     <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', department: '', description: '', category: '仕入販売', type: '', partNumber: '', quantity: 1, unitCost: 0, isInvoiceReceived: false, isPaid: false, projectId: '', productId: '', productCategoryId: null }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
                         新規仕入登録
                     </Button>
-                </div>
-                <div className={styles.filters}>
                     <div className={styles.filterGroup}>
                         <Button variant="ghost" onClick={handlePrevMonth} icon={<ChevronLeft size={18} />}>
                             前月
                         </Button>
-                        <div style={{ padding: '0 1rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                        <div style={{ padding: '0 1rem', fontWeight: 'bold', fontSize: '1.1rem', whiteSpace: 'nowrap' }}>
                             {year}年 {month}月
                         </div>
                         <Button variant="ghost" onClick={handleNextMonth}>
