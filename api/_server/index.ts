@@ -16,6 +16,7 @@ import systemSettingsRouter from './routes/systemSettings';
 import quotationRouter from './routes/quotations';
 import travelExpenseRouter from './routes/travelExpenses';
 import billingRouter from './routes/billing';
+import backupRouter from './routes/backup.js';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
 import { stringify } from 'csv-stringify/sync';
@@ -119,6 +120,7 @@ app.use('/api/system-settings', systemSettingsRouter);
 app.use('/api/quotations', quotationRouter);
 app.use('/api/travel-expenses', travelExpenseRouter);
 app.use('/api/billing', billingRouter);
+app.use('/api/data/backup', backupRouter);
 
 // --- Customers ---
 app.get('/api/customers', async (req, res) => {

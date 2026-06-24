@@ -58,6 +58,10 @@ const DataManagement: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Category>('Master');
     const [loading, setLoading] = useState<string | null>(null);
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+    
+    // Backup State
+    const [backupYear, setBackupYear] = useState<number>(new Date().getFullYear());
+    const [backupMonth, setBackupMonth] = useState<number>(new Date().getMonth() + 1);
 
     const handleExport = async (modelId: string) => {
         try {
@@ -81,6 +85,31 @@ const DataManagement: React.FC = () => {
             console.error('Export failed', error);
             const errorDetail = error.response?.data?.details || error.message || '不明なエラー';
             setMessage({ text: `エクスポートに失敗しました: ${errorDetail}`, type: 'error' });
+        } finally {
+            setLoading(null);
+        }
+    };
+
+    const handleMonthlyBackup = async () => {
+        try {
+            setLoading('monthlyBackup');
+            const response = await axios.get(`${API_BASE_URL}/data/backup/monthly?year=${backupYear}&month=${backupMonth}`, {
+                responseType: 'blob',
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `ces_backup_${backupYear}_${backupMonth}.zip`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            setMessage({ text: `${backupYear}年${backupMonth}月のバックアップをダウンロードしました`, type: 'success' });
+            setTimeout(() => setMessage(null), 3000);
+        } catch (error: any) {
+            console.error('Backup failed', error);
+            setMessage({ text: 'バックアップの作成に失敗しました。', type: 'error' });
         } finally {
             setLoading(null);
         }
@@ -232,6 +261,52 @@ const DataManagement: React.FC = () => {
                 </div>
 
                 <div className="h-16"></div>
+
+                {/* Monthly Backup Section */}
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-12">
+                    <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <FileSpreadsheet className="w-6 h-6 text-indigo-600" />
+                        月次データ一括バックアップ
+                    </h2>
+                    <p className="text-sm text-gray-500 mb-6">
+                        指定した月に発生した案件と関連するすべてのデータ（明細、写真メタデータ、見積、仕入など）をまとめてZIPファイル形式でダウンロードします。
+                    </p>
+                    <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={backupYear}
+                                onChange={(e) => setBackupYear(Number(e.target.value))}
+                                className="border border-gray-300 rounded-lg px-4 py-2 text-gray-700 font-medium"
+                            >
+                                {[...Array(5)].map((_, i) => {
+                                    const y = new Date().getFullYear() - i;
+                                    return <option key={y} value={y}>{y}年</option>;
+                                })}
+                            </select>
+                            <select
+                                value={backupMonth}
+                                onChange={(e) => setBackupMonth(Number(e.target.value))}
+                                className="border border-gray-300 rounded-lg px-4 py-2 text-gray-700 font-medium"
+                            >
+                                {[...Array(12)].map((_, i) => (
+                                    <option key={i + 1} value={i + 1}>{i + 1}月</option>
+                                ))}
+                            </select>
+                        </div>
+                        <button
+                            onClick={handleMonthlyBackup}
+                            disabled={loading === 'monthlyBackup'}
+                            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            {loading === 'monthlyBackup' ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                                <Download className="w-5 h-5" />
+                            )}
+                            ZIPでダウンロード
+                        </button>
+                    </div>
+                </div>
 
                 {/* Info Footer */}
                 <div className="flex items-start gap-4 p-6 bg-yellow-50/50 border border-yellow-100 rounded-xl text-yellow-800/80 max-w-4xl mx-auto">
