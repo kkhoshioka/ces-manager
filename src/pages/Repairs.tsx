@@ -1337,7 +1337,7 @@ const Repairs: React.FC = () => {
                                     : '数量'
                                 }
                             </th>
-                            {(type !== 'labor' && type !== 'travel' && type !== 'discount') && (
+                            {(type !== 'travel' && type !== 'discount') && (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>原価単価</th>
                                     <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>原価計</th>
@@ -1679,7 +1679,7 @@ const Repairs: React.FC = () => {
                                             </select>
                                         </div>
                                     </td>
-                                    {(type !== 'labor' && type !== 'travel' && type !== 'discount') && (
+                                    {(type !== 'travel' && type !== 'discount') && (
                                         <>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
@@ -1739,7 +1739,7 @@ const Repairs: React.FC = () => {
                         {/* Subtotal Row */}
                         <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
                             <td colSpan={type === 'part' ? (showSupplier ? 5 : 4) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
-                            {(type !== 'labor' && type !== 'travel') && (
+                            {(type !== 'travel') && (
                                 <>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>

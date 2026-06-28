@@ -2493,7 +2493,10 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
 
         projects.forEach(project => {
             project.details.forEach(detail => {
-                const name = detail.supplierObj?.name || detail.supplier;
+                let name = detail.supplierObj?.name || detail.supplier;
+                if (detail.lineType === 'labor') {
+                    name = '自社工賃';
+                }
 
                 if (name && Number(detail.unitCost) > 0) {
                     if (!supplierStats[name]) {
@@ -2507,13 +2510,15 @@ app.get('/api/dashboard/supplier-costs', async (req, res) => {
                     supplierStats[name].totalCost += amount;
                     supplierStats[name].count += 1;
 
-                    if (!detail.isInvoiceReceived) {
-                        supplierStats[name].unreceivedCount += 1;
-                        supplierStats[name].unreceivedCost += amount;
-                    }
-                    if (!detail.isPaid) {
-                        supplierStats[name].unpaidCount += 1;
-                        supplierStats[name].unpaidCost += amount;
+                    if (name !== '自社工賃') {
+                        if (!detail.isInvoiceReceived) {
+                            supplierStats[name].unreceivedCount += 1;
+                            supplierStats[name].unreceivedCost += amount;
+                        }
+                        if (!detail.isPaid) {
+                            supplierStats[name].unpaidCount += 1;
+                            supplierStats[name].unpaidCost += amount;
+                        }
                     }
                 }
             });
@@ -2637,7 +2642,10 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
         projects.forEach(project => {
             project.details.forEach(detail => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const name = (detail as any).supplierObj?.name || detail.supplier;
+                let name = (detail as any).supplierObj?.name || detail.supplier;
+                if (detail.lineType === 'labor') {
+                    name = '自社工賃';
+                }
                 if (name === supplier && Number(detail.unitCost) > 0) {
                     details.push({
                         id: detail.id,
@@ -2651,8 +2659,8 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                         quantity: Number(detail.quantity),
                         unitCost: Number(detail.unitCost),
                         amount: Number(detail.quantity) * Number(detail.unitCost),
-                        isInvoiceReceived: detail.isInvoiceReceived,
-                        isPaid: detail.isPaid
+                        isInvoiceReceived: detail.lineType === 'labor' ? true : detail.isInvoiceReceived,
+                        isPaid: detail.lineType === 'labor' ? true : detail.isPaid
                     });
                 }
             });
