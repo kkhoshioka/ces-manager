@@ -112,7 +112,7 @@ model CustomerMachine {
   id           Int      @id @default(autoincrement())
   customerId   Int
   machineModel String
-  serialNumber String
+  serialNumber String?
   manufacturingDate String? // 製造年月 (YYYY-MM)
   deliveryDate      DateTime? // 納入日
   lastInspectionDate DateTime? // 前回年次点検日

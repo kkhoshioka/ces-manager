@@ -78,7 +78,7 @@ const MachineDetail: React.FC = () => {
 
                     <div className={styles.detailItem}>
                         <span className={styles.detailLabel}>シリアルNo</span>
-                        <span className={styles.detailValueMono}>{machine.serialNumber}</span>
+                        <span className={styles.detailValueMono}>{machine.serialNumber || '-'}</span>
                     </div>
 
                     <div className={styles.detailItem}>

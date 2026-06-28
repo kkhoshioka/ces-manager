@@ -2436,7 +2436,7 @@ const Repairs: React.FC = () => {
                                                 )}
 
                                                 <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
-                                                <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} required={formType !== 'sales'} />
+                                                <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} />
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     <div style={{ width: '150px' }}>
                                                         <Input

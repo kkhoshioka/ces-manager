@@ -67,7 +67,7 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
         const payload = {
             customerId: Number(customerId),
             machineModel,
-            serialNumber,
+            serialNumber: serialNumber || null,
             manufacturingDate: manufacturingDate || null,
             deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
             lastInspectionDate: lastInspectionDate ? new Date(lastInspectionDate) : null,
@@ -131,10 +131,9 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
                             required
                         />
                         <Input
-                            label="シリアルNo (必須)"
+                            label="シリアルNo"
                             value={serialNumber}
                             onChange={e => setSerialNumber(e.target.value)}
-                            required
                         />
                     </div>
 

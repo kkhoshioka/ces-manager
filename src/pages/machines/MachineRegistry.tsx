@@ -76,7 +76,7 @@ const MachineRegistry: React.FC = () => {
             const filtered = machines.filter(m =>
                 m.customer?.name.toLowerCase().includes(lower) ||
                 m.machineModel.toLowerCase().includes(lower) ||
-                m.serialNumber.toLowerCase().includes(lower)
+                (m.serialNumber || '').toLowerCase().includes(lower)
             );
             setFilteredMachines(filtered);
         }
@@ -295,7 +295,7 @@ const MachineRegistry: React.FC = () => {
                                                 {machine.machineModel}
                                             </Link>
                                         </td>
-                                        <td style={{ fontFamily: 'monospace' }}>{machine.serialNumber}</td>
+                                        <td style={{ fontFamily: 'monospace' }}>{machine.serialNumber || '-'}</td>
                                         <td>{machine.hourMeter || '-'}</td>
                                         <td style={isAlert ? { color: '#e11d48', fontWeight: 'bold' } : {}}>
                                             {machine.nextInspectionDate ? format(new Date(machine.nextInspectionDate), 'yyyy/MM/dd') : '-'}
