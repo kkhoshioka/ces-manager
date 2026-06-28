@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save, DollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save, DollarSign, Wrench } from 'lucide-react';
 import Select from 'react-select';
 import styles from '../Dashboard.module.css';
 import { formatCurrency } from '../../utils/formatting';
@@ -517,66 +517,89 @@ const SupplierMonthlyReport = () => {
             </div>
 
             <div className={styles.content}>
-                {/* Summary Cards */}
-                <div className={styles.summaryGrid}>
-                    <div className={`${styles.card} ${styles.costCard}`}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
-                                <Settings size={24} />
-                            </div>
-                            <span className={styles.cardLabel}>当月仕入総額 (原価)</span>
-                        </div>
-                        <div className={styles.cardBody}>
-                            <div className={styles.value}>{formatCurrency(totalPeriodCost)}</div>
-                        </div>
-                    </div>
+                {(() => {
+                    const laborItem = data.find(d => d.name === '自社工賃');
+                    const supplierData = data.filter(d => d.name !== '自社工賃');
+                    const laborCost = laborItem?.totalCost || 0;
+                    const externalPurchaseCost = totalPeriodCost - laborCost;
 
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.iconWrapper} style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
-                                <FileText size={24} />
-                            </div>
-                            <span className={styles.cardLabel}>⚠️ 請求書未受領</span>
-                        </div>
-                        <div className={styles.cardBody}>
-                            <div className={styles.value} style={{ color: '#b45309' }}>
-                                {data.reduce((sum, item) => sum + (item.unreceivedCount || 0), 0)} <span className={styles.subtitle}>件</span>
-                            </div>
-                            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                {formatCurrency(data.reduce((sum, item) => sum + (item.unreceivedCost || 0), 0))}
-                            </div>
-                        </div>
-                    </div>
+                    return (
+                        <>
+                            {/* Summary Cards */}
+                            <div className={styles.summaryGrid}>
+                                <div className={`${styles.card} ${styles.costCard}`}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                                            <Settings size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>当月外部仕入総額 (原価)</span>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value}>{formatCurrency(externalPurchaseCost)}</div>
+                                    </div>
+                                </div>
 
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}>
-                                <DollarSign size={24} />
-                            </div>
-                            <span className={styles.cardLabel}>⚠️ 支払未完了</span>
-                        </div>
-                        <div className={styles.cardBody}>
-                            <div className={styles.value} style={{ color: '#b91c1c' }}>
-                                {data.reduce((sum, item) => sum + (item.unpaidCount || 0), 0)} <span className={styles.subtitle}>件</span>
-                            </div>
-                            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                {formatCurrency(data.reduce((sum, item) => sum + (item.unpaidCost || 0), 0))}
-                            </div>
-                        </div>
-                    </div>
+                                <div className={styles.card}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+                                            <Wrench size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>自社工賃総額 (原価)</span>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value} style={{ color: '#15803d' }}>{formatCurrency(laborCost)}</div>
+                                    </div>
+                                </div>
 
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.iconWrapper} style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>
-                                <Settings size={24} />
+                                <div className={styles.card}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
+                                            <FileText size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>⚠️ 請求書未受領</span>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value} style={{ color: '#b45309' }}>
+                                            {supplierData.reduce((sum, item) => sum + (item.unreceivedCount || 0), 0)} <span className={styles.subtitle}>件</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                            {formatCurrency(supplierData.reduce((sum, item) => sum + (item.unreceivedCost || 0), 0))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.card}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}>
+                                            <DollarSign size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>⚠️ 支払未完了</span>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value} style={{ color: '#b91c1c' }}>
+                                            {supplierData.reduce((sum, item) => sum + (item.unpaidCount || 0), 0)} <span className={styles.subtitle}>件</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                            {formatCurrency(supplierData.reduce((sum, item) => sum + (item.unpaidCost || 0), 0))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.card}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.iconWrapper} style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>
+                                            <Settings size={24} />
+                                        </div>
+                                        <span className={styles.cardLabel}>外部取引先数</span>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.value}>{supplierData.length} <span className={styles.subtitle}>社</span></div>
+                                    </div>
+                                </div>
                             </div>
-                            <span className={styles.cardLabel}>取引先数</span>
-                        </div>
-                        <div className={styles.cardBody}>
-                            <div className={styles.value}>{data.length} <span className={styles.subtitle}>社</span></div>
-                        </div>
-                    </div>
-                </div>
+                        </>
+                    );
+                })()}
 
                 {/* Main Table */}
                 <div className={styles.tableCard}>
@@ -605,166 +628,193 @@ const SupplierMonthlyReport = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                data.map((item, index) => (
-                                    <>
-                                        <tr
-                                            key={index}
-                                            onClick={() => handleRowClick(item.name)}
-                                            style={{ cursor: 'pointer', backgroundColor: selectedSupplier === item.name ? '#eff6ff' : undefined }}
-                                        >
-                                            <td style={{ fontWeight: 500 }}>
-                                                {item.name}
-                                                {item.unreceivedCount > 0 && (
-                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#b45309', backgroundColor: '#fef3c7', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-                                                        <FileText size={12} /> 未受領
-                                                    </span>
-                                                )}
-                                                {item.unpaidCount > 0 && (
-                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-                                                        <DollarSign size={12} /> 未払
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className={styles.right}>{item.count} 回</td>
-                                            <td className={styles.right} style={{ fontWeight: 'bold' }}>
-                                                {formatCurrency(item.totalCost)}
-                                            </td>
-                                            <td className={styles.right} style={{ color: '#64748b' }}>
-                                                {totalPeriodCost > 0
-                                                    ? `${((item.totalCost / totalPeriodCost) * 100).toFixed(1)}%`
-                                                    : '-'}
-                                            </td>
-                                            <td style={{ textAlign: 'center', color: '#94a3b8' }}>
-                                                {selectedSupplier === item.name ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                            </td>
-                                        </tr>
-                                        {selectedSupplier === item.name && (
-                                            <tr className={styles.detailRow}>
-                                                <td colSpan={5} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
-                                                    <div style={{ padding: '1rem', backgroundColor: '#f8fafc' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
-                                                            <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>
-                                                                {item.name} の取引明細 (顧客順)
-                                                            </h3>
-                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange(detailData, 'isInvoiceReceived', true, selectedSupplier || '')} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
-                                                                    全明細を請求書受領済にする
-                                                                </Button>
-                                                                <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange(detailData, 'isPaid', true, selectedSupplier || '')} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
-                                                                    全明細を支払済にする
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ overflowX: 'auto', backgroundColor: 'white', borderRadius: '0.5rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                                                                <thead>
-                                                                    <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', borderBottom: '2px solid #e2e8f0' }}>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>日付</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>顧客名</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>機種 / S/N</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>品名</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '100px' }} title="仕入先から請求書を受領したか">請求書(受領)</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '100px' }} title="仕入先への支払いが完了したか">支払(完了)</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>数量</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>単価</th>
-                                                                        <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>金額</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {detailLoading ? (
-                                                                        <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>読み込み中...</td></tr>
-                                                                    ) : detailData.length === 0 ? (
-                                                                        <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>明細データなし</td></tr>
-                                                                    ) : (() => {
-                                                                        // Pre-group data for rendering
-                                                                        const groups: { key: string, items: SupplierDetail[] }[] = [];
-                                                                        detailData.forEach(d => {
-                                                                            const key = `${new Date(d.date).toLocaleDateString()}_${d.customerName}_${d.machineModel}`;
-                                                                            if (groups.length === 0 || groups[groups.length - 1].key !== key) {
-                                                                                groups.push({ key, items: [d] });
-                                                                            } else {
-                                                                                groups[groups.length - 1].items.push(d);
-                                                                            }
-                                                                        });
+                                (() => {
+                                    const laborItem = data.find(d => d.name === '自社工賃');
+                                    const suppliers = data.filter(d => d.name !== '自社工賃');
 
-                                                                        return groups.map((group) => (
-                                                                            <React.Fragment key={group.key}>
-                                                                                <tr style={{ backgroundColor: '#f8fafc' }}>
-                                                                                    <td colSpan={4} style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', borderTop: '1px solid #e2e8f0' }}>
-                                                                                        【案件】{group.key.replace(/_/g, ' / ')}
-                                                                                    </td>
-                                                                                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', borderTop: '1px solid #e2e8f0' }}>
-                                                                                        <button 
-                                                                                            onClick={() => handleBatchStatusChange(group.items, 'isInvoiceReceived', true, 'この案件')}
-                                                                                            style={{ fontSize: '0.7rem', padding: '1px 4px', cursor: 'pointer', borderRadius: '3px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
-                                                                                            title="この案件の全明細を受領済にする"
-                                                                                        >
-                                                                                            一括
-                                                                                        </button>
-                                                                                    </td>
-                                                                                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', borderTop: '1px solid #e2e8f0' }}>
-                                                                                        <button 
-                                                                                            onClick={() => handleBatchStatusChange(group.items, 'isPaid', true, 'この案件')}
-                                                                                            style={{ fontSize: '0.7rem', padding: '1px 4px', cursor: 'pointer', borderRadius: '3px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
-                                                                                            title="この案件の全明細を支払済にする"
-                                                                                        >
-                                                                                            一括
-                                                                                        </button>
-                                                                                    </td>
-                                                                                    <td colSpan={3} style={{ borderTop: '1px solid #e2e8f0' }}></td>
-                                                                                </tr>
-                                                                                {group.items.map((d, idx) => (
-                                                                                    <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                                                        <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
-                                                                                            {idx === 0 ? new Date(d.date).toLocaleDateString() : '〃'}
-                                                                                        </td>
-                                                                                        <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
-                                                                                            {idx === 0 ? d.customerName : '〃'}
-                                                                                        </td>
-                                                                                        <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
-                                                                                            {idx === 0 ? (
-                                                                                                <>
-                                                                                                    {d.machineModel}<br />
-                                                                                                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.serialNumber}</span>
-                                                                                                </>
-                                                                                            ) : '〃'}
-                                                                                        </td>
-                                                                                        <td style={{ padding: '0.5rem' }}>{d.description}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={!!d.isInvoiceReceived}
-                                                                                                onChange={(e) => handleDetailStatusChange(d.id, 'isInvoiceReceived', e.target.checked)}
-                                                                                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                                                                                title="請求書受領"
-                                                                                            />
-                                                                                        </td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={!!d.isPaid}
-                                                                                                onChange={(e) => handleDetailStatusChange(d.id, 'isPaid', e.target.checked)}
-                                                                                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                                                                                title="支払完了"
-                                                                                            />
-                                                                                        </td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{d.quantity}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(d.unitCost)}</td>
-                                                                                        <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(d.amount)}</td>
-                                                                                    </tr>
-                                                                                ))}
-                                                                            </React.Fragment>
-                                                                        ));
-                                                                    })()}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </>
-                                ))
+                                    const renderRow = (item: SupplierCost, isLabor: boolean, index: number) => {
+                                        const isSelected = selectedSupplier === item.name;
+                                        return (
+                                            <React.Fragment key={isLabor ? 'labor' : index}>
+                                                <tr
+                                                    onClick={() => handleRowClick(item.name)}
+                                                    style={{ 
+                                                        cursor: 'pointer', 
+                                                        backgroundColor: isSelected ? (isLabor ? '#dcfce7' : '#eff6ff') : (isLabor ? '#f0fdf4' : undefined),
+                                                        borderBottom: isLabor ? '2px solid #bbf7d0' : undefined
+                                                    }}
+                                                >
+                                                    <td style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem', color: isLabor ? '#16a34a' : 'inherit' }}>
+                                                        {isLabor ? <Wrench size={16} /> : null}
+                                                        {item.name}
+                                                        {item.unreceivedCount > 0 && (
+                                                            <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#b45309', backgroundColor: '#fef3c7', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                                <FileText size={12} /> 未受領
+                                                            </span>
+                                                        )}
+                                                        {item.unpaidCount > 0 && (
+                                                            <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                                <DollarSign size={12} /> 未払
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className={styles.right}>{item.count} 回</td>
+                                                    <td className={styles.right} style={{ fontWeight: 'bold' }}>
+                                                        {formatCurrency(item.totalCost)}
+                                                    </td>
+                                                    <td className={styles.right} style={{ color: '#64748b' }}>
+                                                        {totalPeriodCost > 0
+                                                            ? `${((item.totalCost / totalPeriodCost) * 100).toFixed(1)}%`
+                                                            : '-'}
+                                                    </td>
+                                                    <td style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                                        {isSelected ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                    </td>
+                                                </tr>
+                                                {isSelected && (
+                                                    <tr className={styles.detailRow}>
+                                                        <td colSpan={5} style={{ padding: '0', borderBottom: '2px solid #e2e8f0' }}>
+                                                            <div style={{ padding: '1rem', backgroundColor: isLabor ? '#f0fdf4' : '#f8fafc' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
+                                                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>
+                                                                        {item.name} の取引明細 (顧客順)
+                                                                    </h3>
+                                                                    {!isLabor && (
+                                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                            <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange(detailData, 'isInvoiceReceived', true, selectedSupplier || '')} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
+                                                                                全明細を請求書受領済にする
+                                                                            </Button>
+                                                                            <Button variant="ghost" size="sm" onClick={() => handleBatchStatusChange(detailData, 'isPaid', true, selectedSupplier || '')} style={{ fontSize: '0.75rem', padding: '4px 12px', border: '1px solid #e2e8f0' }}>
+                                                                                全明細を支払済にする
+                                                                            </Button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ overflowX: 'auto', backgroundColor: 'white', borderRadius: '0.5rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                                                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                                                        <thead>
+                                                                            <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', borderBottom: '2px solid #e2e8f0' }}>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>日付</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>顧客名</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>機種 / S/N</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>品名</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '100px' }} title="仕入先から請求書を受領したか">請求書(受領)</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '100px' }} title="仕入先への支払いが完了したか">支払(完了)</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>数量</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>単価</th>
+                                                                                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>金額</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {detailLoading ? (
+                                                                                <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>読み込み中...</td></tr>
+                                                                            ) : detailData.length === 0 ? (
+                                                                                <tr><td colSpan={9} style={{ padding: '1rem', textAlign: 'center' }}>明細データなし</td></tr>
+                                                                            ) : (() => {
+                                                                                // Pre-group data for rendering
+                                                                                const groups: { key: string, items: SupplierDetail[] }[] = [];
+                                                                                detailData.forEach(d => {
+                                                                                    const key = `${new Date(d.date).toLocaleDateString()}_${d.customerName}_${d.machineModel}`;
+                                                                                    if (groups.length === 0 || groups[groups.length - 1].key !== key) {
+                                                                                        groups.push({ key, items: [d] });
+                                                                                    } else {
+                                                                                        groups[groups.length - 1].items.push(d);
+                                                                                    }
+                                                                                });
+
+                                                                                return groups.map((group) => (
+                                                                                    <React.Fragment key={group.key}>
+                                                                                        <tr style={{ backgroundColor: '#f8fafc' }}>
+                                                                                            <td colSpan={4} style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', borderTop: '1px solid #e2e8f0' }}>
+                                                                                                【案件】{group.key.replace(/_/g, ' / ')}
+                                                                                            </td>
+                                                                                            <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', borderTop: '1px solid #e2e8f0' }}>
+                                                                                                {!isLabor && (
+                                                                                                    <button 
+                                                                                                        onClick={() => handleBatchStatusChange(group.items, 'isInvoiceReceived', true, 'この案件')}
+                                                                                                        style={{ fontSize: '0.7rem', padding: '1px 4px', cursor: 'pointer', borderRadius: '3px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                                                                        title="この案件の全明細を受領済にする"
+                                                                                                    >
+                                                                                                        一括
+                                                                                                    </button>
+                                                                                                )}
+                                                                                            </td>
+                                                                                            <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', borderTop: '1px solid #e2e8f0' }}>
+                                                                                                {!isLabor && (
+                                                                                                    <button 
+                                                                                                        onClick={() => handleBatchStatusChange(group.items, 'isPaid', true, 'この案件')}
+                                                                                                        style={{ fontSize: '0.7rem', padding: '1px 4px', cursor: 'pointer', borderRadius: '3px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}
+                                                                                                        title="この案件の全明細を支払済にする"
+                                                                                                    >
+                                                                                                        一括
+                                                                                                    </button>
+                                                                                                )}
+                                                                                            </td>
+                                                                                            <td colSpan={3} style={{ borderTop: '1px solid #e2e8f0' }}></td>
+                                                                                        </tr>
+                                                                                        {group.items.map((d, idx) => (
+                                                                                            <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                                                                <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
+                                                                                                    {idx === 0 ? new Date(d.date).toLocaleDateString() : '〃'}
+                                                                                                </td>
+                                                                                                <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
+                                                                                                    {idx === 0 ? d.customerName : '〃'}
+                                                                                                </td>
+                                                                                                <td style={{ padding: '0.5rem', color: idx === 0 ? 'inherit' : '#94a3b8' }}>
+                                                                                                    {idx === 0 ? (
+                                                                                                        <>
+                                                                                                            {d.machineModel}<br />
+                                                                                                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.serialNumber}</span>
+                                                                                                        </>
+                                                                                                    ) : '〃'}
+                                                                                                </td>
+                                                                                                <td style={{ padding: '0.5rem' }}>{d.description}</td>
+                                                                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                                                    <input
+                                                                                                        type="checkbox"
+                                                                                                        checked={!!d.isInvoiceReceived}
+                                                                                                        onChange={(e) => handleDetailStatusChange(d.id, 'isInvoiceReceived', e.target.checked)}
+                                                                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                                        title="請求書受領"
+                                                                                                        disabled={isLabor}
+                                                                                                    />
+                                                                                                </td>
+                                                                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                                                                    <input
+                                                                                                        type="checkbox"
+                                                                                                        checked={!!d.isPaid}
+                                                                                                        onChange={(e) => handleDetailStatusChange(d.id, 'isPaid', e.target.checked)}
+                                                                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                                                        title="支払完了"
+                                                                                                        disabled={isLabor}
+                                                                                                    />
+                                                                                                </td>
+                                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{d.quantity}</td>
+                                                                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(d.unitCost)}</td>
+                                                                                                <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(d.amount)}</td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </React.Fragment>
+                                                                                ));
+                                                                            })()}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    };
+
+                                    return (
+                                        <>
+                                            {laborItem && renderRow(laborItem, true, -1)}
+                                            {suppliers.map((item, index) => renderRow(item, false, index))}
+                                        </>
+                                    );
+                                })()
                             )}
                         </tbody>
                     </table>
