@@ -28,6 +28,8 @@ interface Project {
     machineModel: string;
     serialNumber: string;
     customerContactName?: string | null;
+    internalRep?: string | null;
+    orderDate?: Date | null;
     details: ProjectDetail[];
     notes?: string;
     createdAt?: Date | string | null;

@@ -63,6 +63,9 @@ interface Project {
     machineModel: string;
     serialNumber: string;
     customerContactName?: string | null;
+    internalRep?: string | null;
+
+    orderDate?: Date | null;
     details: ProjectDetail[];
     notes?: string;
     createdAt?: Date | string | null;
@@ -404,15 +407,13 @@ export const generateInvoice = (project: Project) => {
                     {
                         width: '*',
                         stack: [
-                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' }, // Using dummy name from image or real? User said "CES" logo. I'll use "株式会社シーイーエス" as per code.
-                            // Image shows "株式会社シーイーエス中国" but typically we use DB data or config.
-                            // Previous code had dummy. I'll use the image address.
+                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
                                     'TEL 086-441-3741\n',
                                     'FAX 086-441-3742\n',
-                                    '登録番号 T4260001033325'
+                                    '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
                                 ],
                                 fontSize: 9,
                                 alignment: 'right',
@@ -719,6 +720,7 @@ export const generateDeliveryNote = (project: Project) => {
                         width: 280,
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 11, margin: [10, 0, 0, 0] }] : []),
                             { text: '\n' },
                             { 
                                 text: (project.machineModel || project.serialNumber) 
@@ -742,7 +744,7 @@ export const generateDeliveryNote = (project: Project) => {
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
                                     'TEL 086-441-3741\n',
                                     'FAX 086-441-3742\n',
-                                    '登録番号 T4260001033325'
+                                    '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
                                 ],
                                 fontSize: 9,
                                 alignment: 'right',

@@ -68,6 +68,7 @@ const Repairs: React.FC = () => {
     const [formState, setFormState] = useState<{
         customerName: string;
         customerContactName: string; // New field
+        internalRep: string; // 自社担当者
         machineModel: string;
         serialNumber: string;
         hourMeter: string;
@@ -85,6 +86,7 @@ const Repairs: React.FC = () => {
     }>({
         customerName: '',
         customerContactName: '',
+        internalRep: '',
         machineModel: '',
         serialNumber: '',
         hourMeter: '',
@@ -122,14 +124,14 @@ const Repairs: React.FC = () => {
     }, []);
 
     // Selection Data
-    // Selection Data
     // State for Master Data (Lazy Loading)
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [allMachines, setAllMachines] = useState<CustomerMachine[]>([]);
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [travelExpenses, setTravelExpenses] = useState<any[]>([]);
     const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
+    const [travelExpenses, setTravelExpenses] = useState<any[]>([]);
+    const [internalReps, setInternalReps] = useState<{ id: number, name: string }[]>([]);
 
     // Loading Flags
     const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
@@ -149,13 +151,14 @@ const Repairs: React.FC = () => {
 
         setIsFormLoading(true);
         try {
-            const [custs, machs, cats, supps, parts, travelExp] = await Promise.all([
+            const [custs, machs, cats, supps, parts, travelExp, reps] = await Promise.all([
                 customerService.getAllCustomers().catch(() => []),
                 customerService.getAllMachines().catch(() => []),
                 fetch(`${API_BASE_URL}/categories`).then(r => r.json()).catch(() => []),
                 fetch(`${API_BASE_URL}/suppliers`).then(r => r.json()).catch(() => []),
                 InventoryService.getAll().catch(() => []),
-                fetch(`${API_BASE_URL}/travel-expenses`).then(r => r.json()).catch(() => [])
+                fetch(`${API_BASE_URL}/travel-expenses`).then(r => r.json()).catch(() => []),
+                fetch(`${API_BASE_URL}/internal-reps`).then(r => r.json()).catch(() => [])
             ]);
 
             setCustomers(Array.isArray(custs) ? custs : []);
@@ -164,6 +167,7 @@ const Repairs: React.FC = () => {
             setSuppliers(Array.isArray(supps) ? supps : []);
             setInventoryParts(Array.isArray(parts) ? parts : []);
             setTravelExpenses(Array.isArray(travelExp) ? travelExp : []);
+            setInternalReps(Array.isArray(reps) ? reps : []);
 
             setIsMasterDataLoaded(true);
         } catch (error) {
@@ -663,6 +667,7 @@ const Repairs: React.FC = () => {
             const projectData = {
                 type: formType, // Include type
                 customerContactName: formState.customerContactName, // New field Added
+                internalRep: formState.internalRep, // 自社担当者
                 customerId: customer.id,
                 customerMachineId: customerMachineId,
                 machineModel: formState.machineModel,
@@ -804,6 +809,7 @@ const Repairs: React.FC = () => {
         setFormState({
             customerName: '',
             customerContactName: '',
+            internalRep: '',
             machineModel: '',
             serialNumber: '',
             hourMeter: '',
@@ -1127,7 +1133,8 @@ const Repairs: React.FC = () => {
         setFormState({
             customerName: project.customer?.name || '',
             customerContactName: project.customerContactName || '',
-            machineModel: project.machineModel || '',
+                internalRep: project.internalRep || '',
+                machineModel: project.machineModel || '',
             serialNumber: project.serialNumber || '',
             hourMeter: project.hourMeter || '',
             orderDate: project.orderDate ? new Date(project.orderDate).toISOString().split('T')[0] : '',
@@ -2519,13 +2526,28 @@ const Repairs: React.FC = () => {
 
                                         <div>
                                             <Input
-                                                label="担当者名"
+                                                label="顧客担当者"
                                                 name="customerContactName"
                                                 value={formState.customerContactName}
                                                 onChange={handleInputChange}
                                                 placeholder="例: 山田"
                                                 autoComplete="off"
                                             />
+                                        </div>
+
+                                        <div>
+                                            <Input
+                                                label="自社担当者"
+                                                name="internalRep"
+                                                value={formState.internalRep}
+                                                onChange={handleInputChange}
+                                                placeholder="自社担当者を選択または入力"
+                                                list="internal-reps-list"
+                                                autoComplete="off"
+                                            />
+                                            <datalist id="internal-reps-list">
+                                                {internalReps.map(rep => <option key={rep.id} value={rep.name} />)}
+                                            </datalist>
                                         </div>
 
                                         {/* Show Machine Info for Repairs/Inspection/Maintenance OR if data is present */}

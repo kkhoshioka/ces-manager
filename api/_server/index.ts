@@ -16,6 +16,7 @@ import systemSettingsRouter from './routes/systemSettings';
 import quotationRouter from './routes/quotations';
 import travelExpenseRouter from './routes/travelExpenses';
 import billingRouter from './routes/billing';
+import internalRepRouter from './routes/internalReps';
 import backupRouter from './routes/backup.js';
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
@@ -55,6 +56,30 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Seed Internal Reps
+const seedInternalReps = async () => {
+    try {
+        const count = await prisma.internalRep.count();
+        if (count === 0) {
+            const initialReps = [
+                '粂川\u3000章弘',
+                '間東\u3000由充',
+                '広本\u3000康之',
+                '砂場\u3000尚貴',
+                '白政\u3000有哉',
+                '石田\u3000ゆり'
+            ];
+            for (const name of initialReps) {
+                await prisma.internalRep.create({ data: { name } });
+            }
+            console.log('Seeded initial internal reps.');
+        }
+    } catch (err) {
+        console.error('Failed to seed internal reps:', err);
+    }
+};
+seedInternalReps();
 
 // Export app for Vercel
 export default app;
@@ -120,6 +145,7 @@ app.use('/api/system-settings', systemSettingsRouter);
 app.use('/api/quotations', quotationRouter);
 app.use('/api/travel-expenses', travelExpenseRouter);
 app.use('/api/billing', billingRouter);
+app.use('/api/internal-reps', internalRepRouter);
 app.use('/api/data/backup', backupRouter);
 
 // --- Customers ---
@@ -865,6 +891,7 @@ app.post('/api/projects', async (req, res) => {
                     hourMeter,
                     stockDeducted: false, // Let handleProjectStock manage this
                     customerContactName: data.customerContactName || null,
+                    internalRep: data.internalRep || null,
                     customer: { connect: { id: Number(customerId) } },
                     ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
                     ...(details && { details: { create: details } })

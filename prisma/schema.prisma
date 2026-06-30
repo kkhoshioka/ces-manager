@@ -57,6 +57,15 @@ model CustomerContact {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
 
+// Internal Representatives Master
+model InternalRep {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // 2. Products/Services Master
 model Product {
   id             Int      @id @default(autoincrement())
@@ -140,6 +149,7 @@ model Project {
   customerMachineId Int?
   
   customerContactName String? // New: 顧客担当者名
+  internalRep         String? // New: 自社担当者名
   
   type              String    @default("repair") // 'repair' or 'sales'
   
