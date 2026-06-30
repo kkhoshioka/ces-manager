@@ -7,9 +7,10 @@ import ExpenseMaster from './masters/ExpenseMaster';
 import TravelExpenseMaster from './masters/TravelExpenseMaster';
 import UserMaster from './masters/UserMaster';
 import SystemSettingsMaster from './masters/SystemSettingsMaster';
-import { Users, Tag, DollarSign, Settings, Truck, UserCog, MapPin } from 'lucide-react';
+import InternalRepMaster from './masters/InternalRepMaster';
+import { Users, Tag, DollarSign, Settings, Truck, UserCog, MapPin, UserCheck } from 'lucide-react';
 
-type Tab = 'customer' | 'type' | 'expense' | 'travel' | 'supplier' | 'user' | 'system';
+type Tab = 'customer' | 'type' | 'expense' | 'travel' | 'supplier' | 'user' | 'system' | 'internal-rep';
 
 const Masters: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('customer');
@@ -74,6 +75,13 @@ const Masters: React.FC = () => {
                     <Settings size={18} />
                     システム設定
                 </button>
+                <button
+                    className={`${styles.tab} ${activeTab === 'internal-rep' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('internal-rep')}
+                >
+                    <UserCheck size={18} />
+                    自社担当者
+                </button>
             </div>
 
             <div className={styles.content}>
@@ -84,6 +92,7 @@ const Masters: React.FC = () => {
                 {activeTab === 'travel' && <TravelExpenseMaster />}
                 {activeTab === 'user' && <UserMaster />}
                 {activeTab === 'system' && <SystemSettingsMaster />}
+                {activeTab === 'internal-rep' && <InternalRepMaster />}
             </div>
         </div>
     );
