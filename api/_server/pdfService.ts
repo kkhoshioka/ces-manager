@@ -84,7 +84,7 @@ const formatDate = (date: Date | string | null) => {
 };
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
-const processProjectDetails = (details: ProjectDetail[], options?: { includeZeroAmount?: boolean }): ProjectDetail[] => {
+const processProjectDetails = (details: ProjectDetail[], options?: { includeZeroAmount?: boolean, hideZeroAmountLabor?: boolean }): ProjectDetail[] => {
     const processed: ProjectDetail[] = [];
     const processedIds = new Set<number>();
 
@@ -187,6 +187,12 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
             });
 
         } else if (current.lineType === 'labor') {
+            const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
+            if (options?.hideZeroAmountLabor && amount === 0) {
+                processedIds.add(currentId);
+                continue;
+            }
+
             if (current.laborType === 'time') {
                 processed.push(current);
             } else {
@@ -606,7 +612,7 @@ export const generateInvoice = (project: Project) => {
 
 export const generateDeliveryNote = (project: Project) => {
     // Process details (Group travel, etc if needed - reusing same logic as Invoice)
-    const processedDetails = processProjectDetails(project.details);
+    const processedDetails = processProjectDetails(project.details, { hideZeroAmountLabor: true });
 
     // Pad with empty rows
     const MIN_ROWS = 10;
