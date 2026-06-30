@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown, Copy } from 'lucide-react';
+import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown, Copy, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Repair } from '../types/repair';
 import { RepairService } from '../utils/repairService';
 import { customerService } from '../utils/customerService';
@@ -207,7 +207,32 @@ const Repairs: React.FC = () => {
         isTaxExempt?: boolean;
     }
 
+    interface SectionDef {
+        title: string;
+        type: DetailItem['lineType'];
+        subType?: string;
+        showSupplier?: boolean;
+        description?: string;
+    }
+
+    const DEFAULT_REPAIR_SECTIONS: SectionDef[] = [
+        { title: '自社工賃', type: 'labor', description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '自社出張費', type: 'travel', description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '在庫部品・商品', type: 'inventory', description: '在庫管理に登録されている部品を選択します' },
+        { title: '発注部品・商品', type: 'part', subType: 'part', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '外注費', type: 'outsourcing', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '諸経費', type: 'expense', description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '値引き', type: 'discount', description: '値引き額はマイナスを付けずに入力してください。自動的に値引きとして計算されます。' },
+        { title: 'その他', type: 'other', description: '請求単価0で登録した場合は、内容のみ明細に表示されます' }
+    ];
+
+    const DEFAULT_RENTAL_SECTIONS: SectionDef[] = [
+        { title: '自社在庫レンタル', type: 'part', description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '他社Wレンタル', type: 'outsourcing', description: '請求単価0で登録した内容は明細には表示されません' }
+    ];
+
     const [details, setDetails] = useState<DetailItem[]>([]);
+    const [sectionOrder, setSectionOrder] = useState<SectionDef[]>([]);
     const [photos, setPhotos] = useState<ProjectPhoto[]>([]);
     const [pendingPhotos, setPendingPhotos] = useState<File[]>([]); // New state for buffering
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -652,7 +677,17 @@ const Repairs: React.FC = () => {
                 actualReturnDate: formState.actualReturnDate ? new Date(formState.actualReturnDate) : null,
                 rentalStatus: formState.rentalStatus,
                 totalAmount: totals.totalSales,
-                details: details.map(d => {
+                details: [...details].sort((a, b) => {
+                    const getSectionIdx = (item: DetailItem) => {
+                        const idx = sectionOrder.findIndex(s => s.type === item.lineType && (s.subType === item.outsourcingDetailType || !s.subType));
+                        return idx === -1 ? 999 : idx; // Unknown sections to the end
+                    };
+                    const sectionA = getSectionIdx(a);
+                    const sectionB = getSectionIdx(b);
+                    if (sectionA !== sectionB) return sectionA - sectionB;
+                    // Maintain relative order within section
+                    return details.indexOf(a) - details.indexOf(b);
+                }).map(d => {
                     const safeQty = isNaN(Number(d.quantity)) ? 0 : Number(d.quantity);
                     const safePrice = isNaN(Number(d.unitPrice)) ? 0 : Number(d.unitPrice);
                     const safeCost = isNaN(Number(d.unitCost)) ? 0 : Number(d.unitCost);
@@ -796,6 +831,7 @@ const Repairs: React.FC = () => {
         await loadFormData(); // Load masters before opening
         resetForm();
         setFormType(type);
+        setSectionOrder(type === 'rental' ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS);
         setIsFormOpen(true);
         // Pre-add a detail line for convenience
         if (type === 'sales') {
@@ -845,9 +881,7 @@ const Repairs: React.FC = () => {
                 }));
 
                 if (fullProject.details) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    setDetails(fullProject.details.map((d: any) => {
+                    const loadedDetails = fullProject.details.map((d: any) => {
                         let tType: 'time' | 'distance' | 'area' | undefined = undefined;
                         let pCode = '';
                         let desc = d.description || '';
@@ -905,11 +939,45 @@ const Repairs: React.FC = () => {
                             rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
                             rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
                             productId: d.productId || null,
-                            isTaxExempt: d.isTaxExempt || false
+                            isTaxExempt: d.isTaxExempt || false,
+                            originalIndex: Date.now() + Math.random() // Unique initial key
                         } as DetailItem;
-                    }));
+                    });
+                    
+                    setDetails(loadedDetails);
+
+                    // Compute initial section order based on saved data
+                    const isRental = fullProject.type === 'rental';
+                    const defaultSections = isRental ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS;
+                    
+                    const newSectionOrder: SectionDef[] = [];
+                    const seenSections = new Set<string>();
+
+                    // 1. Extract sections from loaded details
+                    for (const d of loadedDetails) {
+                        const secKey = `${d.lineType}-${d.outsourcingDetailType || ''}`;
+                        if (!seenSections.has(secKey)) {
+                            seenSections.add(secKey);
+                            const matchedDef = defaultSections.find(s => s.type === d.lineType && (s.subType === d.outsourcingDetailType || !s.subType));
+                            if (matchedDef) {
+                                newSectionOrder.push(matchedDef);
+                            }
+                        }
+                    }
+
+                    // 2. Append missing sections from defaults
+                    for (const def of defaultSections) {
+                        const secKey = `${def.type}-${def.subType || ''}`;
+                        if (!seenSections.has(secKey)) {
+                            newSectionOrder.push(def);
+                        }
+                    }
+
+                    setSectionOrder(newSectionOrder);
+
                 } else {
                     setDetails([]);
+                    setSectionOrder(fullProject.type === 'rental' ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS);
                 }
 
                 setPhotos(fullProject.photos || []);
@@ -1082,8 +1150,45 @@ const Repairs: React.FC = () => {
         await loadProjectDetails(project.id);
     };
 
+    const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+        if (direction === 'up' && index > 0) {
+            const newOrder = [...sectionOrder];
+            [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+            setSectionOrder(newOrder);
+        } else if (direction === 'down' && index < sectionOrder.length - 1) {
+            const newOrder = [...sectionOrder];
+            [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+            setSectionOrder(newOrder);
+        }
+    };
+
+    const handleMoveDetail = (originalIndex: number, direction: 'up' | 'down', sectionType: string, subType?: string) => {
+        const sectionDetails = details.map((d, i) => ({ ...d, originalIndex: i })).filter(d => {
+            if (d.lineType !== sectionType) return false;
+            if (sectionType === 'outsourcing' && subType) return d.outsourcingDetailType === subType;
+            return true;
+        });
+        const currentIndexInSection = sectionDetails.findIndex(d => d.originalIndex === originalIndex);
+        
+        if (direction === 'up' && currentIndexInSection > 0) {
+            const indexToSwap = sectionDetails[currentIndexInSection - 1].originalIndex;
+            setDetails(prev => {
+                const newDetails = [...prev];
+                [newDetails[indexToSwap], newDetails[originalIndex]] = [newDetails[originalIndex], newDetails[indexToSwap]];
+                return newDetails;
+            });
+        } else if (direction === 'down' && currentIndexInSection < sectionDetails.length - 1) {
+            const indexToSwap = sectionDetails[currentIndexInSection + 1].originalIndex;
+            setDetails(prev => {
+                const newDetails = [...prev];
+                [newDetails[indexToSwap], newDetails[originalIndex]] = [newDetails[originalIndex], newDetails[indexToSwap]];
+                return newDetails;
+            });
+        }
+    };
+
     // Helper to render Inventory Detail Section
-    const renderInventoryDetailTable = (title: string, type: DetailItem['lineType'], description?: string) => {
+    const renderInventoryDetailTable = (title: string, type: DetailItem['lineType'], description?: string, sectionIndex?: number) => {
         const sectionDetails = details
             .map((d, i) => ({ ...d, originalIndex: i }))
             .filter(d => d.lineType === type);
@@ -1099,6 +1204,12 @@ const Repairs: React.FC = () => {
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        {sectionIndex !== undefined && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <button type="button" onClick={() => handleMoveSection(sectionIndex, 'up')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748b' }} title="上に移動"><ArrowUp size={14} /></button>
+                                <button type="button" onClick={() => handleMoveSection(sectionIndex, 'down')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748b' }} title="下に移動"><ArrowDown size={14} /></button>
+                            </div>
+                        )}
                         <span>{title}</span>
                         {description && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{description}</span>}
                     </div>
@@ -1117,7 +1228,7 @@ const Repairs: React.FC = () => {
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>数量</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>売価</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>原価</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '70px' }}>操作</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1221,7 +1332,7 @@ const Repairs: React.FC = () => {
     };
 
     // Helper to render Detail Section
-    const renderDetailTable = (title: string, type: DetailItem['lineType'], subType?: string, showSupplier: boolean = false, description?: string) => {
+    const renderDetailTable = (title: string, type: DetailItem['lineType'], subType?: string, showSupplier: boolean = false, description?: string, sectionIndex?: number) => {
         const sectionDetails = details
             .map((d, i) => ({ ...d, originalIndex: i }))
             .filter(d => {
@@ -1243,6 +1354,12 @@ const Repairs: React.FC = () => {
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        {sectionIndex !== undefined && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <button type="button" onClick={() => handleMoveSection(sectionIndex, 'up')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748b' }} title="上に移動"><ArrowUp size={14} /></button>
+                                <button type="button" onClick={() => handleMoveSection(sectionIndex, 'down')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748b' }} title="下に移動"><ArrowDown size={14} /></button>
+                            </div>
+                        )}
                         <span>{title}</span>
                         {description && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{description}</span>}
                     </div>
@@ -1724,11 +1841,13 @@ const Repairs: React.FC = () => {
                                     )}
 
                                     <td style={{ padding: '0.25rem', textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                                            <button type="button" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }} title="明細を複製">
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.25rem', alignItems: 'center' }}>
+                                            <button type="button" onClick={() => handleMoveDetail(detail.originalIndex, 'up', type, subType)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }} title="上に移動"><ArrowUp size={16} /></button>
+                                            <button type="button" onClick={() => handleMoveDetail(detail.originalIndex, 'down', type, subType)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }} title="下に移動"><ArrowDown size={16} /></button>
+                                            <button type="button" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }} title="明細を複製">
                                                 <Copy size={16} />
                                             </button>
-                                            <button type="button" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }} title="削除">
+                                            <button type="button" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }} title="削除">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
@@ -1793,7 +1912,7 @@ const Repairs: React.FC = () => {
         return result;
     }, [projects, statusFilter, sortField, sortOrder]);
 
-    const renderRentalDetailTable = (title: string, type: 'part' | 'outsourcing', description?: string) => {
+    const renderRentalDetailTable = (title: string, type: 'part' | 'outsourcing', description?: string, sectionIndex?: number) => {
         const sectionDetails = details
             .map((d, i) => ({ ...d, originalIndex: i }))
             .filter(d => d.lineType === type);
@@ -1807,6 +1926,12 @@ const Repairs: React.FC = () => {
             <div className={styles.detailTableWrapper}>
                 <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        {sectionIndex !== undefined && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <button type="button" onClick={() => handleMoveSection(sectionIndex, 'up')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748b' }} title="上に移動"><ArrowUp size={14} /></button>
+                                <button type="button" onClick={() => handleMoveSection(sectionIndex, 'down')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748b' }} title="下に移動"><ArrowDown size={14} /></button>
+                            </div>
+                        )}
                         <span>{title}</span>
                         {description && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{description}</span>}
                     </div>
@@ -1830,7 +1955,7 @@ const Repairs: React.FC = () => {
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '90px' }}>補償日数</th>
                             <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>補償料</th>
                             {isWRental && <th style={{ padding: '0.5rem', textAlign: 'right', width: '110px' }}>原価単価</th>}
-                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '60px' }}>操作</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1963,11 +2088,13 @@ const Repairs: React.FC = () => {
                                     </td>
                                 )}
                                 <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6' }} title="明細を複製">
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.25rem', alignItems: 'center' }}>
+                                        <button type="button" onClick={() => handleMoveDetail(detail.originalIndex, 'up', type)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }} title="上に移動"><ArrowUp size={16} /></button>
+                                        <button type="button" onClick={() => handleMoveDetail(detail.originalIndex, 'down', type)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }} title="下に移動"><ArrowDown size={16} /></button>
+                                        <Button type="button" variant="ghost" size="sm" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6', padding: '0.25rem' }} title="明細を複製">
                                             <Copy size={16} />
                                         </Button>
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444' }} title="削除">
+                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', padding: '0.25rem' }} title="削除">
                                             <Trash2 size={16} />
                                         </Button>
                                     </div>
@@ -2667,30 +2794,20 @@ const Repairs: React.FC = () => {
 
                                 {/* Details Sections */}
                                 <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
-                                    {formType === 'rental' ? (
-                                        <>
-                                            {renderRentalDetailTable('自社在庫レンタル', 'part', '請求単価0で登録した内容は明細には表示されません')}
-                                            {renderRentalDetailTable('他社Wレンタル', 'outsourcing', '請求単価0で登録した内容は明細には表示されません')}
-                                        </>
-                                    ) : (
-                                        <>
-                                            {formType !== 'sales' && renderDetailTable('自社工賃', 'labor', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
-                                            {formType !== 'sales' && renderDetailTable('自社出張費', 'travel', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
-                                            {renderInventoryDetailTable('在庫部品・商品', 'inventory', '在庫管理に登録されている部品を選択します')}
-                                            {renderDetailTable('発注部品・商品', 'part', 'part', true, '請求単価0で登録した内容は明細には表示されません')}
+                                    {sectionOrder.map((section, index) => {
+                                        if (formType === 'sales' && (section.type === 'labor' || section.type === 'travel')) return null;
 
-                                            {/* Outsourcing Section - Consolidated */}
-                                            {renderDetailTable('外注費', 'outsourcing', undefined, true, '請求単価0で登録した内容は明細には表示されません')}
+                                        const key = `${section.type}-${section.subType || ''}`;
+                                        if (formType === 'rental') {
+                                            return <React.Fragment key={key}>{renderRentalDetailTable(section.title, section.type as 'part'|'outsourcing', section.description, index)}</React.Fragment>;
+                                        }
 
-                                            {/* Expense Section */}
-                                            {renderDetailTable('諸経費', 'expense', undefined, false, '請求単価0で登録した内容は明細には表示されません')}
+                                        if (section.type === 'inventory') {
+                                            return <React.Fragment key={key}>{renderInventoryDetailTable(section.title, section.type, section.description, index)}</React.Fragment>;
+                                        }
 
-                                            {/* Discount Section */}
-                                            {renderDetailTable('値引き', 'discount', undefined, false, '値引き額はマイナスを付けずに入力してください。自動的に値引きとして計算されます。')}
-
-                                            {renderDetailTable('その他', 'other', undefined, false, '請求単価0で登録した場合は、内容のみ明細に表示されます')}
-                                        </>
-                                    )}
+                                        return <React.Fragment key={key}>{renderDetailTable(section.title, section.type, section.subType, section.showSupplier, section.description, index)}</React.Fragment>;
+                                    })}
                                 </div>
 
                                 <div className={styles.formActions}>
