@@ -2181,23 +2181,23 @@ const Repairs: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th style={{ width: '80px' }}>タイプ</th>
+                            <th style={{ width: '60px' }}>タイプ</th>
                             <th
-                                style={{ cursor: 'pointer', userSelect: 'none' }}
+                                style={{ width: '80px', cursor: 'pointer', userSelect: 'none' }}
                                 onClick={() => handleSort('status')}
                             >
                                 ステータス {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th
-                                style={{ cursor: 'pointer', userSelect: 'none' }}
+                                style={{ width: '90px', cursor: 'pointer', userSelect: 'none' }}
                                 onClick={() => handleSort('createdAt')}
                             >
-                                受付/販売日 {sortField === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                受付日 {sortField === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th>顧客名</th>
+                            <th style={{ width: '25%' }}>顧客名</th>
                             <th>機種 / シリアル (件名)</th>
                             <th>内容</th>
-                            <th>アクション</th>
+                            <th style={{ width: '150px' }}>アクション</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2254,9 +2254,9 @@ const Repairs: React.FC = () => {
                                                 size="sm"
                                                 onClick={() => window.open(`${API_BASE_URL}/projects/${project.id}/pdf/quotation`, '_blank')}
                                                 title="見積書PDF"
-                                                style={{ color: '#2563eb', fontWeight: 'bold', border: '1px solid #bfdbfe', background: '#eff6ff', fontSize: '0.75rem', padding: '0.2rem 0.4rem', height: 'auto' }}
+                                                style={{ color: '#7e22ce', fontWeight: 'bold', border: '1px solid #e9d5ff', background: '#faf5ff', fontSize: '0.75rem', padding: '0.2rem 0.3rem', height: 'auto' }}
                                             >
-                                                <FileText size={14} style={{ marginRight: '4px' }} /> 見積書
+                                                <FileText size={14} style={{ marginRight: '2px' }} /> 見積
                                             </Button>
                                             <Button
                                                 variant="secondary"
@@ -2273,12 +2273,12 @@ const Repairs: React.FC = () => {
                                                     border: project.isDeliveryNoteIssued ? '1px solid #86efac' : '1px solid #a7f3d0',
                                                     background: project.isDeliveryNoteIssued ? '#dcfce7' : '#f0fdf4',
                                                     fontSize: '0.75rem',
-                                                    padding: '0.2rem 0.4rem',
+                                                    padding: '0.2rem 0.3rem',
                                                     height: 'auto'
                                                 }}
                                             >
-                                                <FileText size={14} style={{ marginRight: '4px' }} />
-                                                {project.isDeliveryNoteIssued ? '納品書(済)' : '納品書'}
+                                                <FileText size={14} style={{ marginRight: '2px' }} />
+                                                {project.isDeliveryNoteIssued ? '納品(済)' : '納品'}
                                             </Button>
                                             <Button
                                                 variant="secondary"
@@ -2321,12 +2321,12 @@ const Repairs: React.FC = () => {
                                                     border: project.isInvoiceIssued ? '1px solid #93c5fd' : '1px solid #bfdbfe',
                                                     background: project.isInvoiceIssued ? '#dbeafe' : '#eff6ff',
                                                     fontSize: '0.75rem',
-                                                    padding: '0.2rem 0.4rem',
+                                                    padding: '0.2rem 0.3rem',
                                                     height: 'auto'
                                                 }}
                                             >
-                                                <FileText size={14} style={{ marginRight: '4px' }} />
-                                                {project.isInvoiceIssued ? '請求書(済)' : '請求書'}
+                                                <FileText size={14} style={{ marginRight: '2px' }} />
+                                                {project.isInvoiceIssued ? '請求(済)' : '請求'}
                                             </Button>
                                             <Button variant="ghost" size="sm" onClick={(e) => handleDeleteProject(project.id, e)} title="削除" style={{ color: '#ef4444' }}>
                                                 <Trash2 size={16} />
