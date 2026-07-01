@@ -2181,7 +2181,7 @@ const Repairs: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th style={{ width: '60px' }}>タイプ</th>
+                            <th style={{ width: '50px' }}>タイプ</th>
                             <th
                                 style={{ width: '80px', cursor: 'pointer', userSelect: 'none' }}
                                 onClick={() => handleSort('status')}
@@ -2194,7 +2194,7 @@ const Repairs: React.FC = () => {
                             >
                                 受付日 {sortField === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th style={{ width: '25%' }}>顧客名</th>
+                            <th style={{ width: '30%' }}>顧客名</th>
                             <th>機種 / シリアル (件名)</th>
                             <th>内容</th>
                             <th style={{ width: '150px' }}>アクション</th>
@@ -2232,7 +2232,7 @@ const Repairs: React.FC = () => {
                                             whiteSpace: 'nowrap'
                                         }}>
                                             {project.type === 'sales' ? '販売' :
-                                                project.type === 'inspection' ? '特定自主検査' :
+                                                project.type === 'inspection' ? '特自' :
                                                     project.type === 'maintenance' ? '整備' :
                                                         project.type === 'rental' ? 'レンタル' : '修理'}
                                         </span>
