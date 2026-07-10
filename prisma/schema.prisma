@@ -150,6 +150,7 @@ model Project {
   
   customerContactName String? // New: 顧客担当者名
   internalRep         String? // New: 自社担当者名
+  projectNo           String? // New: 案件No.
   
   type              String    @default("repair") // 'repair' or 'sales'
   

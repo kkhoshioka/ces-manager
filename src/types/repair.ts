@@ -41,6 +41,7 @@ export interface Repair {
     type?: 'repair' | 'sales' | 'inspection' | 'maintenance' | 'rental'; // Added rental project type
 
     // Snapshot fields
+    projectNo?: string | null;
     machineModel?: string | null;
     serialNumber?: string | null;
     hourMeter?: string | null;
@@ -80,6 +81,7 @@ export type NewRepair = {
     customerMachineId?: number;
     machineModel?: string;
     serialNumber?: string;
+    projectNo?: string;
     hourMeter?: string;
     issueDescription?: string; // Mapped to notes or description in details? Let's use notes for now or create a detail.
     notes?: string;

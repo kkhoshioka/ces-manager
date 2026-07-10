@@ -71,6 +71,7 @@ const Repairs: React.FC = () => {
         internalRep: string; // 自社担当者
         machineModel: string;
         serialNumber: string;
+        projectNo: string;
         hourMeter: string;
         issueDescription: string;
         notes: string;
@@ -89,6 +90,7 @@ const Repairs: React.FC = () => {
         internalRep: '',
         machineModel: '',
         serialNumber: '',
+        projectNo: '',
         hourMeter: '',
         issueDescription: '',
         notes: '',
@@ -672,6 +674,7 @@ const Repairs: React.FC = () => {
                 customerMachineId: customerMachineId,
                 machineModel: formState.machineModel,
                 serialNumber: formState.serialNumber,
+                projectNo: formState.projectNo,
                 hourMeter: formState.hourMeter,
                 orderDate: formState.orderDate ? new Date(formState.orderDate) : new Date(), // Auto-fill today if empty
                 completionDate: finalCompletionDate ? new Date(finalCompletionDate) : null,
@@ -817,6 +820,7 @@ const Repairs: React.FC = () => {
             internalRep: '',
             machineModel: '',
             serialNumber: '',
+            projectNo: '',
             hourMeter: '',
             issueDescription: '',
             notes: '',
@@ -879,6 +883,7 @@ const Repairs: React.FC = () => {
                     customerContactName: fullProject.customerContactName || prev.customerContactName,
                     machineModel: fullProject.machineModel || prev.machineModel,
                     serialNumber: fullProject.serialNumber || prev.serialNumber,
+                    projectNo: fullProject.projectNo || prev.projectNo,
                     hourMeter: fullProject.hourMeter || prev.hourMeter,
                     orderDate: fullProject.orderDate ? new Date(fullProject.orderDate).toISOString().split('T')[0] : prev.orderDate,
                     completionDate: fullProject.completionDate ? new Date(fullProject.completionDate).toISOString().split('T')[0] : prev.completionDate,
@@ -1103,6 +1108,7 @@ const Repairs: React.FC = () => {
                         laborType: d.laborType as 'time' | 'fixed' | undefined,
                         machineModel: d.machineModel || '',
                         serialNumber: d.serialNumber || '',
+                        projectNo: d.projectNo || '',
                         rentalBillingType: d.rentalBillingType as 'daily' | 'monthly' | undefined,
                         rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate).toISOString().split('T')[0] : '',
                         rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : '',
@@ -1138,9 +1144,10 @@ const Repairs: React.FC = () => {
         setFormState({
             customerName: project.customer?.name || '',
             customerContactName: project.customerContactName || '',
-                internalRep: project.internalRep || '',
-                machineModel: project.machineModel || '',
+            internalRep: project.internalRep || '',
+            machineModel: project.machineModel || '',
             serialNumber: project.serialNumber || '',
+            projectNo: project.projectNo || '',
             hourMeter: project.hourMeter || '',
             orderDate: project.orderDate ? new Date(project.orderDate).toISOString().split('T')[0] : '',
             completionDate: project.completionDate ? new Date(project.completionDate).toISOString().split('T')[0] : '',
@@ -2186,9 +2193,10 @@ const Repairs: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th style={{ width: '50px' }}>タイプ</th>
+                            <th style={{ width: '60px' }}>案件No.</th>
+                            <th style={{ width: '40px' }}>タイプ</th>
                             <th
-                                style={{ width: '80px', cursor: 'pointer', userSelect: 'none' }}
+                                style={{ width: '70px', cursor: 'pointer', userSelect: 'none' }}
                                 onClick={() => handleSort('status')}
                             >
                                 ステータス {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -2208,17 +2216,18 @@ const Repairs: React.FC = () => {
                     <tbody>
                         {isLoadingList ? (
                             <tr>
-                                <td colSpan={7} className={styles.emptyState}>
+                                <td colSpan={8} className={styles.emptyState}>
                                     <LoadingSpinner />
                                 </td>
                             </tr>
                         ) : displayProjects.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className={styles.emptyState}>データがありません</td>
+                                <td colSpan={8} className={styles.emptyState}>データがありません</td>
                             </tr>
                         ) : (
                             displayProjects.map(project => (
                                 <tr key={project.id} onClick={() => handleRowClick(project)} style={{ cursor: 'pointer' }}>
+                                    <td><span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{project.projectNo || '-'}</span></td>
                                     <td>
                                         <span style={{
                                             display: 'inline-block',
@@ -2487,6 +2496,14 @@ const Repairs: React.FC = () => {
                                                     {formType === 'rental' && <option value="on_rental" style={{ backgroundColor: '#d1fae5', color: '#065f46' }}>貸出中</option>}
                                                     <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                                 </select>
+                                            </div>
+                                            <div style={{ width: '150px', flex: '0 0 auto' }}>
+                                                <Input
+                                                    label="案件No."
+                                                    name="projectNo"
+                                                    value={formState.projectNo}
+                                                    onChange={handleInputChange}
+                                                />
                                             </div>
                                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                                 <div>
