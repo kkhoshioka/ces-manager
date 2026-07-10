@@ -2192,10 +2192,10 @@ const Repairs: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th style={{ width: '60px' }}>案件No.</th>
-                            <th style={{ width: '40px' }}>タイプ</th>
+                            <th style={{ width: '80px', minWidth: '80px', whiteSpace: 'nowrap' }}>案件No.</th>
+                            <th style={{ width: '60px', minWidth: '60px', padding: '1rem 0.5rem', textAlign: 'center' }}>タイプ</th>
                             <th
-                                style={{ width: '70px', cursor: 'pointer', userSelect: 'none' }}
+                                style={{ width: '90px', minWidth: '90px', padding: '1rem 0.5rem', cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}
                                 onClick={() => handleSort('status')}
                             >
                                 ステータス {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -2227,7 +2227,7 @@ const Repairs: React.FC = () => {
                             displayProjects.map(project => (
                                 <tr key={project.id} onClick={() => handleRowClick(project)} style={{ cursor: 'pointer' }}>
                                     <td><span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{project.projectNo || '-'}</span></td>
-                                    <td>
+                                    <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
                                         <span style={{
                                             display: 'inline-block',
                                             fontSize: '0.75rem',
@@ -2250,7 +2250,7 @@ const Repairs: React.FC = () => {
                                                         project.type === 'rental' ? 'レンタル' : '修理'}
                                         </span>
                                     </td>
-                                    <td><StatusBadge status={project.status || 'received'} /></td>
+                                    <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}><StatusBadge status={project.status || 'received'} /></td>
                                     <td>{project.orderDate ? new Date(project.orderDate).toLocaleDateString() : (project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-')}</td>
                                     <td className={styles.customerName}>{project.customer?.name || '-'}</td>
                                     <td>
