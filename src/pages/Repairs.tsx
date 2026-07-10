@@ -1108,7 +1108,6 @@ const Repairs: React.FC = () => {
                         laborType: d.laborType as 'time' | 'fixed' | undefined,
                         machineModel: d.machineModel || '',
                         serialNumber: d.serialNumber || '',
-                        projectNo: d.projectNo || '',
                         rentalBillingType: d.rentalBillingType as 'daily' | 'monthly' | undefined,
                         rentalStartDate: d.rentalStartDate ? new Date(d.rentalStartDate).toISOString().split('T')[0] : '',
                         rentalEndDate: d.rentalEndDate ? new Date(d.rentalEndDate).toISOString().split('T')[0] : '',

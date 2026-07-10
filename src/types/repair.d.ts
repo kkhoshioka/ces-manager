@@ -35,6 +35,7 @@ export interface Repair {
     customerId: number;
     customerMachineId?: number | null;
     type?: 'repair' | 'sales' | 'inspection' | 'maintenance' | 'rental';
+    projectNo?: string | null;
     machineModel?: string | null;
     serialNumber?: string | null;
     hourMeter?: string | null;
@@ -65,6 +66,7 @@ export type NewRepair = {
     customerMachineId?: number;
     machineModel?: string;
     serialNumber?: string;
+    projectNo?: string;
     hourMeter?: string;
     issueDescription?: string;
     notes?: string;
