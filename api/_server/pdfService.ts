@@ -817,7 +817,7 @@ export const generateDeliveryNote = (project: Project) => {
                 unbreakable: true,
                 stack: [
                     { text: '備考:', margin: [0, 20, 0, 5], fontSize: 9 },
-                    { text: project.notes || 'なし', fontSize: 9, color: '#555' }
+                    { text: (project.notes && project.notes.includes('\n\n備考: ')) ? project.notes.split('\n\n備考: ')[1] : 'なし', fontSize: 9, color: '#555' }
                 ]
             }
         ],
