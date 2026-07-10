@@ -795,8 +795,13 @@ const Repairs: React.FC = () => {
                 }
             }
 
-            resetForm();
             loadProjects();
+            if (selectedProjectId) {
+                await loadProjectDetails(selectedProjectId);
+                alert('更新しました。');
+            } else {
+                resetForm();
+            }
         } catch (error) {
             console.error('Failed to save project', error);
             alert(`保存に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
