@@ -2442,40 +2442,40 @@ const Repairs: React.FC = () => {
                                 {/* Summary Header */}
                                 <div className={styles.summaryHeader}>
                                     <div className={styles.formGrid}>
-                                        {/* Linked Type Selector */}
-                                        <div className="mb-2">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
-                                            <select
-                                                value={formType}
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                onChange={(e) => setFormType(e.target.value as any)}
-                                                className={`border rounded-md p-2 text-sm form-select cursor-pointer`}
-                                                style={{
-                                                    width: '160px',
-                                                    backgroundColor: (formType === 'sales' ? '#e0f2fe' :
-                                                        formType === 'inspection' ? '#f3e8ff' :
-                                                            formType === 'maintenance' ? '#ffedd5' :
-                                                                formType === 'rental' ? '#d1fae5' : '#fef9c3'),
-                                                    color: (formType === 'sales' ? '#0369a1' :
-                                                        formType === 'inspection' ? '#7e22ce' :
-                                                            formType === 'maintenance' ? '#c2410c' :
-                                                                formType === 'rental' ? '#047857' : '#854d0e'),
-                                                    borderColor: (formType === 'sales' ? '#bae6fd' :
-                                                        formType === 'inspection' ? '#e9d5ff' :
-                                                            formType === 'maintenance' ? '#fed7aa' :
-                                                                formType === 'rental' ? '#047857' : '#fde047'),
-                                                    fontWeight: 'bold'
-                                                }}
-                                            >
-                                                <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
-                                                <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>特定自主検査案件</option>
-                                                <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
-                                                <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
-                                                <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
-                                            </select>
-                                        </div>
+                                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                                            {/* Linked Type Selector */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
+                                                <select
+                                                    value={formType}
+                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                    onChange={(e) => setFormType(e.target.value as any)}
+                                                    className={`border rounded-md p-2 text-sm form-select cursor-pointer`}
+                                                    style={{
+                                                        width: '160px',
+                                                        backgroundColor: (formType === 'sales' ? '#e0f2fe' :
+                                                            formType === 'inspection' ? '#f3e8ff' :
+                                                                formType === 'maintenance' ? '#ffedd5' :
+                                                                    formType === 'rental' ? '#d1fae5' : '#fef9c3'),
+                                                        color: (formType === 'sales' ? '#0369a1' :
+                                                            formType === 'inspection' ? '#7e22ce' :
+                                                                formType === 'maintenance' ? '#c2410c' :
+                                                                    formType === 'rental' ? '#047857' : '#854d0e'),
+                                                        borderColor: (formType === 'sales' ? '#bae6fd' :
+                                                            formType === 'inspection' ? '#e9d5ff' :
+                                                                formType === 'maintenance' ? '#fed7aa' :
+                                                                    formType === 'rental' ? '#047857' : '#fde047'),
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                >
+                                                    <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
+                                                    <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>特定自主検査案件</option>
+                                                    <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
+                                                    <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
+                                                    <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
+                                                </select>
+                                            </div>
 
-                                        <div className="mb-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
                                                 <select
@@ -2496,7 +2496,8 @@ const Repairs: React.FC = () => {
                                                     <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                                 </select>
                                             </div>
-                                            <div style={{ width: '150px', flex: '0 0 auto' }}>
+
+                                            <div style={{ width: '150px' }}>
                                                 <Input
                                                     label="案件No."
                                                     name="projectNo"
@@ -2504,7 +2505,8 @@ const Repairs: React.FC = () => {
                                                     onChange={handleInputChange}
                                                 />
                                             </div>
-                                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+
+                                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                                                 <div>
                                                     <Input
                                                         type="date"
