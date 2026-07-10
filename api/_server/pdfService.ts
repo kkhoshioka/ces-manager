@@ -392,13 +392,15 @@ export const generateInvoice = (project: Project) => {
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
                             ...(project.billingSnapshot ? [] : [{ 
-                                text: (project.machineModel || project.serialNumber) 
-                                    ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
-                                    : '件名: 案件詳細', 
+                                text: `件名: ${project.notes ? project.notes.split('\n')[0] : '案件詳細'}`, 
                                 fontSize: 9, 
                                 margin: [0, 4, 0, 0] 
                             }]),
-                            ...(project.notes ? [{ text: (project.notes || '').split('\n')[0], fontSize: 9, margin: [0, 2, 0, 0] }] : []),
+                            ...((project.machineModel || project.serialNumber) ? [{ 
+                                text: `機種: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `S/N: ${project.serialNumber}` : ''}`.trim(), 
+                                fontSize: 9, 
+                                margin: [0, 2, 0, 0] 
+                            }] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り御請求申し上げます。', fontSize: 9 }
@@ -723,13 +725,15 @@ export const generateDeliveryNote = (project: Project) => {
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 11, margin: [10, 0, 0, 0] }] : []),
                             { text: '\n' },
                             { 
-                                text: (project.machineModel || project.serialNumber) 
-                                    ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
-                                    : '件名: 案件詳細', 
+                                text: `件名: ${project.notes ? project.notes.split('\n')[0] : '案件詳細'}`, 
                                 fontSize: 9, 
                                 margin: [0, 4, 0, 0] 
                             },
-                            ...(project.notes ? [{ text: (project.notes || '').split('\n')[0], fontSize: 9, margin: [0, 2, 0, 0] }] : []),
+                            ...((project.machineModel || project.serialNumber) ? [{ 
+                                text: `機種: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `S/N: ${project.serialNumber}` : ''}`.trim(), 
+                                fontSize: 9, 
+                                margin: [0, 2, 0, 0] 
+                            }] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り納品いたしました。', fontSize: 9 }
@@ -872,9 +876,10 @@ export const generateQuotation = (project: Project) => {
     const now = new Date();
     // Use the first line of notes as the issue summary for the subject
     const issueSummary = (project.notes || '').split('\n')[0];
-    const subjectLine = (project.machineModel || project.serialNumber) 
-        ? `件名: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `#${project.serialNumber}` : ''}`.trim()
-        : '件名: 案件詳細';
+    const subjectLine = `件名: ${issueSummary || '案件詳細'}`;
+    const machineInfo = (project.machineModel || project.serialNumber) 
+        ? `機種: ${project.machineModel || (project.serialNumber ? '型式不明' : '')} ${project.serialNumber ? `S/N: ${project.serialNumber}` : ''}`.trim()
+        : null;
 
     // UI Colors
     const PRIMARY_COLOR = '#5B9BD5'; // Water/Light Blue
@@ -966,7 +971,7 @@ export const generateQuotation = (project: Project) => {
                             // Add customerContactName if it exists, otherwise omit this line
                             ...(project.customerContactName ? [{ text: `${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
                             { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },
-                            ...(issueSummary ? [{ text: issueSummary, fontSize: 9, margin: [0, 2, 0, 0] }] : []),
+                            ...(machineInfo ? [{ text: machineInfo, fontSize: 9, margin: [0, 2, 0, 0] }] : []),
                             { text: '毎度ありがとうございます。', fontSize: 9, margin: [0, 8, 0, 0] },
                             { text: '下記の通り御見積申し上げます。', fontSize: 9 },
                             { text: 'ご検討の程、宜しくお願い致します。', fontSize: 9 }
