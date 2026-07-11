@@ -23,6 +23,8 @@ export interface ProjectDetail {
     serialNumber?: string | null;
     rentalBillingType?: string | null;
     isTaxExempt?: boolean;
+    purchaseDate?: string | null;
+    listPrice?: number | null;
 }
 
 export interface ProjectPhoto {

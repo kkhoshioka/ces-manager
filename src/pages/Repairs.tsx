@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown, Copy, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown, ChevronUp, Copy, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Repair } from '../types/repair';
 import { RepairService } from '../utils/repairService';
 import { customerService } from '../utils/customerService';
@@ -139,6 +139,19 @@ const Repairs: React.FC = () => {
     const [isMasterDataLoaded, setIsMasterDataLoaded] = useState(false);
     const [isFormLoading, setIsFormLoading] = useState(false);
     const [isLoadingList, setIsLoadingList] = useState(true);
+    const [expandedDetails, setExpandedDetails] = useState<Set<number>>(new Set());
+
+    const toggleDetailExpand = (originalIndex: number) => {
+        setExpandedDetails(prev => {
+            const next = new Set(prev);
+            if (next.has(originalIndex)) {
+                next.delete(originalIndex);
+            } else {
+                next.add(originalIndex);
+            }
+            return next;
+        });
+    };
 
     // Derived state for available machines based on selected customer name
     const availableMachines = useMemo(() => {
@@ -1239,6 +1252,7 @@ const Repairs: React.FC = () => {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                         <thead>
                             <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '30px' }}></th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>カテゴリー</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>部品選択</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>品番</th>
@@ -1254,90 +1268,121 @@ const Repairs: React.FC = () => {
                                 const availableParts = inventoryParts.filter(p => p.categoryId === detail.productCategoryId);
                                 
                                 return (
-                                    <tr key={detail.originalIndex} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <select
-                                                className={styles.tableInput}
-                                                value={detail.productCategoryId || ''}
-                                                onChange={(e) => {
-                                                    const val = e.target.value ? Number(e.target.value) : null;
-                                                    handleDetailChange(detail.originalIndex, 'productCategoryId', val);
-                                                    // Reset part selection when category changes
-                                                    handleDetailChange(detail.originalIndex, 'productId', null);
-                                                    handleDetailChange(detail.originalIndex, 'productCode', '');
-                                                    handleDetailChange(detail.originalIndex, 'description', '');
-                                                    handleDetailChange(detail.originalIndex, 'unitPrice', 0);
-                                                    handleDetailChange(detail.originalIndex, 'unitCost', 0);
-                                                }}
-                                            >
-                                                <option value="">-</option>
-                                                {activeCategories.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                                ))}
-                                            </select>
-                                        </td>
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <select
-                                                className={styles.tableInput}
-                                                value={detail.productId || ''}
-                                                onChange={(e) => {
-                                                    const val = e.target.value ? Number(e.target.value) : null;
-                                                    handleDetailChange(detail.originalIndex, 'productId', val);
-                                                    
-                                                    if (val) {
-                                                        const part = inventoryParts.find(p => p.id === val);
-                                                        if (part) {
-                                                            handleDetailChange(detail.originalIndex, 'productCode', part.partNumber || part.code || '');
-                                                            handleDetailChange(detail.originalIndex, 'description', part.name || '');
-                                                            handleDetailChange(detail.originalIndex, 'unitPrice', part.standardPrice || 0);
-                                                            handleDetailChange(detail.originalIndex, 'unitCost', part.standardCost || 0);
+                                    <React.Fragment key={detail.originalIndex}>
+                                        <tr style={{ borderBottom: expandedDetails.has(detail.originalIndex) ? 'none' : '1px solid #f1f5f9' }}>
+                                            <td style={{ padding: '0.25rem', textAlign: 'center' }}>
+                                                <button type="button" onClick={() => toggleDetailExpand(detail.originalIndex)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748b' }} title="詳細">
+                                                    {expandedDetails.has(detail.originalIndex) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                </button>
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <select
+                                                    className={styles.tableInput}
+                                                    value={detail.productCategoryId || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value ? Number(e.target.value) : null;
+                                                        handleDetailChange(detail.originalIndex, 'productCategoryId', val);
+                                                        // Reset part selection when category changes
+                                                        handleDetailChange(detail.originalIndex, 'productId', null);
+                                                        handleDetailChange(detail.originalIndex, 'productCode', '');
+                                                        handleDetailChange(detail.originalIndex, 'description', '');
+                                                        handleDetailChange(detail.originalIndex, 'unitPrice', 0);
+                                                        handleDetailChange(detail.originalIndex, 'unitCost', 0);
+                                                    }}
+                                                >
+                                                    <option value="">-</option>
+                                                    {activeCategories.map(c => (
+                                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <select
+                                                    className={styles.tableInput}
+                                                    value={detail.productId || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value ? Number(e.target.value) : null;
+                                                        handleDetailChange(detail.originalIndex, 'productId', val);
+                                                        
+                                                        if (val) {
+                                                            const part = inventoryParts.find(p => p.id === val);
+                                                            if (part) {
+                                                                handleDetailChange(detail.originalIndex, 'productCode', part.partNumber || part.code || '');
+                                                                handleDetailChange(detail.originalIndex, 'description', part.name || '');
+                                                                handleDetailChange(detail.originalIndex, 'unitPrice', part.standardPrice || 0);
+                                                                handleDetailChange(detail.originalIndex, 'unitCost', part.standardCost || 0);
+                                                            }
                                                         }
-                                                    }
-                                                }}
-                                                disabled={!detail.productCategoryId}
-                                            >
-                                                <option value="">-</option>
-                                                {availableParts.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name} {p.partNumber ? `[${p.partNumber}]` : (p.code ? `(${p.code})` : '')}</option>
-                                                ))}
-                                            </select>
-                                        </td>
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <input type="text" className={styles.tableInput} value={detail.productCode || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'productCode', e.target.value)} placeholder="品番" />
-                                        </td>
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <input type="text" className={styles.tableInput} value={detail.description || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)} placeholder="品名" />
-                                        </td>
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <input type="number" className={styles.tableInput} style={{ textAlign: 'right' }} min="1" step="0.1" value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', Number(e.target.value))} />
-                                        </td>
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <div className={styles.currencyWrapper}>
-                                                <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
-                                                <span className={styles.currencyUnit}>円</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '0.25rem' }}>
-                                            <div className={styles.currencyWrapper}>
-                                                <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
-                                                <span className={styles.currencyUnit}>円</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '0.25rem', textAlign: 'center' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                                                <Button type="button" variant="ghost" size="sm" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6', padding: '0.25rem' }} title="明細を複製">
-                                                    <Copy size={16} />
-                                                </Button>
-                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', padding: '0.25rem' }} title="削除">
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                    }}
+                                                    disabled={!detail.productCategoryId}
+                                                >
+                                                    <option value="">-</option>
+                                                    {availableParts.map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name} {p.partNumber ? `[${p.partNumber}]` : (p.code ? `(${p.code})` : '')}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <input type="text" className={styles.tableInput} value={detail.productCode || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'productCode', e.target.value)} placeholder="品番" />
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <input type="text" className={styles.tableInput} value={detail.description || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)} placeholder="品名" />
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <input type="number" className={styles.tableInput} style={{ textAlign: 'right' }} min="1" step="0.1" value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', Number(e.target.value))} />
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <div className={styles.currencyWrapper}>
+                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                                    <span className={styles.currencyUnit}>円</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <div className={styles.currencyWrapper}>
+                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                                    <span className={styles.currencyUnit}>円</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '0.25rem', textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                                                    <Button type="button" variant="ghost" size="sm" onClick={() => duplicateDetail(detail.originalIndex)} style={{ color: '#3b82f6', padding: '0.25rem' }} title="明細を複製">
+                                                        <Copy size={16} />
+                                                    </Button>
+                                                    <Button type="button" variant="ghost" size="sm" onClick={() => removeDetail(detail.originalIndex)} style={{ color: '#ef4444', padding: '0.25rem' }} title="削除">
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {expandedDetails.has(detail.originalIndex) && (
+                                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                                <td></td>
+                                                <td colSpan={8} style={{ padding: '0.5rem 1rem 1rem 1rem' }}>
+                                                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                                                        <div style={{ width: '150px' }}>
+                                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>仕入日</label>
+                                                            <input type="date" className={styles.tableInput} value={detail.purchaseDate ? detail.purchaseDate.split('T')[0] : ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'purchaseDate', e.target.value)} />
+                                                        </div>
+                                                        <div style={{ width: '150px' }}>
+                                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>定価</label>
+                                                            <div className={styles.currencyWrapper}>
+                                                                <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.listPrice || 0} onChange={(val) => handleDetailChange(detail.originalIndex, 'listPrice', val)} />
+                                                                <span className={styles.currencyUnit}>円</span>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ flex: 1, minWidth: '300px' }}>
+                                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>備考</label>
+                                                            <input type="text" className={styles.tableInput} value={detail.remarks || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'remarks', e.target.value)} placeholder="備考を入力" />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 );
                             })}
                             <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                                <td colSpan={5} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
+                                <td colSpan={6} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
                                 <td></td>
@@ -1443,6 +1488,7 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'center', width: '30px' }}></th>}
                             {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
                             {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
 
@@ -1545,7 +1591,15 @@ const Repairs: React.FC = () => {
                             const currentSection = detail.section || selectedCategory?.section || '';
 
                             return (
-                                <tr key={detail.originalIndex} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <React.Fragment key={detail.originalIndex}>
+                                <tr style={{ borderBottom: expandedDetails.has(detail.originalIndex) ? 'none' : '1px solid #f1f5f9' }}>
+                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
+                                        <td style={{ padding: '0.25rem', textAlign: 'center' }}>
+                                            <button type="button" onClick={() => toggleDetailExpand(detail.originalIndex)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748b' }} title="詳細">
+                                                {expandedDetails.has(detail.originalIndex) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                            </button>
+                                        </td>
+                                    )}
                                     {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
@@ -1871,11 +1925,36 @@ const Repairs: React.FC = () => {
                                         </div>
                                     </td>
                                 </tr>
+                                {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && expandedDetails.has(detail.originalIndex) && (
+                                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                        <td></td>
+                                        <td colSpan={showSupplier ? 12 : 11} style={{ padding: '0.5rem 1rem 1rem 1rem' }}>
+                                            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                                                <div style={{ width: '150px' }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>仕入日</label>
+                                                    <input type="date" className={styles.tableInput} value={detail.purchaseDate ? detail.purchaseDate.split('T')[0] : ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'purchaseDate', e.target.value)} />
+                                                </div>
+                                                <div style={{ width: '150px' }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>定価</label>
+                                                    <div className={styles.currencyWrapper}>
+                                                        <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right' }} value={detail.listPrice || 0} onChange={(val) => handleDetailChange(detail.originalIndex, 'listPrice', val)} />
+                                                        <span className={styles.currencyUnit}>円</span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: '300px' }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>備考</label>
+                                                    <input type="text" className={styles.tableInput} value={detail.remarks || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'remarks', e.target.value)} placeholder="備考を入力" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                                </React.Fragment>
                             );
                         })}
                         {/* Subtotal Row */}
                         <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                            <td colSpan={type === 'part' ? (showSupplier ? 5 : 4) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
+                            <td colSpan={type === 'part' ? (showSupplier ? 6 : 5) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
                             {(type !== 'travel') && (
                                 <>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>

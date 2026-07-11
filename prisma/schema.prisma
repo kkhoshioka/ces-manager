@@ -214,6 +214,9 @@ model ProjectDetail {
   unitCost        Decimal  @default(0)
   unitPrice       Decimal  @default(0)
   
+  purchaseDate    DateTime? // New: 仕入日
+  listPrice       Decimal?  // New: 定価
+  
   // Calculated fields are not directly supported in Prisma schema as DB columns in SQLite easily without raw SQL, 
   // but we can compute them in application logic or use default values. 
   // For SQLite, generated columns are supported in newer versions but Prisma support might be limited.
