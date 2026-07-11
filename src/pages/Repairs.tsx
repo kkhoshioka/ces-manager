@@ -1254,7 +1254,7 @@ const Repairs: React.FC = () => {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                         <thead>
                             <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '30px' }}></th>
+                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '65px' }}></th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>カテゴリー</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>部品選択</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>品番</th>
@@ -1273,8 +1273,19 @@ const Repairs: React.FC = () => {
                                     <React.Fragment key={detail.originalIndex}>
                                         <tr style={{ borderBottom: expandedDetails.has(detail.originalIndex) ? 'none' : '1px solid #f1f5f9' }}>
                                             <td style={{ padding: '0.25rem', textAlign: 'center' }}>
-                                                <button type="button" onClick={() => toggleDetailExpand(detail.originalIndex)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748b' }} title="詳細">
-                                                    {expandedDetails.has(detail.originalIndex) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleDetailExpand(detail.originalIndex)}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center',
+                                                        background: expandedDetails.has(detail.originalIndex) ? '#e2e8f0' : '#f1f5f9',
+                                                        border: '1px solid #cbd5e1', borderRadius: '4px',
+                                                        padding: '2px 6px', fontSize: '0.75rem', color: '#475569',
+                                                        cursor: 'pointer', whiteSpace: 'nowrap', width: '100%'
+                                                    }}
+                                                    title="詳細設定を開く"
+                                                >
+                                                    {expandedDetails.has(detail.originalIndex) ? <><ChevronUp size={12} /> 閉じる</> : <><ChevronDown size={12} /> 詳細</>}
                                                 </button>
                                             </td>
                                             <td style={{ padding: '0.25rem' }}>
@@ -1490,7 +1501,7 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'center', width: '30px' }}></th>}
+                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'center', width: '65px' }}></th>}
                             {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
                             {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
 
@@ -1597,8 +1608,19 @@ const Repairs: React.FC = () => {
                                 <tr style={{ borderBottom: expandedDetails.has(detail.originalIndex) ? 'none' : '1px solid #f1f5f9' }}>
                                     {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem', textAlign: 'center' }}>
-                                            <button type="button" onClick={() => toggleDetailExpand(detail.originalIndex)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748b' }} title="詳細">
-                                                {expandedDetails.has(detail.originalIndex) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleDetailExpand(detail.originalIndex)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center',
+                                                    background: expandedDetails.has(detail.originalIndex) ? '#e2e8f0' : '#f1f5f9',
+                                                    border: '1px solid #cbd5e1', borderRadius: '4px',
+                                                    padding: '2px 6px', fontSize: '0.75rem', color: '#475569',
+                                                    cursor: 'pointer', whiteSpace: 'nowrap', width: '100%'
+                                                }}
+                                                title="詳細設定を開く"
+                                            >
+                                                {expandedDetails.has(detail.originalIndex) ? <><ChevronUp size={12} /> 閉じる</> : <><ChevronDown size={12} /> 詳細</>}
                                             </button>
                                         </td>
                                     )}
