@@ -224,6 +224,8 @@ const Repairs: React.FC = () => {
         rentalCompensationFee?: number | null;
         rentalCompensationDays?: number | null;
         isTaxExempt?: boolean;
+        purchaseDate?: string;
+        listPrice?: number | null;
     }
 
     interface SectionDef {
