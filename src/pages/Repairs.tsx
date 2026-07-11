@@ -1524,7 +1524,7 @@ const Repairs: React.FC = () => {
                                 </>
                             )}
 
-                            {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>仕入先</th>}
+                            {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '18%' }}>仕入先</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '70px', whiteSpace: 'nowrap' }}>
                                 {(type === 'labor' || (type === 'outsourcing' && subType === 'labor'))
                                     ? (sectionDetails.some(d => d.laborType === 'fixed') ? '数量' : '時間')
@@ -1533,12 +1533,12 @@ const Repairs: React.FC = () => {
                             </th>
                             {(type !== 'travel' && type !== 'discount') && (
                                 <>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>原価単価</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>原価計</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '95px', whiteSpace: 'nowrap' }}>原価単価</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '95px', whiteSpace: 'nowrap' }}>原価計</th>
                                 </>
                             )}
-                            <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>{type === 'discount' ? '値引き額' : '請求単価'}</th>
-                            {type !== 'discount' && <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>請求額</th>}
+                            <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '95px', whiteSpace: 'nowrap' }}>{type === 'discount' ? '値引き額' : '請求単価'}</th>
+                            {type !== 'discount' && <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '95px', whiteSpace: 'nowrap' }}>請求額</th>}
 
                             {/* Remarks Header for Labor */}
                             {type === 'labor' && (
@@ -1863,7 +1863,7 @@ const Repairs: React.FC = () => {
                                             <input
                                                 type="number"
                                                 className={styles.tableInput}
-                                                style={{ textAlign: 'center', width: '80px' }} // Widen for 3 digits + margin
+                                                style={{ textAlign: 'center', width: '55px' }} // Widen for 3 digits + margin
                                                 value={detail.quantity}
                                                 onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', e.target.value)}
                                                 min="0"
@@ -1876,7 +1876,7 @@ const Repairs: React.FC = () => {
                                             {/* Unit Selection Dropdown */}
                                             <select
                                                 className={styles.tableInput}
-                                                style={{ fontSize: '0.8rem', padding: '0.1rem', marginLeft: '4px', width: '60px' }}
+                                                style={{ fontSize: '0.8rem', padding: '0.1rem', marginLeft: '4px', width: '45px' }}
                                                 value={detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType || '式'))}
                                                 onChange={(e) => {
                                                     const val = e.target.value;
