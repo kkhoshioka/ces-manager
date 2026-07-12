@@ -2545,136 +2545,140 @@ const Repairs: React.FC = () => {
                                 {/* Summary Header */}
                                 <div className={styles.summaryHeader}>
                                     <div className={styles.formGrid}>
-                                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1rem' }}>
-                                            {/* Linked Type Selector */}
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
-                                                <select
-                                                    value={formType}
-                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                    onChange={(e) => setFormType(e.target.value as any)}
-                                                    className={`border rounded-md p-2 text-sm form-select cursor-pointer`}
-                                                    style={{
-                                                        width: '160px',
-                                                        backgroundColor: (formType === 'sales' ? '#e0f2fe' :
-                                                            formType === 'inspection' ? '#f3e8ff' :
-                                                                formType === 'maintenance' ? '#ffedd5' :
-                                                                    formType === 'rental' ? '#d1fae5' : '#fef9c3'),
-                                                        color: (formType === 'sales' ? '#0369a1' :
-                                                            formType === 'inspection' ? '#7e22ce' :
-                                                                formType === 'maintenance' ? '#c2410c' :
-                                                                    formType === 'rental' ? '#047857' : '#854d0e'),
-                                                        borderColor: (formType === 'sales' ? '#bae6fd' :
-                                                            formType === 'inspection' ? '#e9d5ff' :
-                                                                formType === 'maintenance' ? '#fed7aa' :
-                                                                    formType === 'rental' ? '#047857' : '#fde047'),
-                                                        fontWeight: 'bold'
-                                                    }}
-                                                >
-                                                    <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
-                                                    <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>特定自主検査案件</option>
-                                                    <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
-                                                    <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
-                                                    <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
-                                                </select>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-                                                <select
-                                                    name="status"
-                                                    value={formState.status}
-                                                    onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
-                                                    className="border rounded-md p-2 text-sm font-bold"
-                                                    style={{
-                                                        width: '160px',
-                                                        backgroundColor: getStatusStyle(formState.status).bg,
-                                                        color: getStatusStyle(formState.status).color,
-                                                        borderColor: '#d1d5db'
-                                                    }}
-                                                >
-                                                    <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
-                                                    <option value="estimating" style={{ backgroundColor: '#fef08a', color: '#854d0e' }}>見積中</option>
-                                                    {formType === 'rental' && <option value="on_rental" style={{ backgroundColor: '#d1fae5', color: '#065f46' }}>貸出中</option>}
-                                                    <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
-                                                </select>
-                                            </div>
-
-                                            <div style={{ width: '150px' }}>
-                                                <Input
-                                                    label="案件No."
-                                                    name="projectNo"
-                                                    value={formState.projectNo}
-                                                    onChange={handleInputChange}
-                                                />
-                                            </div>
-
-                                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                                            {/* Row 1: Type, Status, Dates */}
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                 <div>
-                                                    <Input
-                                                        type="date"
-                                                        label="受付日"
-                                                        name="orderDate"
-                                                        value={formState.orderDate}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
+                                                    <select
+                                                        value={formType}
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                        onChange={(e) => setFormType(e.target.value as any)}
+                                                        className={`border rounded-md p-2 text-sm form-select cursor-pointer`}
+                                                        style={{
+                                                            width: '160px',
+                                                            backgroundColor: (formType === 'sales' ? '#e0f2fe' :
+                                                                formType === 'inspection' ? '#f3e8ff' :
+                                                                    formType === 'maintenance' ? '#ffedd5' :
+                                                                        formType === 'rental' ? '#d1fae5' : '#fef9c3'),
+                                                            color: (formType === 'sales' ? '#0369a1' :
+                                                                formType === 'inspection' ? '#7e22ce' :
+                                                                    formType === 'maintenance' ? '#c2410c' :
+                                                                        formType === 'rental' ? '#047857' : '#854d0e'),
+                                                            borderColor: (formType === 'sales' ? '#bae6fd' :
+                                                                formType === 'inspection' ? '#e9d5ff' :
+                                                                    formType === 'maintenance' ? '#fed7aa' :
+                                                                        formType === 'rental' ? '#047857' : '#fde047'),
+                                                            fontWeight: 'bold'
+                                                        }}
+                                                    >
+                                                        <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
+                                                        <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>特定自主検査案件</option>
+                                                        <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
+                                                        <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
+                                                        <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
+                                                    </select>
                                                 </div>
-                                                {formType !== 'rental' && (
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+                                                    <select
+                                                        name="status"
+                                                        value={formState.status}
+                                                        onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value as RepairStatus }))}
+                                                        className="border rounded-md p-2 text-sm font-bold"
+                                                        style={{
+                                                            width: '160px',
+                                                            backgroundColor: getStatusStyle(formState.status).bg,
+                                                            color: getStatusStyle(formState.status).color,
+                                                            borderColor: '#d1d5db'
+                                                        }}
+                                                    >
+                                                        <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
+                                                        <option value="estimating" style={{ backgroundColor: '#fef08a', color: '#854d0e' }}>見積中</option>
+                                                        {formType === 'rental' && <option value="on_rental" style={{ backgroundColor: '#d1fae5', color: '#065f46' }}>貸出中</option>}
+                                                        <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
+                                                    </select>
+                                                </div>
+
+                                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                                                     <div>
                                                         <Input
                                                             type="date"
-                                                            label="完了日"
-                                                            name="completionDate"
-                                                            value={formState.completionDate}
+                                                            label="受付日"
+                                                            name="orderDate"
+                                                            value={formState.orderDate}
                                                             onChange={handleInputChange}
+                                                            required
                                                         />
                                                     </div>
-                                                )}
+                                                    {formType !== 'rental' && (
+                                                        <div>
+                                                            <Input
+                                                                type="date"
+                                                                label="完了日"
+                                                                name="completionDate"
+                                                                value={formState.completionDate}
+                                                                onChange={handleInputChange}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div>
-                                            <Input
-                                                label="顧客名"
-                                                name="customerName"
-                                                value={formState.customerName}
-                                                onChange={handleInputChange}
-                                                required
-                                                list="customer-list"
-                                                autoComplete="off"
-                                            />
-                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※未登録の場合は、保存時に新規顧客として自動登録されます</div>
-                                            <datalist id="customer-list">
-                                                {customers.map(c => <option key={c.id} value={c.name} />)}
-                                            </datalist>
-                                        </div>
+                                            {/* Row 2: Project No & Customer */}
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                <div style={{ width: '160px' }}>
+                                                    <Input
+                                                        label="案件No."
+                                                        name="projectNo"
+                                                        value={formState.projectNo}
+                                                        onChange={handleInputChange}
+                                                    />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: '300px' }}>
+                                                    <Input
+                                                        label="顧客名"
+                                                        name="customerName"
+                                                        value={formState.customerName}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                        list="customer-list"
+                                                        autoComplete="off"
+                                                    />
+                                                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※未登録の場合は、保存時に新規顧客として自動登録されます</div>
+                                                    <datalist id="customer-list">
+                                                        {customers.map(c => <option key={c.id} value={c.name} />)}
+                                                    </datalist>
+                                                </div>
+                                            </div>
 
-                                        <div>
-                                            <Input
-                                                label="顧客担当者"
-                                                name="customerContactName"
-                                                value={formState.customerContactName}
-                                                onChange={handleInputChange}
-                                                placeholder="例: 山田"
-                                                autoComplete="off"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Input
-                                                label="自社担当者"
-                                                name="internalRep"
-                                                value={formState.internalRep}
-                                                onChange={handleInputChange}
-                                                placeholder="自社担当者を選択または入力"
-                                                list="internal-reps-list"
-                                                autoComplete="off"
-                                            />
-                                            <datalist id="internal-reps-list">
-                                                {internalReps.map(rep => <option key={rep.id} value={rep.name} />)}
-                                            </datalist>
-                                        </div>
+                                            {/* Row 3: Contacts */}
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                                                <div style={{ flex: 1, minWidth: '200px' }}>
+                                                    <Input
+                                                        label="顧客担当者"
+                                                        name="customerContactName"
+                                                        value={formState.customerContactName}
+                                                        onChange={handleInputChange}
+                                                        placeholder="例: 山田"
+                                                        autoComplete="off"
+                                                    />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: '200px' }}>
+                                                    <Input
+                                                        label="自社担当者"
+                                                        name="internalRep"
+                                                        value={formState.internalRep}
+                                                        onChange={handleInputChange}
+                                                        placeholder="自社担当者を選択または入力"
+                                                        list="internal-reps-list"
+                                                        autoComplete="off"
+                                                    />
+                                                    <datalist id="internal-reps-list">
+                                                        {internalReps.map(rep => <option key={rep.id} value={rep.name} />)}
+                                                    </datalist>
+                                                </div>
+                                            </div>
 
                                         {/* Show Machine Info for Repairs/Inspection/Maintenance OR if data is present */}
                                         {((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') || formState.machineModel) && (
