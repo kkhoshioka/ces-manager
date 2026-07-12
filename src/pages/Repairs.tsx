@@ -2685,8 +2685,8 @@ const Repairs: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                        {/* Show Machine Info for Repairs/Inspection/Maintenance OR if data is present */}
-                                        {((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') || formState.machineModel) && (
+                                        {/* Show Machine Info for Repairs/Inspection/Maintenance/Sales OR if data is present */}
+                                        {((formType === 'repair' || formType === 'inspection' || formType === 'maintenance' || formType === 'sales') || formState.machineModel) && (
                                             <>
                                                 {/* Machine Select (Optional helper) */}
                                                 {availableMachines.length > 0 && (
