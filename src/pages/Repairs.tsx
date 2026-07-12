@@ -1260,8 +1260,8 @@ const Repairs: React.FC = () => {
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>品番</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%' }}>内容・品名</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '90px', whiteSpace: 'nowrap' }}>数量</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>売価</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>原価</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>売価</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>操作</th>
                             </tr>
                         </thead>
@@ -1346,13 +1346,13 @@ const Repairs: React.FC = () => {
                                             </td>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
-                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
+                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
                                                     <span className={styles.currencyUnit}>円</span>
                                                 </div>
                                             </td>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
-                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitCost} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitCost', val)} />
+                                                    <CurrencyInput className={styles.tableInput} style={{ textAlign: 'right', minWidth: '100px' }} value={detail.unitPrice} onChange={(val) => handleDetailChange(detail.originalIndex, 'unitPrice', val)} />
                                                     <span className={styles.currencyUnit}>円</span>
                                                 </div>
                                             </td>
