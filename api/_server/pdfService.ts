@@ -180,14 +180,16 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
                 }
             }
 
-            processed.push({
-                ...current,
-                description: `［出張費］${currentDesc}`,
-                quantity: 1,
-                unitPrice: totalAmount,
-                lineType: current.lineType,
-                date: current.date
-            });
+            if (totalAmount !== 0 || options?.includeZeroAmount) {
+                processed.push({
+                    ...current,
+                    description: `［出張費］${currentDesc}`,
+                    quantity: 1,
+                    unitPrice: totalAmount,
+                    lineType: current.lineType,
+                    date: current.date
+                });
+            }
 
         } else if (current.lineType === 'labor') {
             const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
@@ -225,8 +227,8 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
 };
 
 export const generateInvoice = (project: Project) => {
-    // Process details to group travel expenses
-    let processedDetails = processProjectDetails(project.details);
+    // Process details to group travel expenses and hide 0-yen labor
+    let processedDetails = processProjectDetails(project.details, { hideZeroAmountLabor: true });
 
     // Pad with empty rows
     const MIN_ROWS = 10;
