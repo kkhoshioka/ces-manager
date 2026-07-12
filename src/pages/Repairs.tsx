@@ -1259,7 +1259,7 @@ const Repairs: React.FC = () => {
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>部品選択</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>品番</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%' }}>内容・品名</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '80px' }}>数量</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>数量</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>売価</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>原価</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>操作</th>
