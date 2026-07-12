@@ -2545,7 +2545,7 @@ const Repairs: React.FC = () => {
                                 {/* Summary Header */}
                                 <div className={styles.summaryHeader}>
                                     <div className={styles.formGrid}>
-                                            {/* Row 1: Type, Status, Dates */}
+                                            {/* Row 1: Type, Status */}
                                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
@@ -2599,33 +2599,34 @@ const Repairs: React.FC = () => {
                                                         <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                                     </select>
                                                 </div>
-
-                                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                                                    <div>
-                                                        <Input
-                                                            type="date"
-                                                            label="受付日"
-                                                            name="orderDate"
-                                                            value={formState.orderDate}
-                                                            onChange={handleInputChange}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    {formType !== 'rental' && (
-                                                        <div>
-                                                            <Input
-                                                                type="date"
-                                                                label="完了日"
-                                                                name="completionDate"
-                                                                value={formState.completionDate}
-                                                                onChange={handleInputChange}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
                                             </div>
 
-                                            {/* Row 2: Project No & Customer */}
+                                            {/* Row 2: Dates */}
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                <div style={{ width: '160px' }}>
+                                                    <Input
+                                                        type="date"
+                                                        label="受付日"
+                                                        name="orderDate"
+                                                        value={formState.orderDate}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </div>
+                                                {formType !== 'rental' && (
+                                                    <div style={{ width: '160px' }}>
+                                                        <Input
+                                                            type="date"
+                                                            label="完了日"
+                                                            name="completionDate"
+                                                            value={formState.completionDate}
+                                                            onChange={handleInputChange}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Row 3: Project No */}
                                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                 <div style={{ width: '160px' }}>
                                                     <Input
@@ -2635,6 +2636,10 @@ const Repairs: React.FC = () => {
                                                         onChange={handleInputChange}
                                                     />
                                                 </div>
+                                            </div>
+
+                                            {/* Row 4: Customer */}
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                 <div style={{ flex: 1, minWidth: '300px' }}>
                                                     <Input
                                                         label="顧客名"
@@ -2652,7 +2657,7 @@ const Repairs: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Row 3: Contacts */}
+                                            {/* Row 5: Contacts */}
                                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                                                 <div style={{ flex: 1, minWidth: '200px' }}>
                                                     <Input
