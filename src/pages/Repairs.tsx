@@ -1259,10 +1259,10 @@ const Repairs: React.FC = () => {
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>部品選択</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>品番</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%' }}>内容・品名</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>数量</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>売価</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px' }}>原価</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px' }}>操作</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '90px', whiteSpace: 'nowrap' }}>数量</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>売価</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>原価</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'center', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1342,7 +1342,7 @@ const Repairs: React.FC = () => {
                                                 <input type="text" className={styles.tableInput} value={detail.description || ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)} placeholder="品名" />
                                             </td>
                                             <td style={{ padding: '0.25rem' }}>
-                                                <input type="number" className={styles.tableInput} style={{ textAlign: 'right' }} min="1" step="0.1" value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', Number(e.target.value))} />
+                                                <input type="number" className={styles.tableInput} style={{ textAlign: 'right', minWidth: '60px' }} min="1" step="0.1" value={detail.quantity} onChange={(e) => handleDetailChange(detail.originalIndex, 'quantity', Number(e.target.value))} />
                                             </td>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
