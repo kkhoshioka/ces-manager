@@ -3,6 +3,7 @@ import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save, DollarSign, Wrench, Copy } from 'lucide-react';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import styles from '../Dashboard.module.css';
 import { formatCurrency } from '../../utils/formatting';
 
@@ -386,14 +387,36 @@ const SupplierMonthlyReport = () => {
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label style={{ fontSize: '0.875rem', fontWeight: '600', color: '#475569', marginBottom: '0.5rem', display: 'block' }}>仕入先</label>
-                                    <select value={purchaseForm.supplierId} onChange={e => {
-                                        const id = Number(e.target.value);
-                                        const sup = suppliersList.find(s => s.id === id);
-                                        setPurchaseForm({...purchaseForm, supplierId: id || '', supplierName: sup ? sup.name : ''});
-                                    }} style={{ width: '100%', padding: '0.625rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', backgroundColor: '#fff' }}>
-                                        <option value="">選択してください</option>
-                                        {suppliersList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
+                                    <CreatableSelect
+                                        options={suppliersList.map(s => ({ value: s.id, label: s.name }))}
+                                        value={purchaseForm.supplierId ? { value: purchaseForm.supplierId, label: purchaseForm.supplierName } : (purchaseForm.supplierName ? { value: purchaseForm.supplierName, label: purchaseForm.supplierName } : null)}
+                                        onChange={(selectedOption: any) => {
+                                            if (selectedOption) {
+                                                if (typeof selectedOption.value === 'number') {
+                                                    setPurchaseForm({...purchaseForm, supplierId: selectedOption.value, supplierName: selectedOption.label});
+                                                } else {
+                                                    setPurchaseForm({...purchaseForm, supplierId: '', supplierName: selectedOption.value});
+                                                }
+                                            } else {
+                                                setPurchaseForm({...purchaseForm, supplierId: '', supplierName: ''});
+                                            }
+                                        }}
+                                        placeholder="仕入先を選択または入力..."
+                                        formatCreateLabel={(inputValue) => `「${inputValue}」を新規入力`}
+                                        isClearable
+                                        styles={{
+                                            control: (base) => ({
+                                                ...base,
+                                                borderColor: '#cbd5e1',
+                                                padding: '2px',
+                                                borderRadius: '6px',
+                                                boxShadow: 'none',
+                                                '&:hover': {
+                                                    borderColor: '#94a3b8'
+                                                }
+                                            })
+                                        }}
+                                    />
                                 </div>
                             </div>
                             
