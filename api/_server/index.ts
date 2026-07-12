@@ -2237,68 +2237,76 @@ const parseId = (val: any) => (val === '' || val === null || val === undefined) 
 
 app.post('/api/purchases', async (req, res) => {
     try {
-        const data = req.body;
-        const projectId = parseId(data.projectId);
-        const productId = parseId(data.productId);
-        const supplierId = parseId(data.supplierId);
-        const productCategoryId = parseId(data.productCategoryId);
-        
-        let newProjectDetailId: number | null = null;
+        const payload = req.body;
+        const isBatch = Array.isArray(payload.items);
+        const itemsToProcess = isBatch ? payload.items : [payload];
+        const commonData = isBatch ? payload : {};
 
         await prisma.$transaction(async (tx) => {
-            // 1. If linking to Inventory (productId)
-            if (productId && data.quantity) {
-                await tx.product.update({
-                    where: { id: productId },
-                    data: { stockQuantity: { increment: Number(data.quantity) } }
-                });
-            }
+            for (const item of itemsToProcess) {
+                const data = isBatch ? { ...commonData, ...item } : item;
 
-            // 2. If linking to Project (projectId), create ProjectDetail
-            if (projectId) {
-                const pd = await tx.projectDetail.create({
+                const projectId = parseId(data.projectId);
+                const productId = parseId(data.productId);
+                const supplierId = parseId(data.supplierId);
+                const productCategoryId = parseId(data.productCategoryId);
+                
+                let newProjectDetailId: number | null = null;
+
+                // 1. If linking to Inventory (productId)
+                if (productId && data.quantity) {
+                    await tx.product.update({
+                        where: { id: productId },
+                        data: { stockQuantity: { increment: Number(data.quantity) } }
+                    });
+                }
+
+                // 2. If linking to Project (projectId), create ProjectDetail
+                if (projectId) {
+                    const pd = await tx.projectDetail.create({
+                        data: {
+                            projectId: projectId,
+                            lineType: data.category === '外注費' ? 'outsourcing' : 'part', // default to part or outsourcing
+                            department: data.department, // section
+                            partNumber: data.partNumber,
+                            description: data.description,
+                            supplier: data.supplierName,
+                            supplierId: supplierId,
+                            quantity: data.quantity,
+                            unitCost: data.unitCost,
+                            unitPrice: 0, // Needs manual update from project screen
+                            amountCost: Number(data.quantity) * Number(data.unitCost),
+                            date: new Date(data.date),
+                            isInvoiceReceived: data.isInvoiceReceived || false,
+                            isPaid: data.isPaid || false,
+                            productCategoryId: productCategoryId
+                        }
+                    });
+                    newProjectDetailId = pd.id;
+                }
+
+                // 3. Create Purchase
+                await tx.purchase.create({
                     data: {
-                        projectId: projectId,
-                        lineType: data.category === '外注費' ? 'outsourcing' : 'part', // default to part or outsourcing
-                        department: data.department, // section
-                        partNumber: data.partNumber,
-                        description: data.description,
-                        supplier: data.supplierName,
+                        date: new Date(data.date),
                         supplierId: supplierId,
+                        supplierName: data.supplierName,
+                        description: data.description,
+                        category: data.category,
+                        department: data.department,
+                        type: data.type,
+                        partNumber: data.partNumber,
                         quantity: data.quantity,
                         unitCost: data.unitCost,
-                        unitPrice: 0, // Needs manual update from project screen
-                        amountCost: Number(data.quantity) * Number(data.unitCost),
-                        date: new Date(data.date),
+                        amount: Number(data.quantity) * Number(data.unitCost),
                         isInvoiceReceived: data.isInvoiceReceived || false,
                         isPaid: data.isPaid || false,
-                        productCategoryId: productCategoryId
+                        projectId: projectId,
+                        productId: productId,
+                        projectDetailId: newProjectDetailId
                     }
                 });
-                newProjectDetailId = pd.id;
             }
-
-            // 3. Create Purchase
-            await tx.purchase.create({
-                data: {
-                    date: new Date(data.date),
-                    supplierId: supplierId,
-                    supplierName: data.supplierName,
-                    description: data.description,
-                    category: data.category,
-                    department: data.department,
-                    type: data.type,
-                    partNumber: data.partNumber,
-                    quantity: data.quantity,
-                    unitCost: data.unitCost,
-                    amount: Number(data.quantity) * Number(data.unitCost),
-                    isInvoiceReceived: data.isInvoiceReceived || false,
-                    isPaid: data.isPaid || false,
-                    projectId: projectId,
-                    productId: productId,
-                    projectDetailId: newProjectDetailId
-                }
-            });
         });
 
         res.json({ success: true });
