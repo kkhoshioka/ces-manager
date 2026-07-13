@@ -59,7 +59,7 @@ const SupplierMonthlyReport = () => {
             id: Date.now(), // temp id for React key
             department: '',
             description: '',
-            category: '仕入販売',
+            category: '発注部品・商品',
             type: 'part',
             partNumber: '',
             quantity: 1,
@@ -335,7 +335,7 @@ const SupplierMonthlyReport = () => {
                     id: Date.now(),
                     department: '',
                     description: '',
-                    category: '仕入販売',
+                    category: '発注部品・商品',
                     type: 'part',
                     partNumber: '',
                     quantity: 1,
@@ -372,7 +372,7 @@ const SupplierMonthlyReport = () => {
                     <p className={styles.subtitle}>仕入登録および仕入先ごとの原価発生状況を月次で確認</p>
                 </div>
                 <div className={styles.filters}>
-                    <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', isInvoiceReceived: false, isPaid: false, items: [{ id: Date.now(), department: '', description: '', category: '仕入販売', type: '', partNumber: '', quantity: 1, unitCost: 0, projectId: '', productId: '', productCategoryId: null }] }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
+                    <Button variant="primary" onClick={() => { setPurchaseForm({ id: null, date: new Date().toISOString().split('T')[0], supplierId: '', supplierName: '', isInvoiceReceived: false, isPaid: false, items: [{ id: Date.now(), department: '', description: '', category: '発注部品・商品', type: '', partNumber: '', quantity: 1, unitCost: 0, projectId: '', productId: '', productCategoryId: null }] }); setIsPurchaseModalOpen(true); }} icon={<Plus size={18} />}>
                         新規仕入登録
                     </Button>
                     <div className={styles.filterGroup}>
@@ -469,7 +469,7 @@ const SupplierMonthlyReport = () => {
                                             <div className={styles.formGroup} style={{ marginBottom: 0 }}>
                                                 <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>カテゴリ</label>
                                                 <select value={item.category} onChange={e => handleItemChange(index, 'category', e.target.value)} style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}>
-                                                    <option value="仕入販売">仕入販売</option>
+                                                    <option value="発注部品・商品">発注部品・商品</option>
                                                     <option value="外注費">外注費</option>
                                                     <option value="在庫">在庫</option>
                                                     <option value="その他">その他</option>
