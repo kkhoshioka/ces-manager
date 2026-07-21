@@ -2,22 +2,44 @@ const fs = require('fs');
 const path = 'api/_server/pdfService.ts';
 let data = fs.readFileSync(path, 'utf8');
 
-if (!data.includes("import fs from 'fs';")) {
-    data = data.replace("import path from 'path';", "import path from 'path';\nimport fs from 'fs';");
-}
-
-if (!data.includes("const sealPath")) {
-    data = data.replace("const fontDir", "const sealPath = path.join(process.cwd(), 'public', 'seal.png');\nconst fontDir");
-}
-
-const searchStr = "{ text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },";
-const replaceStr = `{ text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
-                            ...(fs.existsSync(sealPath) ? [{
+// We want to replace the image block.
+const searchStr = `                            ...(fs.existsSync(sealPath) ? [{
                                 image: sealPath,
                                 width: 45,
                                 alignment: 'right',
                                 margin: [0, -35, 10, -10]
                             }] : []),`;
+
+const getBase64Logic = `
+const getSealImage = () => {
+    try {
+        if (fs.existsSync(sealPath)) {
+            const ext = path.extname(sealPath).toLowerCase();
+            const mime = ext === '.jpg' || ext === '.jpeg' ? 'jpeg' : 'png';
+            const base64Data = fs.readFileSync(sealPath).toString('base64');
+            return \`data:image/\${mime};base64,\${base64Data}\`;
+        }
+    } catch(e) {
+        console.error('Error reading seal image:', e);
+    }
+    return null;
+};
+`;
+
+if (!data.includes('const getSealImage')) {
+    data = data.replace("const sealPath = path.join(process.cwd(), 'public', 'seal.png');", 
+        "const sealPath = path.join(process.cwd(), 'public', 'seal.png');" + getBase64Logic);
+}
+
+const replaceStr = `                            ...( (() => {
+                                const seal = getSealImage();
+                                return seal ? [{
+                                    image: seal,
+                                    width: 45,
+                                    alignment: 'right',
+                                    margin: [0, -35, 10, -10]
+                                }] : [];
+                            })() ),`;
 
 data = data.split(searchStr).join(replaceStr);
 

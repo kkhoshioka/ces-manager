@@ -9,6 +9,20 @@ const __dirname = path.dirname(__filename);
 // Define font paths properly (Works for Local, Vercel, Render)
 // Vercel/Render: __dirname works better for bundled functions than process.cwd()
 const sealPath = path.join(process.cwd(), 'public', 'seal.png');
+const getSealImage = () => {
+    try {
+        if (fs.existsSync(sealPath)) {
+            const ext = path.extname(sealPath).toLowerCase();
+            const mime = ext === '.jpg' || ext === '.jpeg' ? 'jpeg' : 'png';
+            const base64Data = fs.readFileSync(sealPath).toString('base64');
+            return `data:image/${mime};base64,${base64Data}`;
+        }
+    } catch(e) {
+        console.error('Error reading seal image:', e);
+    }
+    return null;
+};
+
 const fontDir = path.join(__dirname, 'fonts');
 const notoSansRegular = path.join(fontDir, 'NotoSansJP-Regular.otf');
 const notoSansBold = path.join(fontDir, 'NotoSansJP-Bold.otf');
@@ -414,12 +428,15 @@ export const generateInvoice = (project: Project) => {
                         width: '*',
                         stack: [
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
-                            ...(fs.existsSync(sealPath) ? [{
-                                image: sealPath,
-                                width: 45,
-                                alignment: 'right',
-                                margin: [0, -35, 10, -10]
-                            }] : []),
+                            ...( (() => {
+                                const seal = getSealImage();
+                                return seal ? [{
+                                    image: seal,
+                                    width: 45,
+                                    alignment: 'right',
+                                    margin: [0, -35, 10, -10]
+                                }] : [];
+                            })() ),
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
@@ -753,12 +770,15 @@ export const generateDeliveryNote = (project: Project) => {
                         width: '*',
                         stack: [
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
-                            ...(fs.existsSync(sealPath) ? [{
-                                image: sealPath,
-                                width: 45,
-                                alignment: 'right',
-                                margin: [0, -35, 10, -10]
-                            }] : []),
+                            ...( (() => {
+                                const seal = getSealImage();
+                                return seal ? [{
+                                    image: seal,
+                                    width: 45,
+                                    alignment: 'right',
+                                    margin: [0, -35, 10, -10]
+                                }] : [];
+                            })() ),
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
@@ -997,12 +1017,15 @@ export const generateQuotation = (project: Project) => {
                         width: '*',
                         stack: [
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
-                            ...(fs.existsSync(sealPath) ? [{
-                                image: sealPath,
-                                width: 45,
-                                alignment: 'right',
-                                margin: [0, -35, 10, -10]
-                            }] : []),
+                            ...( (() => {
+                                const seal = getSealImage();
+                                return seal ? [{
+                                    image: seal,
+                                    width: 45,
+                                    alignment: 'right',
+                                    margin: [0, -35, 10, -10]
+                                }] : [];
+                            })() ),
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
