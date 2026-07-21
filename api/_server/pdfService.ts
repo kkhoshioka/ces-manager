@@ -642,7 +642,7 @@ export const generateInvoice = (project: Project) => {
 
 export const generateDeliveryNote = (project: Project) => {
     // Process details (Group travel, etc if needed - reusing same logic as Invoice)
-    const processedDetails = processProjectDetails(project.details, { hideZeroAmountLabor: true });
+    const processedDetails = processProjectDetails(project.details, { includeZeroAmount: true, hideZeroAmountLabor: true });
 
     // Pad with empty rows
     const MIN_ROWS = 10;
