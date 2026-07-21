@@ -1,5 +1,6 @@
 import PdfPrinter from 'pdfmake';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -7,6 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // Define font paths properly (Works for Local, Vercel, Render)
 // Vercel/Render: __dirname works better for bundled functions than process.cwd()
+const sealPath = path.join(process.cwd(), 'public', 'seal.png');
 const fontDir = path.join(__dirname, 'fonts');
 const notoSansRegular = path.join(fontDir, 'NotoSansJP-Regular.otf');
 const notoSansBold = path.join(fontDir, 'NotoSansJP-Bold.otf');
@@ -412,6 +414,12 @@ export const generateInvoice = (project: Project) => {
                         width: '*',
                         stack: [
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
+                            ...(fs.existsSync(sealPath) ? [{
+                                image: sealPath,
+                                width: 45,
+                                alignment: 'right',
+                                margin: [0, -35, 10, -10]
+                            }] : []),
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
@@ -745,6 +753,12 @@ export const generateDeliveryNote = (project: Project) => {
                         width: '*',
                         stack: [
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
+                            ...(fs.existsSync(sealPath) ? [{
+                                image: sealPath,
+                                width: 45,
+                                alignment: 'right',
+                                margin: [0, -35, 10, -10]
+                            }] : []),
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
@@ -983,6 +997,12 @@ export const generateQuotation = (project: Project) => {
                         width: '*',
                         stack: [
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
+                            ...(fs.existsSync(sealPath) ? [{
+                                image: sealPath,
+                                width: 45,
+                                alignment: 'right',
+                                margin: [0, -35, 10, -10]
+                            }] : []),
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
