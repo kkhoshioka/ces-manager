@@ -131,23 +131,28 @@ const TravelExpenseMaster: React.FC = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: '#f1f5f9', padding: '1rem', borderRadius: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <label style={{ fontWeight: 'bold' }}>ベース出張費 (円):</label>
-                    <Input 
-                        type="number" 
-                        value={baseFee} 
-                        onChange={(e) => setBaseFee(e.target.value)} 
-                        style={{ width: '150px' }}
-                    />
-                    <Button onClick={saveBaseFee} disabled={isSavingBaseFee} icon={<Save size={18} />}>
-                        {isSavingBaseFee ? '保存中...' : '設定を保存'}
-                    </Button>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>※マスター未登録の場所を入力した際の初期値になります</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem', background: '#f1f5f9', padding: '1rem', borderRadius: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <label style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>ベース出張費 (円):</label>
+                    <div style={{ width: '150px', flexShrink: 0 }}>
+                        <Input 
+                            type="number" 
+                            value={baseFee} 
+                            onChange={(e) => setBaseFee(e.target.value)} 
+                        />
+                    </div>
+                    <div style={{ whiteSpace: 'nowrap' }}>
+                        <Button onClick={saveBaseFee} disabled={isSavingBaseFee} icon={<Save size={18} />}>
+                            {isSavingBaseFee ? '保存中...' : '設定を保存'}
+                        </Button>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'nowrap' }}>※マスター未登録の場所を入力した際の初期値になります</span>
                 </div>
-                <Button icon={<Plus size={18} />} onClick={openAdd}>
-                    新規登録
-                </Button>
+                <div style={{ whiteSpace: 'nowrap' }}>
+                    <Button icon={<Plus size={18} />} onClick={openAdd}>
+                        新規登録
+                    </Button>
+                </div>
             </div>
 
             <div className={styles.tableContainer}>
