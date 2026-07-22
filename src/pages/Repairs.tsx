@@ -2610,7 +2610,7 @@ const Repairs: React.FC = () => {
                                                 )}
                                             </div>
 
-                                            {/* Row 3: Project No */}
+                                            {/* Row 3: Project No & Internal Rep */}
                                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                 <div style={{ width: '160px' }}>
                                                     <Input
@@ -2620,9 +2620,23 @@ const Repairs: React.FC = () => {
                                                         onChange={handleInputChange}
                                                     />
                                                 </div>
+                                                <div style={{ width: '200px' }}>
+                                                    <Input
+                                                        label="自社担当者"
+                                                        name="internalRep"
+                                                        value={formState.internalRep}
+                                                        onChange={handleInputChange}
+                                                        placeholder="選択または入力"
+                                                        list="internal-reps-list"
+                                                        autoComplete="off"
+                                                    />
+                                                    <datalist id="internal-reps-list">
+                                                        {internalReps.map(rep => <option key={rep.id} value={rep.name} />)}
+                                                    </datalist>
+                                                </div>
                                             </div>
 
-                                            {/* Row 4: Customer */}
+                                            {/* Row 4: Customer & Customer Contact */}
                                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                 <div style={{ flex: 1, minWidth: '300px' }}>
                                                     <Input
@@ -2639,11 +2653,7 @@ const Repairs: React.FC = () => {
                                                         {customers.map(c => <option key={c.id} value={c.name} />)}
                                                     </datalist>
                                                 </div>
-                                            </div>
-
-                                            {/* Row 5: Contacts */}
-                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                                                <div style={{ flex: 1, minWidth: '200px' }}>
+                                                <div style={{ width: '200px' }}>
                                                     <Input
                                                         label="顧客担当者"
                                                         name="customerContactName"
@@ -2652,20 +2662,6 @@ const Repairs: React.FC = () => {
                                                         placeholder="例: 山田"
                                                         autoComplete="off"
                                                     />
-                                                </div>
-                                                <div style={{ flex: 1, minWidth: '200px' }}>
-                                                    <Input
-                                                        label="自社担当者"
-                                                        name="internalRep"
-                                                        value={formState.internalRep}
-                                                        onChange={handleInputChange}
-                                                        placeholder="自社担当者を選択または入力"
-                                                        list="internal-reps-list"
-                                                        autoComplete="off"
-                                                    />
-                                                    <datalist id="internal-reps-list">
-                                                        {internalReps.map(rep => <option key={rep.id} value={rep.name} />)}
-                                                    </datalist>
                                                 </div>
                                             </div>
 
@@ -2703,7 +2699,7 @@ const Repairs: React.FC = () => {
                                                     </div>
                                                 )}
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                                                         <div style={{ flex: 1 }}>
                                                             <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
@@ -2711,19 +2707,39 @@ const Repairs: React.FC = () => {
                                                         <div style={{ flex: 1 }}>
                                                             <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} />
                                                         </div>
-                                                    </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                         <div style={{ width: '150px' }}>
-                                                            <Input
-                                                                label="アワーメーター"
-                                                                name="hourMeter"
-                                                                value={formState.hourMeter}
-                                                                onChange={handleInputChange}
-                                                                placeholder="1234.5"
-                                                            />
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <div style={{ flex: 1 }}>
+                                                                    <Input
+                                                                        label="アワーメーター"
+                                                                        name="hourMeter"
+                                                                        value={formState.hourMeter}
+                                                                        onChange={handleInputChange}
+                                                                        placeholder="1234.5"
+                                                                    />
+                                                                </div>
+                                                                <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
+                                                            </div>
                                                         </div>
-                                                        <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
                                                     </div>
+                                                    
+                                                    {formType !== 'sales' && formType !== 'rental' && (
+                                                        <div>
+                                                            <Textarea 
+                                                                label={
+                                                                    formType === 'repair' ? "症状・不具合内容 (必須)" :
+                                                                    formType === 'inspection' ? "特定自主検査内容 (必須)" :
+                                                                    formType === 'maintenance' ? "整備内容 (必須)" : "内容 (必須)"
+                                                                } 
+                                                                name="issueDescription" 
+                                                                value={formState.issueDescription} 
+                                                                onChange={handleInputChange} 
+                                                                required 
+                                                                style={{ minHeight: '80px' }}
+                                                            />
+                                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書の件名（2行目）に表示されます。Enterキーでは保存されません。</div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </>
                                         )}
@@ -2757,46 +2773,16 @@ const Repairs: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {formType === 'sales' || formType === 'rental' ? (
-                                    <div className={styles.notesGrid}>
-                                        <Textarea 
-                                            label="社内メモ (帳票には印字されません)" 
-                                            name="internalMemo" 
-                                            value={formState.internalMemo || ''} 
-                                            onChange={handleInputChange} 
-                                            placeholder="例: 要件確認中、〇〇部品の手配必要" 
-                                        />
-                                        <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
-                                    </div>
-                                ) : (
-                                    <div className={styles.notesGrid}>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <Textarea 
-                                                label={
-                                                    formType === 'repair' ? "症状・不具合内容 (必須)" :
-                                                    formType === 'inspection' ? "特定自主検査内容 (必須)" :
-                                                    formType === 'maintenance' ? "整備内容 (必須)" : "内容 (必須)"
-                                                } 
-                                                name="issueDescription" 
-                                                value={formState.issueDescription} 
-                                                onChange={handleInputChange} 
-                                                required 
-                                                style={{ flex: 1, minHeight: '215px' }}
-                                            />
-                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書の件名（2行目）に表示されます。Enterキーでは保存されません。</div>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            <Textarea 
-                                                label="社内メモ (帳票には印字されません)" 
-                                                name="internalMemo" 
-                                                value={formState.internalMemo || ''} 
-                                                onChange={handleInputChange} 
-                                                placeholder="例: 要件確認中、〇〇部品の手配必要" 
-                                            />
-                                            <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
-                                        </div>
-                                    </div>
-                                )}
+                                <div className={styles.notesGrid}>
+                                    <Textarea 
+                                        label="社内メモ (帳票には印字されません)" 
+                                        name="internalMemo" 
+                                        value={formState.internalMemo || ''} 
+                                        onChange={handleInputChange} 
+                                        placeholder="例: 要件確認中、〇〇部品の手配必要" 
+                                    />
+                                    <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
+                                </div>
 
                                 {/* Photos Section */}
                                 <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#f8fafc' }}>
