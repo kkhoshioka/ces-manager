@@ -71,6 +71,7 @@ interface ProjectDetail {
 interface Customer {
     code?: string;
     name: string;
+    closingDate?: string | null;
 }
 
 interface Project {
@@ -103,6 +104,29 @@ const formatHourMeter = (hm?: string | null) => {
     const numericOnly = hm.replace(/[^0-9.]/g, '');
     if (!numericOnly) return hm;
     return Number(numericOnly).toLocaleString() + ' hr';
+};
+
+const getInvoiceDateString = (completionDate: Date | string | null | undefined, closingDayStr?: string | null) => {
+    let baseDate = new Date();
+    if (completionDate) {
+        baseDate = new Date(completionDate);
+    }
+    
+    if (!closingDayStr) {
+        return `令和 ${baseDate.getFullYear() - 2018} 年 ${baseDate.getMonth() + 1} 月 ${baseDate.getDate()} 日`;
+    }
+    
+    const closingDay = parseInt(closingDayStr, 10);
+    if (isNaN(closingDay)) {
+        return `令和 ${baseDate.getFullYear() - 2018} 年 ${baseDate.getMonth() + 1} 月 ${baseDate.getDate()} 日`;
+    }
+    
+    let targetDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), closingDay);
+    if (closingDay === 99) {
+        targetDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0); // End of month
+    }
+    
+    return `令和 ${targetDate.getFullYear() - 2018} 年 ${targetDate.getMonth() + 1} 月 ${targetDate.getDate()} 日`;
 };
 
 const formatDate = (date: Date | string | null) => {
@@ -386,7 +410,7 @@ export const generateInvoice = (project: Project) => {
                                         {
                                             columns: [
                                                 { text: '請求日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
+                                                { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 100, alignment: 'right', fontSize: 10 }
                                             ]
                                         }
                                     ],
