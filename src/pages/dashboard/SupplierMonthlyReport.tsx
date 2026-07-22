@@ -311,19 +311,21 @@ const SupplierMonthlyReport = () => {
     };
 
     const handleItemChange = (index: number, field: string, value: any) => {
-        const newItems = [...purchaseForm.items];
-        newItems[index] = { ...newItems[index], [field]: value };
-        if (field === 'department') {
-            newItems[index].productCategoryId = null;
-            newItems[index].type = '';
-        }
-        if (field === 'projectId') {
-            newItems[index].productId = '';
-        }
-        if (field === 'productId') {
-            newItems[index].projectId = '';
-        }
-        setPurchaseForm({ ...purchaseForm, items: newItems });
+        setPurchaseForm(prev => {
+            const newItems = [...prev.items];
+            newItems[index] = { ...newItems[index], [field]: value };
+            if (field === 'department') {
+                newItems[index].productCategoryId = null;
+                newItems[index].type = '';
+            }
+            if (field === 'projectId') {
+                newItems[index].productId = '';
+            }
+            if (field === 'productId') {
+                newItems[index].projectId = '';
+            }
+            return { ...prev, items: newItems };
+        });
     };
 
     const addItem = () => {

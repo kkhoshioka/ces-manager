@@ -1,24 +1,31 @@
 const fs = require('fs');
-const path = 'api/_server/pdfService.ts';
+const path = 'src/pages/dashboard/SupplierMonthlyReport.tsx';
 let code = fs.readFileSync(path, 'utf8');
 
-// 1. Add formatHourMeter helper
-const formatHelper = `const formatDate = (date: Date | string | null) => {`;
-const newFormatHelper = `const formatHourMeter = (hm?: string | null) => {
-    if (!hm) return '';
-    const numericOnly = hm.replace(/[^0-9.]/g, '');
-    if (!numericOnly) return hm;
-    return Number(numericOnly).toLocaleString() + ' hr';
-};
+const regex = /const handleItemChange = \(index: number, field: string, value: any\) => \{[\s\S]*?setPurchaseForm\(\{ \.\.\.purchaseForm, items: newItems \}\);\s*\};/;
 
-const formatDate = (date: Date | string | null) => {`;
-code = code.replace(formatHelper, newFormatHelper);
+const replace = `const handleItemChange = (index: number, field: string, value: any) => {
+        setPurchaseForm(prev => {
+            const newItems = [...prev.items];
+            newItems[index] = { ...newItems[index], [field]: value };
+            if (field === 'department') {
+                newItems[index].productCategoryId = null;
+                newItems[index].type = '';
+            }
+            if (field === 'projectId') {
+                newItems[index].productId = '';
+            }
+            if (field === 'productId') {
+                newItems[index].projectId = '';
+            }
+            return { ...prev, items: newItems };
+        });
+    };`;
 
-// 2. Update Invoice PDF (around line 427 after previous edits)
-// Actually we can just do a regex replace or string replace for the hourMeter logic
-const search1 = `\\nアワーメーター: \${project.hourMeter}`;
-const replace1 = `\\nアワーメーター: \${formatHourMeter(project.hourMeter)}`;
-code = code.split(search1).join(replace1);
-
-fs.writeFileSync(path, code, 'utf8');
-console.log('Update pdfService.ts complete');
+if (regex.test(code)) {
+    code = code.replace(regex, replace);
+    fs.writeFileSync(path, code, 'utf8');
+    console.log('Update complete');
+} else {
+    console.log('Pattern not found!');
+}
