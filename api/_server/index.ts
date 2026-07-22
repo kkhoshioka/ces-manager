@@ -1404,7 +1404,7 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
                     data: { isInvoiceIssued: true }
                 });
                 await handleProjectStock(tx, Number(id), 'deduct');
-            });
+            }, { timeout: 30000 });
 
             // 顧客の月次請求ステータスを同期
             const billingDate = project.completionDate || project.createdAt;
@@ -3045,7 +3045,7 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
 
             const snapshot = await prisma.$transaction(async (tx) => {
                 return await calculateBillingSnapshotForCustomer(tx, Number(custId), Number(year), Number(month), customer.closingDate);
-            });
+            }, { timeout: 30000 });
 
             // Create a pseudo-project for the PDF generation
             const pdfData = {
@@ -3179,7 +3179,7 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
         
         const snapshot = await prisma.$transaction(async (tx) => {
             return await calculateBillingSnapshotForCustomer(tx, Number(customerId), Number(year), Number(month), customer.closingDate);
-        });
+        }, { timeout: 30000 });
 
         const pdfData = {
             id: customId,
