@@ -110,7 +110,8 @@ const Repairs: React.FC = () => {
         defaultLaborRate: number;
         defaultTravelTimeRate: number;
         defaultTravelDistanceRate: number;
-    }>({ defaultLaborRate: 8000, defaultTravelTimeRate: 3000, defaultTravelDistanceRate: 50 });
+        defaultBaseTravelFee: number;
+    }>({ defaultLaborRate: 8000, defaultTravelTimeRate: 3000, defaultTravelDistanceRate: 50, defaultBaseTravelFee: 0 });
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/system-settings`)
@@ -119,7 +120,8 @@ const Repairs: React.FC = () => {
                 setSystemSettings({
                     defaultLaborRate: Number(data.defaultLaborRate) || 8000,
                     defaultTravelTimeRate: Number(data.defaultTravelTimeRate) || 3000,
-                    defaultTravelDistanceRate: Number(data.defaultTravelDistanceRate) || 50
+                    defaultTravelDistanceRate: Number(data.defaultTravelDistanceRate) || 50,
+                    defaultBaseTravelFee: Number(data.defaultBaseTravelFee) || 0
                 });
             })
             .catch(console.error);
@@ -1510,8 +1512,7 @@ const Repairs: React.FC = () => {
                             {type === 'travel' ? (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>日付</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>移動場所・区間</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'center', width: '15%' }}>項目</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: '40%' }}>移動場所・区間</th>
                                 </>
                             ) : (
                                 <>
@@ -1531,7 +1532,7 @@ const Repairs: React.FC = () => {
                                     : '数量'
                                 }
                             </th>
-                            {(type !== 'travel' && type !== 'discount') && (
+                            {(type !== 'discount') && (
                                 <>
                                     <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '95px', whiteSpace: 'nowrap' }}>原価単価</th>
                                     <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '95px', whiteSpace: 'nowrap' }}>原価計</th>
@@ -1754,27 +1755,15 @@ const Repairs: React.FC = () => {
                                                                     handleDetailChange(detail.originalIndex, 'description', val);
                                                                     handleDetailChange(detail.originalIndex, 'unitPrice', match.fee);
                                                                     handleDetailChange(detail.originalIndex, 'amountSales', match.fee * detail.quantity);
+                                                                    
+                                                                    // Update unitCost as well if they want base cost to equal base fee
+                                                                    handleDetailChange(detail.originalIndex, 'unitCost', match.fee);
                                                                 } else {
                                                                     handleDetailChange(detail.originalIndex, 'description', val);
-                                                                }
-                                                            }}
-                                                            onBlur={async (e) => {
-                                                                const val = e.target.value;
-                                                                if (val && !travelExpenses.find(t => t.area === val)) {
-                                                                    if (confirm(`「${val}」は出張費マスターに未登録です。マスターに追加しますか？`)) {
-                                                                        try {
-                                                                            const res = await fetch(`${API_BASE_URL}/travel-expenses`, {
-                                                                                method: 'POST',
-                                                                                headers: { 'Content-Type': 'application/json' },
-                                                                                body: JSON.stringify({ area: val, fee: detail.unitPrice || 0 })
-                                                                            });
-                                                                            if (res.ok) {
-                                                                                const newExp = await res.json();
-                                                                                setTravelExpenses(prev => [...prev, newExp]);
-                                                                            }
-                                                                        } catch (error) {
-                                                                            console.error('Failed to create travel expense', error);
-                                                                        }
+                                                                    if (val) {
+                                                                        handleDetailChange(detail.originalIndex, 'unitPrice', systemSettings.defaultBaseTravelFee);
+                                                                        handleDetailChange(detail.originalIndex, 'amountSales', systemSettings.defaultBaseTravelFee * detail.quantity);
+                                                                        handleDetailChange(detail.originalIndex, 'unitCost', systemSettings.defaultBaseTravelFee);
                                                                     }
                                                                 }
                                                             }}
@@ -1791,17 +1780,7 @@ const Repairs: React.FC = () => {
                                                     <div style={{ height: '34px' }}></div> // Spacer for empty cell
                                                 )}
                                             </td>
-                                            {/* Fixed Item Label Column */}
-                                            <td style={{ padding: '0.25rem', textAlign: 'center' }}>
-                                                <span style={{
-                                                    whiteSpace: 'nowrap',
-                                                    fontSize: '0.9rem',
-                                                    fontWeight: 'bold',
-                                                    color: '#475569',
-                                                }}>
-                                                    {detail.travelType === 'area' ? '地区指定' : (detail.travelType === 'time' ? '移動時間' : '移動距離')}
-                                                </span>
-                                            </td>
+
                                         </>
                                     ) : (
                                         /* Standard Content Column for other types */

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Save } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -23,6 +23,8 @@ const TravelExpenseMaster: React.FC = () => {
         code: ''
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [baseFee, setBaseFee] = useState<string>('0');
+    const [isSavingBaseFee, setIsSavingBaseFee] = useState(false);
 
     useEffect(() => {
         fetchExpenses();
@@ -35,6 +37,15 @@ const TravelExpenseMaster: React.FC = () => {
             if (res.ok) {
                 const data = await res.json();
                 setExpenses(data);
+            }
+            
+            // Fetch System Settings
+            const setRes = await fetch(`${API_BASE_URL}/system-settings`);
+            if (setRes.ok) {
+                const setData = await setRes.json();
+                if (setData.defaultBaseTravelFee) {
+                    setBaseFee(setData.defaultBaseTravelFee);
+                }
             }
         } catch (error) {
             console.error('Failed to fetch travel expenses', error);
@@ -97,9 +108,43 @@ const TravelExpenseMaster: React.FC = () => {
         setIsModalOpen(true);
     };
 
+    const saveBaseFee = async () => {
+        setIsSavingBaseFee(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/system-settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ defaultBaseTravelFee: baseFee })
+            });
+            if (res.ok) {
+                alert('ベース出張費を保存しました。');
+            } else {
+                alert('保存に失敗しました。');
+            }
+        } catch (error) {
+            console.error('Failed to save base fee', error);
+            alert('保存に失敗しました。');
+        } finally {
+            setIsSavingBaseFee(false);
+        }
+    };
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: '#f1f5f9', padding: '1rem', borderRadius: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <label style={{ fontWeight: 'bold' }}>ベース出張費 (円):</label>
+                    <Input 
+                        type="number" 
+                        value={baseFee} 
+                        onChange={(e) => setBaseFee(e.target.value)} 
+                        style={{ width: '150px' }}
+                    />
+                    <Button onClick={saveBaseFee} disabled={isSavingBaseFee} icon={<Save size={18} />}>
+                        {isSavingBaseFee ? '保存中...' : '設定を保存'}
+                    </Button>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>※マスター未登録の場所を入力した際の初期値になります</span>
+                </div>
                 <Button icon={<Plus size={18} />} onClick={openAdd}>
                     新規登録
                 </Button>
