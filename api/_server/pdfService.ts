@@ -664,7 +664,7 @@ export const generateInvoice = (project: Project) => {
 
 export const generateDeliveryNote = (project: Project) => {
     // Process details (Group travel, etc if needed - reusing same logic as Invoice)
-    const processedDetails = processProjectDetails(project.details, { includeZeroAmount: true, hideZeroAmountLabor: true });
+    let processedDetails = processProjectDetails(project.details, { hideZeroAmountLabor: true });
 
     // Pad with empty rows
     const MIN_ROWS = 10;
@@ -876,44 +876,86 @@ export const generateDeliveryNote = (project: Project) => {
                 table: {
                     headerRows: 1,
                     dontBreakRows: true,
-                    // Col widths: Date, Name, Qty, Unit, Remarks
-                    widths: [55, '*', 30, 30, '*'],
-                    heights: 24,
+                    // Col widths: Date, Code/Name, Qty, Unit, Price, Amount, Check?
+                    widths: [55, '*', 25, 25, 55, 60, 40],
+                    heights: 24, // FIXED HEIGHT FOR ALL ROWS
                     body: [
                         [
-                            { text: '日付', style: 'tableHeaderMain' },
-                            { text: '品名 / 内容', style: 'tableHeaderMain' },
+                            { text: '日付/伝票番号', style: 'tableHeaderMain' },
+                            { text: '商品コード / 商品名', style: 'tableHeaderMain' },
                             { text: '数量', style: 'tableHeaderMain' },
                             { text: '単位', style: 'tableHeaderMain' },
+                            { text: '単価', style: 'tableHeaderMain' },
+                            { text: '金額', style: 'tableHeaderMain' },
                             { text: '備考', style: 'tableHeaderMain' }
                         ],
                         // Data Rows with Zebra Striping
                         ...(() => {
-                            let lastPrintedDateStr = '';
-                            
+                            let isNewProject = true;
+                            let currentProjectDateStr = deliveryDate;
+
                             return processedDetails.map((d: ProjectDetail, index: number) => {
                                 const rowFill = index % 2 === 0 ? null : ACCENT_COLOR;
                                 const rowBorder = [true, true, true, true];
                                 const rowBorderColor = [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR];
-                                
-                                let displayDateStr = '';
-                                if (d.lineType !== 'padding') {
-                                    const currentDateStr = d.date ? formatDate(d.date) : formatDate(noteDate);
-                                    if (currentDateStr !== lastPrintedDateStr) {
-                                        displayDateStr = currentDateStr;
-                                        lastPrintedDateStr = currentDateStr;
+
+                                if (d.lineType === 'padding') {
+                                    if (d.description && d.description.startsWith('【')) {
+                                        isNewProject = true;
+                                        if (d.date) {
+                                            currentProjectDateStr = formatDate(d.date);
+                                        }
                                     }
+                                    return [
+                                        { text: '', fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: d.description || '\u00A0', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                        { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
+                                    ];
                                 }
-                                
+
+                                let dateStr = '';
+                                if (isNewProject) {
+                                    dateStr = currentProjectDateStr;
+                                    isNewProject = false;
+                                }
+
                                 return [
-                                    { text: displayDateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor, alignment: 'center' },
-                                    { text: d.lineType === 'padding' ? '\u00A0' : d.description, fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
-                                    { text: d.lineType === 'padding' || (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : (d.laborType === 'time' ? 'H' : (d.laborType === 'fixed' ? '式' : (d.laborType === 'days' ? '日' : (d.laborType || '式')))), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: dateStr, fontSize: 8, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: d.description + (d.isTaxExempt ? ' (非課税)' : ''), fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : d.quantity, alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : (d.laborType === 'time' ? 'H' : (d.laborType === 'fixed' ? '式' : (d.laborType === 'days' ? '日' : (d.laborType || '式')))), alignment: 'center', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : formatCurrency(d.unitPrice).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
+                                    { text: (Number(d.quantity || 0) * Number(d.unitPrice || 0) === 0) ? '' : formatCurrency(Number(d.quantity) * Number(d.unitPrice)).replace('¥', ''), alignment: 'right', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor },
                                     { text: '', fontSize: 9, fillColor: rowFill, border: rowBorder, borderColor: rowBorderColor }
                                 ];
                             });
-                        })()
+                        })(),
+
+                        // Consumption Tax Row (Footer 1)
+                        [
+                            { text: '消費税', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            {}, {}, {}, {},
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '', fillColor: '#f8fafc', border: [false, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                        ],
+                        // Total Taxable (Footer 2)
+                        [
+                            { text: '【合計 課税10.0% 税抜額】', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            {}, {}, {}, {},
+                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '', fillColor: '#f8fafc', border: [false, false, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                        ],
+                        // Total Tax (Footer 3)
+                        [
+                            { text: '【合計 課税10.0% 消費税額】', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            {}, {}, {}, {},
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '', fillColor: '#f8fafc', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                        ]
                     ]
                 },
                 layout: 'noBorders' // Use cell borders

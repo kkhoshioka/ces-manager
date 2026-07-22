@@ -21,6 +21,7 @@ interface ProjectDetail {
 interface Customer {
     code?: string;
     name: string;
+    closingDate?: string | null;
 }
 interface Project {
     id: number | string;
