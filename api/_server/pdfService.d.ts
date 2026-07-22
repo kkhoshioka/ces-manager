@@ -27,6 +27,7 @@ interface Project {
     customer: Customer;
     machineModel: string;
     serialNumber: string;
+    hourMeter?: string | null;
     customerContactName?: string | null;
     internalRep?: string | null;
     orderDate?: Date | null;
