@@ -1958,7 +1958,7 @@ const Repairs: React.FC = () => {
                         {/* Subtotal Row */}
                         <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
                             <td colSpan={type === 'part' ? (showSupplier ? 6 : 5) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
-                            {(type !== 'travel') && (
+                            {(type !== 'discount') && (
                                 <>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
