@@ -1389,8 +1389,9 @@ app.get('/api/projects/:id/pdf/:type', async (req, res) => {
         const projectForPdf = {
             ...project,
             details: project.details.map(toNum),
-            machineModel: project.customerMachine?.machineModel || '',
-            serialNumber: project.customerMachine?.serialNumber || '',
+            machineModel: project.machineModel || project.customerMachine?.machineModel || '',
+            serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+            hourMeter: project.hourMeter || project.customerMachine?.hourMeter || '',
             notes: project.notes || undefined
         };
 
@@ -2771,6 +2772,7 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
                 customer: quotation.project.customer,
                 machineModel: quotation.project.machineModel || quotation.project.customerMachine?.machineModel,
                 serialNumber: quotation.project.serialNumber || quotation.project.customerMachine?.serialNumber,
+                hourMeter: quotation.project.hourMeter || quotation.project.customerMachine?.hourMeter,
                 notes: quotation.notes || quotation.project.notes, // Prefer quotation notes
                 details: quotation.details.map(d => ({
                     description: d.description,
@@ -2838,6 +2840,7 @@ app.get('/api/projects/:id/pdf', async (req, res) => {
                 customer: { name: project.customer?.name || '得意先不明', code: project.customer?.code },
                 machineModel: project.machineModel || project.customerMachine?.machineModel || '',
                 serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+                hourMeter: project.hourMeter || project.customerMachine?.hourMeter || '',
                 details: safeDetails,
                 notes: project.notes || '',
                 createdAt: project.createdAt,

@@ -1,32 +1,60 @@
 const fs = require('fs');
-const path = 'api/_server/pdfService.ts';
+const path = 'api/_server/index.ts';
 let code = fs.readFileSync(path, 'utf8');
 
-// For invoice and delivery note
-const search1 = `                            ...((project.machineModel || project.serialNumber) ? [{ 
-                                text: \`機種: \${project.machineModel || (project.serialNumber ? '型式不明' : '')}\${project.serialNumber ? \`\\nS/N : \${project.serialNumber}\` : ''}\`.trim(), 
-                                fontSize: 9, 
-                                margin: [0, 2, 0, 0] 
-                            }] : []),`;
+// 1. Fix projectForPdf in /api/projects/:id/pdf/:type
+const search1 = `        const projectForPdf = {
+            ...project,
+            details: project.details.map(toNum),
+            machineModel: project.customerMachine?.machineModel || '',
+            serialNumber: project.customerMachine?.serialNumber || '',
+            notes: project.notes || undefined
+        };`;
+const replace1 = `        const projectForPdf = {
+            ...project,
+            details: project.details.map(toNum),
+            machineModel: project.machineModel || project.customerMachine?.machineModel || '',
+            serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+            hourMeter: project.hourMeter || project.customerMachine?.hourMeter || '',
+            notes: project.notes || undefined
+        };`;
+code = code.replace(search1, replace1);
 
-const replace1 = `                            ...((project.machineModel || project.serialNumber || project.hourMeter) ? [{ 
-                                text: \`機種: \${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}\${project.serialNumber ? \`\\nS/N : \${project.serialNumber}\` : ''}\${project.hourMeter ? \`\\nアワーメーター: \${project.hourMeter}\` : ''}\`.trim(), 
-                                fontSize: 9, 
-                                margin: [0, 2, 0, 0] 
-                            }] : []),`;
+// 2. Fix quotation projectLike in /api/projects/:id/pdf
+const search2 = `                customer: quotation.project.customer,
+                machineModel: quotation.project.machineModel || quotation.project.customerMachine?.machineModel,
+                serialNumber: quotation.project.serialNumber || quotation.project.customerMachine?.serialNumber,
+                notes: quotation.notes || quotation.project.notes, // Prefer quotation notes`;
+const replace2 = `                customer: quotation.project.customer,
+                machineModel: quotation.project.machineModel || quotation.project.customerMachine?.machineModel,
+                serialNumber: quotation.project.serialNumber || quotation.project.customerMachine?.serialNumber,
+                hourMeter: quotation.project.hourMeter || quotation.project.customerMachine?.hourMeter,
+                notes: quotation.notes || quotation.project.notes, // Prefer quotation notes`;
+code = code.replace(search2, replace2);
 
-code = code.split(search1).join(replace1);
-
-// For quotation
-const search2 = `    const machineInfo = (project.machineModel || project.serialNumber) 
-        ? \`機種: \${project.machineModel || (project.serialNumber ? '型式不明' : '')}\${project.serialNumber ? \`\\nS/N : \${project.serialNumber}\` : ''}\`.trim()
-        : null;`;
-
-const replace2 = `    const machineInfo = (project.machineModel || project.serialNumber || project.hourMeter) 
-        ? \`機種: \${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}\${project.serialNumber ? \`\\nS/N : \${project.serialNumber}\` : ''}\${project.hourMeter ? \`\\nアワーメーター: \${project.hourMeter}\` : ''}\`.trim()
-        : null;`;
-
-code = code.split(search2).join(replace2);
+// 3. Fix pdfData in /api/projects/:id/pdf
+const search3 = `            const pdfData = {
+                id: project.id,
+                customer: { name: project.customer?.name || '得意先不明', code: project.customer?.code },
+                machineModel: project.machineModel || project.customerMachine?.machineModel || '',
+                serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+                details: safeDetails,
+                notes: project.notes || '',
+                createdAt: project.createdAt,
+                completionDate: project.completionDate
+            };`;
+const replace3 = `            const pdfData = {
+                id: project.id,
+                customer: { name: project.customer?.name || '得意先不明', code: project.customer?.code },
+                machineModel: project.machineModel || project.customerMachine?.machineModel || '',
+                serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
+                hourMeter: project.hourMeter || project.customerMachine?.hourMeter || '',
+                details: safeDetails,
+                notes: project.notes || '',
+                createdAt: project.createdAt,
+                completionDate: project.completionDate
+            };`;
+code = code.replace(search3, replace3);
 
 fs.writeFileSync(path, code, 'utf8');
-console.log('Done modifying pdfService.ts');
+console.log('Update index.ts complete');
