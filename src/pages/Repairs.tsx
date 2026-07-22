@@ -2757,24 +2757,8 @@ const Repairs: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className={styles.notesGrid}>
-                                    {formType !== 'sales' && formType !== 'rental' && (
-                                        <div>
-                                            <Textarea 
-                                                label={
-                                                    formType === 'repair' ? "症状・不具合内容" :
-                                                    formType === 'inspection' ? "特定自主検査内容" :
-                                                    formType === 'maintenance' ? "整備内容" : "内容"
-                                                } 
-                                                name="issueDescription" 
-                                                value={formState.issueDescription} 
-                                                onChange={handleInputChange} 
-                                                required 
-                                            />
-                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書の件名（2行目）に表示されます。Enterキーでは保存されません。</div>
-                                        </div>
-                                    )}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {formType === 'sales' || formType === 'rental' ? (
+                                    <div className={styles.notesGrid}>
                                         <Textarea 
                                             label="社内メモ (帳票には印字されません)" 
                                             name="internalMemo" 
@@ -2784,7 +2768,35 @@ const Repairs: React.FC = () => {
                                         />
                                         <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className={styles.notesGrid}>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <Textarea 
+                                                label={
+                                                    formType === 'repair' ? "症状・不具合内容 (必須)" :
+                                                    formType === 'inspection' ? "特定自主検査内容 (必須)" :
+                                                    formType === 'maintenance' ? "整備内容 (必須)" : "内容 (必須)"
+                                                } 
+                                                name="issueDescription" 
+                                                value={formState.issueDescription} 
+                                                onChange={handleInputChange} 
+                                                required 
+                                                style={{ flex: 1, minHeight: '215px' }}
+                                            />
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書の件名（2行目）に表示されます。Enterキーでは保存されません。</div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            <Textarea 
+                                                label="社内メモ (帳票には印字されません)" 
+                                                name="internalMemo" 
+                                                value={formState.internalMemo || ''} 
+                                                onChange={handleInputChange} 
+                                                placeholder="例: 要件確認中、〇〇部品の手配必要" 
+                                            />
+                                            <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Photos Section */}
                                 <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#f8fafc' }}>
