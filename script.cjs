@@ -1,60 +1,24 @@
 const fs = require('fs');
-const path = 'api/_server/index.ts';
+const path = 'api/_server/pdfService.ts';
 let code = fs.readFileSync(path, 'utf8');
 
-// 1. Fix projectForPdf in /api/projects/:id/pdf/:type
-const search1 = `        const projectForPdf = {
-            ...project,
-            details: project.details.map(toNum),
-            machineModel: project.customerMachine?.machineModel || '',
-            serialNumber: project.customerMachine?.serialNumber || '',
-            notes: project.notes || undefined
-        };`;
-const replace1 = `        const projectForPdf = {
-            ...project,
-            details: project.details.map(toNum),
-            machineModel: project.machineModel || project.customerMachine?.machineModel || '',
-            serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
-            hourMeter: project.hourMeter || project.customerMachine?.hourMeter || '',
-            notes: project.notes || undefined
-        };`;
-code = code.replace(search1, replace1);
+// 1. Add formatHourMeter helper
+const formatHelper = `const formatDate = (date: Date | string | null) => {`;
+const newFormatHelper = `const formatHourMeter = (hm?: string | null) => {
+    if (!hm) return '';
+    const numericOnly = hm.replace(/[^0-9.]/g, '');
+    if (!numericOnly) return hm;
+    return Number(numericOnly).toLocaleString() + ' hr';
+};
 
-// 2. Fix quotation projectLike in /api/projects/:id/pdf
-const search2 = `                customer: quotation.project.customer,
-                machineModel: quotation.project.machineModel || quotation.project.customerMachine?.machineModel,
-                serialNumber: quotation.project.serialNumber || quotation.project.customerMachine?.serialNumber,
-                notes: quotation.notes || quotation.project.notes, // Prefer quotation notes`;
-const replace2 = `                customer: quotation.project.customer,
-                machineModel: quotation.project.machineModel || quotation.project.customerMachine?.machineModel,
-                serialNumber: quotation.project.serialNumber || quotation.project.customerMachine?.serialNumber,
-                hourMeter: quotation.project.hourMeter || quotation.project.customerMachine?.hourMeter,
-                notes: quotation.notes || quotation.project.notes, // Prefer quotation notes`;
-code = code.replace(search2, replace2);
+const formatDate = (date: Date | string | null) => {`;
+code = code.replace(formatHelper, newFormatHelper);
 
-// 3. Fix pdfData in /api/projects/:id/pdf
-const search3 = `            const pdfData = {
-                id: project.id,
-                customer: { name: project.customer?.name || '得意先不明', code: project.customer?.code },
-                machineModel: project.machineModel || project.customerMachine?.machineModel || '',
-                serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
-                details: safeDetails,
-                notes: project.notes || '',
-                createdAt: project.createdAt,
-                completionDate: project.completionDate
-            };`;
-const replace3 = `            const pdfData = {
-                id: project.id,
-                customer: { name: project.customer?.name || '得意先不明', code: project.customer?.code },
-                machineModel: project.machineModel || project.customerMachine?.machineModel || '',
-                serialNumber: project.serialNumber || project.customerMachine?.serialNumber || '',
-                hourMeter: project.hourMeter || project.customerMachine?.hourMeter || '',
-                details: safeDetails,
-                notes: project.notes || '',
-                createdAt: project.createdAt,
-                completionDate: project.completionDate
-            };`;
-code = code.replace(search3, replace3);
+// 2. Update Invoice PDF (around line 427 after previous edits)
+// Actually we can just do a regex replace or string replace for the hourMeter logic
+const search1 = `\\nアワーメーター: \${project.hourMeter}`;
+const replace1 = `\\nアワーメーター: \${formatHourMeter(project.hourMeter)}`;
+code = code.split(search1).join(replace1);
 
 fs.writeFileSync(path, code, 'utf8');
-console.log('Update index.ts complete');
+console.log('Update pdfService.ts complete');
