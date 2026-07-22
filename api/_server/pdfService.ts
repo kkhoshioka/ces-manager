@@ -414,8 +414,8 @@ export const generateInvoice = (project: Project) => {
                                 fontSize: 9, 
                                 margin: [0, 4, 0, 0] 
                             }]),
-                            ...((project.machineModel || project.serialNumber) ? [{ 
-                                text: `機種: ${project.machineModel || (project.serialNumber ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}`.trim(), 
+                            ...((project.machineModel || project.serialNumber || project.hourMeter) ? [{ 
+                                text: `機種: ${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}${project.hourMeter ? `\nアワーメーター: ${project.hourMeter}` : ''}`.trim(), 
                                 fontSize: 9, 
                                 margin: [0, 2, 0, 0] 
                             }] : []),
@@ -756,8 +756,8 @@ export const generateDeliveryNote = (project: Project) => {
                                 fontSize: 9, 
                                 margin: [0, 4, 0, 0] 
                             },
-                            ...((project.machineModel || project.serialNumber) ? [{ 
-                                text: `機種: ${project.machineModel || (project.serialNumber ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}`.trim(), 
+                            ...((project.machineModel || project.serialNumber || project.hourMeter) ? [{ 
+                                text: `機種: ${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}${project.hourMeter ? `\nアワーメーター: ${project.hourMeter}` : ''}`.trim(), 
                                 fontSize: 9, 
                                 margin: [0, 2, 0, 0] 
                             }] : []),
@@ -913,8 +913,8 @@ export const generateQuotation = (project: Project) => {
     // Use the first line of notes as the issue summary for the subject
     const issueSummary = (project.notes || '').split('\n')[0];
     const subjectLine = `件名: ${issueSummary || '案件詳細'}`;
-    const machineInfo = (project.machineModel || project.serialNumber) 
-        ? `機種: ${project.machineModel || (project.serialNumber ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}`.trim()
+    const machineInfo = (project.machineModel || project.serialNumber || project.hourMeter) 
+        ? `機種: ${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}${project.hourMeter ? `\nアワーメーター: ${project.hourMeter}` : ''}`.trim()
         : null;
 
     // UI Colors
