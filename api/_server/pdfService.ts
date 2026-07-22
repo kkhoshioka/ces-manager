@@ -857,15 +857,7 @@ export const generateDeliveryNote = (project: Project) => {
                                 }] : [];
                             })() ),
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
-                            ...( (() => {
-                                const seal = getSealImage();
-                                return seal ? [{
-                                    image: seal,
-                                    width: 45,
-                                    alignment: 'right',
-                                    margin: [0, -35, 10, -10]
-                                }] : [];
-                            })() ),
+                            
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
