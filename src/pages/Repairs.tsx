@@ -1871,7 +1871,7 @@ const Repairs: React.FC = () => {
                                             </select>
                                         </div>
                                     </td>
-                                    {(type !== 'travel' && type !== 'discount') && (
+                                    {(type !== 'discount') && (
                                         <>
                                             <td style={{ padding: '0.25rem' }}>
                                                 <div className={styles.currencyWrapper}>
