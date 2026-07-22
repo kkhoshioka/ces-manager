@@ -2737,7 +2737,7 @@ const Repairs: React.FC = () => {
                                                                 required 
                                                                 style={{ minHeight: '80px' }}
                                                             />
-                                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書の件名（2行目）に表示されます。Enterキーでは保存されません。</div>
+                                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書等の件名として複数行で印字されます。</div>
                                                         </div>
                                                     )}
                                                 </div>

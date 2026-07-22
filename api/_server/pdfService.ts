@@ -830,7 +830,7 @@ export const generateDeliveryNote = (project: Project) => {
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 11, margin: [10, 0, 0, 0] }] : []),
                             { text: '\n' },
                             { 
-                                text: `件名: ${project.notes ? project.notes.split('\n')[0] : '案件詳細'}`, 
+                                text: `件名: ${project.notes ? project.notes.split('\n\n備考:')[0].trim() : '案件詳細'}`, 
                                 fontSize: 9, 
                                 margin: [0, 4, 0, 0] 
                             },
@@ -1048,8 +1048,8 @@ export const generateQuotation = (project: Project) => {
     const total = subtotal + tax;
 
     const now = new Date();
-    // Use the first line of notes as the issue summary for the subject
-    const issueSummary = (project.notes || '').split('\n')[0];
+    // Use the issue description as the subject
+    const issueSummary = (project.notes || '').split('\n\n備考:')[0].trim();
     const subjectLine = `件名: ${issueSummary || '案件詳細'}`;
     const machineInfo = (project.machineModel || project.serialNumber || project.hourMeter) 
         ? `機種: ${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}${project.hourMeter ? `\nアワーメーター: ${formatHourMeter(project.hourMeter)}` : ''}`.trim()
