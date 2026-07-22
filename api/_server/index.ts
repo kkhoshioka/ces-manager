@@ -891,6 +891,7 @@ app.post('/api/projects', async (req, res) => {
                     hourMeter,
                     stockDeducted: false, // Let handleProjectStock manage this
                     customerContactName: data.customerContactName || null,
+                    internalMemo: data.internalMemo || null,
                     internalRep: data.internalRep || null,
                     customer: { connect: { id: Number(customerId) } },
                     ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),

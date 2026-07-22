@@ -68,6 +68,7 @@ const Repairs: React.FC = () => {
     const [formState, setFormState] = useState<{
         customerName: string;
         customerContactName: string; // New field
+        internalMemo: string; // 帳票に印字しない社内メモ
         internalRep: string; // 自社担当者
         machineModel: string;
         serialNumber: string;
@@ -87,6 +88,7 @@ const Repairs: React.FC = () => {
     }>({
         customerName: '',
         customerContactName: '',
+        internalMemo: '',
         internalRep: '',
         machineModel: '',
         serialNumber: '',
@@ -685,7 +687,8 @@ const Repairs: React.FC = () => {
 
             const projectData = {
                 type: formType, // Include type
-                customerContactName: formState.customerContactName, // New field Added
+                customerContactName: formState.customerContactName,
+                internalMemo: formState.internalMemo, // New field Added
                 internalRep: formState.internalRep, // 自社担当者
                 customerId: customer.id,
                 customerMachineId: customerMachineId,
@@ -834,6 +837,7 @@ const Repairs: React.FC = () => {
         setFormState({
             customerName: '',
             customerContactName: '',
+            internalMemo: '',
             internalRep: '',
             machineModel: '',
             serialNumber: '',
@@ -1160,6 +1164,7 @@ const Repairs: React.FC = () => {
         setFormState({
             customerName: project.customer?.name || '',
             customerContactName: project.customerContactName || '',
+            internalMemo: project.internalMemo || '',
             internalRep: project.internalRep || '',
             machineModel: project.machineModel || '',
             serialNumber: project.serialNumber || '',
@@ -2633,6 +2638,16 @@ const Repairs: React.FC = () => {
                                                     <datalist id="customer-list">
                                                         {customers.map(c => <option key={c.id} value={c.name} />)}
                                                     </datalist>
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: '300px' }}>
+                                                    <Input
+                                                        label="社内メモ (帳票には印字されません)"
+                                                        name="internalMemo"
+                                                        value={formState.internalMemo || ''}
+                                                        onChange={handleInputChange}
+                                                        placeholder="例: 要件確認中、〇〇部品の手配必要"
+                                                        autoComplete="off"
+                                                    />
                                                 </div>
                                             </div>
 

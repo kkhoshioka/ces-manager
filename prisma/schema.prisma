@@ -164,6 +164,7 @@ model Project {
   status            String    @default("received") // received, diagnosing, in_progress, completed, delivered
   totalAmount       Decimal   @default(0)
   notes             String?
+  internalMemo      String?   // New: 帳票に印字しない社内メモ
   
   // Rental specific fields
   rentalStartDate   DateTime?
