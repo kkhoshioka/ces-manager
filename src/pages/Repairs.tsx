@@ -2639,16 +2639,6 @@ const Repairs: React.FC = () => {
                                                         {customers.map(c => <option key={c.id} value={c.name} />)}
                                                     </datalist>
                                                 </div>
-                                                <div style={{ flex: 1, minWidth: '300px' }}>
-                                                    <Input
-                                                        label="社内メモ (帳票には印字されません)"
-                                                        name="internalMemo"
-                                                        value={formState.internalMemo || ''}
-                                                        onChange={handleInputChange}
-                                                        placeholder="例: 要件確認中、〇〇部品の手配必要"
-                                                        autoComplete="off"
-                                                    />
-                                                </div>
                                             </div>
 
                                             {/* Row 5: Contacts */}
@@ -2713,19 +2703,33 @@ const Repairs: React.FC = () => {
                                                     </div>
                                                 )}
 
-                                                <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
-                                                <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} />
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <div style={{ width: '150px' }}>
-                                                        <Input
-                                                            label="アワーメーター"
-                                                            name="hourMeter"
-                                                            value={formState.hourMeter}
-                                                            onChange={handleInputChange}
-                                                            placeholder="1234.5"
+                                                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                                                    <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                        <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} required={formType !== 'sales'} />
+                                                        <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} />
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <div style={{ width: '150px' }}>
+                                                                <Input
+                                                                    label="アワーメーター"
+                                                                    name="hourMeter"
+                                                                    value={formState.hourMeter}
+                                                                    onChange={handleInputChange}
+                                                                    placeholder="1234.5"
+                                                                />
+                                                            </div>
+                                                            <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: '300px' }}>
+                                                        <Textarea 
+                                                            label="社内メモ (帳票には印字されません)" 
+                                                            name="internalMemo" 
+                                                            value={formState.internalMemo || ''} 
+                                                            onChange={handleInputChange} 
+                                                            placeholder="例: 要件確認中、〇〇部品の手配必要" 
+                                                            style={{ minHeight: '190px' }}
                                                         />
                                                     </div>
-                                                    <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
                                                 </div>
                                             </>
                                         )}
