@@ -23,6 +23,21 @@ const getSealImage = () => {
     return null;
 };
 
+const logoPath = path.join(process.cwd(), 'public', 'CES中国ロゴ01.png');
+const getLogoImage = () => {
+    try {
+        if (fs.existsSync(logoPath)) {
+            const ext = path.extname(logoPath).toLowerCase();
+            const mime = ext === '.jpg' || ext === '.jpeg' ? 'jpeg' : 'png';
+            const base64Data = fs.readFileSync(logoPath).toString('base64');
+            return `data:image/${mime};base64,${base64Data}`;
+        }
+    } catch(e) {
+        console.error('Error reading logo image:', e);
+    }
+    return null;
+};
+
 const fontDir = path.join(__dirname, 'fonts');
 const notoSansRegular = path.join(fontDir, 'NotoSansJP-Regular.otf');
 const notoSansBold = path.join(fontDir, 'NotoSansJP-Bold.otf');
@@ -449,6 +464,15 @@ export const generateInvoice = (project: Project) => {
                     {
                         width: '*',
                         stack: [
+                            ...( (() => {
+                                const logo = getLogoImage();
+                                return logo ? [{
+                                    image: logo,
+                                    width: 140,
+                                    alignment: 'right',
+                                    margin: [0, 0, 0, 5]
+                                }] : [];
+                            })() ),
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
                             ...( (() => {
                                 const seal = getSealImage();
@@ -823,6 +847,15 @@ export const generateDeliveryNote = (project: Project) => {
                     {
                         width: '*',
                         stack: [
+                            ...( (() => {
+                                const logo = getLogoImage();
+                                return logo ? [{
+                                    image: logo,
+                                    width: 140,
+                                    alignment: 'right',
+                                    margin: [0, 0, 0, 5]
+                                }] : [];
+                            })() ),
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
                             ...( (() => {
                                 const seal = getSealImage();
@@ -1129,6 +1162,15 @@ export const generateQuotation = (project: Project) => {
                     {
                         width: '*',
                         stack: [
+                            ...( (() => {
+                                const logo = getLogoImage();
+                                return logo ? [{
+                                    image: logo,
+                                    width: 140,
+                                    alignment: 'right',
+                                    margin: [0, 0, 0, 5]
+                                }] : [];
+                            })() ),
                             { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'right' },
                             ...( (() => {
                                 const seal = getSealImage();
