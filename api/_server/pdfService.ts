@@ -417,16 +417,6 @@ export const generateInvoice = (project: Project) => {
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n' },
-                            ...(project.billingSnapshot ? [] : [{ 
-                                text: `件名: ${project.notes ? project.notes.split('\n')[0] : '案件詳細'}`, 
-                                fontSize: 9, 
-                                margin: [0, 4, 0, 0] 
-                            }]),
-                            ...((project.machineModel || project.serialNumber || project.hourMeter) ? [{ 
-                                text: `機種: ${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}${project.hourMeter ? `\nアワーメーター: ${formatHourMeter(project.hourMeter)}` : ''}`.trim(), 
-                                fontSize: 9, 
-                                margin: [0, 2, 0, 0] 
-                            }] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り御請求申し上げます。', fontSize: 9 }
