@@ -517,17 +517,29 @@ const Repairs: React.FC = () => {
 
     useEffect(() => {
         const init = async () => {
-            await loadProjects();
             const openId = searchParams.get('id');
+            if (openId) {
+                // 即座にモーダルを開き、ローディング状態にする
+                setIsFormOpen(true);
+                setIsFormLoading(true);
+            }
+
+            await loadProjects();
+            
             if (openId) {
                 try {
                     const project = await RepairService.getById(Number(openId));
                     if (project) {
                         handleRowClick(project);
                         setSearchParams({});
+                    } else {
+                        setIsFormOpen(false);
+                        setIsFormLoading(false);
                     }
                 } catch (error) {
                     console.error("Failed to open project from URL", error);
+                    setIsFormOpen(false);
+                    setIsFormLoading(false);
                 }
             }
         };
