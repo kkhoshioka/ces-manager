@@ -158,6 +158,7 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
         return (desc || '')
             .replace(/【移動時間】/g, '')
             .replace(/【移動距離】/g, '')
+            .replace(/【地区指定】/g, '')
             .trim();
     };
 
