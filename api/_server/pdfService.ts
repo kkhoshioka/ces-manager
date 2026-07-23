@@ -611,23 +611,23 @@ export const generateInvoice = (project: Project) => {
 
                         // Consumption Tax Row (Footer 1)
                         [
-                            { text: '消費税', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '消費税', colSpan: 5, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {}, {},
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', fillColor: '#f8fafc', border: [false, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Taxable (Footer 2)
                         [
-                            { text: '【合計 課税10.0% 税抜額】', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '【合計 課税10.0% 税抜額】', colSpan: 5, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {}, {},
-                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', fillColor: '#f8fafc', border: [false, false, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Tax (Footer 3)
                         [
-                            { text: '【合計 課税10.0% 消費税額】', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '【合計 課税10.0% 消費税額】', colSpan: 5, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {}, {},
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', fillColor: '#f8fafc', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ]
                     ]
@@ -691,7 +691,7 @@ export const generateDeliveryNote = (project: Project) => {
     let processedDetails = processProjectDetails(project.details, { hideZeroAmountLabor: true });
 
     // Pad with empty rows
-    const MIN_ROWS = 10;
+    const MIN_ROWS = 8;
     if (processedDetails.length < MIN_ROWS) {
         const paddingCount = MIN_ROWS - processedDetails.length;
         for (let i = 0; i < paddingCount; i++) {
@@ -962,23 +962,23 @@ export const generateDeliveryNote = (project: Project) => {
 
                         // Consumption Tax Row (Footer 1)
                         [
-                            { text: '消費税', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '消費税', colSpan: 5, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {}, {},
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', fillColor: '#f8fafc', border: [false, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Taxable (Footer 2)
                         [
-                            { text: '【合計 課税10.0% 税抜額】', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '【合計 課税10.0% 税抜額】', colSpan: 5, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {}, {},
-                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', fillColor: '#f8fafc', border: [false, false, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Tax (Footer 3)
                         [
-                            { text: '【合計 課税10.0% 消費税額】', colSpan: 5, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '【合計 課税10.0% 消費税額】', colSpan: 5, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {}, {},
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, false, false, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             { text: '', fillColor: '#f8fafc', border: [false, false, true, true], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ]
                     ]
@@ -1258,15 +1258,15 @@ export const generateQuotation = (project: Project) => {
 
                         // Consumption Tax Row (Footer 1)
                         [
-                            { text: '消費税', colSpan: 4, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '消費税', colSpan: 4, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, true, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {},
-                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                            { text: formatCurrency(tax).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, true, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Taxable (Footer 2)
                         [
-                            { text: '【合計 課税10.0% 税抜額】', colSpan: 4, alignment: 'right', margin: [0, 2, 10, 2], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
+                            { text: '【合計 課税10.0% 税抜額】', colSpan: 4, alignment: 'right', margin: [0, 0, 10, 0], fontSize: 9, fillColor: '#f8fafc', border: [true, false, false, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] },
                             {}, {}, {},
-                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', margin: [0, 2, 0, 2], fontSize: 9, fillColor: '#f8fafc', border: [false, false, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
+                            { text: formatCurrency(subtotal).replace('¥', ''), alignment: 'right', margin: [0, 0, 0, 0], fontSize: 9, fillColor: '#f8fafc', border: [false, false, true, false], borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR] }
                         ],
                         // Total Tax (Footer 3)
                         [
