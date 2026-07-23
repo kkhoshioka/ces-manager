@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown, ChevronUp, Copy, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Repair } from '../types/repair';
@@ -51,6 +52,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const Repairs: React.FC = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [projects, setProjects] = useState<Repair[]>([]); // Renamed from repairs to projects
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -514,7 +516,22 @@ const Repairs: React.FC = () => {
     };
 
     useEffect(() => {
-        loadProjects();
+        const init = async () => {
+            await loadProjects();
+            const openId = searchParams.get('id');
+            if (openId) {
+                try {
+                    const project = await RepairService.getById(Number(openId));
+                    if (project) {
+                        handleRowClick(project);
+                        setSearchParams({});
+                    }
+                } catch (error) {
+                    console.error("Failed to open project from URL", error);
+                }
+            }
+        };
+        init();
     }, []);
 
     const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {

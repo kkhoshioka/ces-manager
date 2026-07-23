@@ -2690,6 +2690,7 @@ app.get('/api/dashboard/supplier-details', async (req, res) => {
                         id: detail.id,
                         isPurchase: !!(detail as any).purchase,
                         purchaseId: (detail as any).purchase?.id || null,
+                        projectId: project.id,
                         date: project.createdAt, // Or completionDate? Using createdAt for consistency
                         customerName: project.customer?.name || '不明',
                         machineModel: project.machineModel || project.customerMachine?.machineModel || '-',

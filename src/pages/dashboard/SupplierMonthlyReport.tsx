@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ChevronLeft, ChevronRight, FileText, Settings, ChevronDown, ChevronUp, Plus, X, Edit, Save, DollarSign, Wrench, Copy } from 'lucide-react';
@@ -33,6 +34,7 @@ interface SupplierDetail {
     isPaid: boolean;
     isPurchase?: boolean;
     purchaseId?: number;
+    projectId?: number;
 }
 
 const SupplierMonthlyReport = () => {
@@ -147,8 +149,16 @@ const SupplierMonthlyReport = () => {
         fetchReport();
     }, [fetchReport]);
 
+    const navigate = useNavigate();
+
     const handleEditPurchase = (detail: SupplierDetail) => {
-        if (!detail.isPurchase || !detail.purchaseId) return;
+        if (!detail.isPurchase) {
+            if (detail.projectId) {
+                navigate(`/repairs?id=${detail.projectId}`);
+            }
+            return;
+        }
+        if (!detail.purchaseId) return;
         // Fetch purchase details and open modal
         fetch(`${API_BASE_URL}/purchases?id=${detail.purchaseId}`)
             .then(res => res.json())
