@@ -2705,7 +2705,13 @@ const Repairs: React.FC = () => {
                                                             <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} />
                                                         </div>
                                                         <div style={{ flex: 1 }}>
-                                                            <Input label="シリアル番号" name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} />
+                                                            <Input 
+                                                                label="シリアル番号" 
+                                                                name="serialNumber" 
+                                                                value={formState.serialNumber} 
+                                                                onChange={handleInputChange} 
+                                                                style={(!!formState.machineModel && !formState.serialNumber) ? { backgroundColor: '#fff8e1', borderColor: '#ffc107', borderWidth: '2px' } : undefined}
+                                                            />
                                                         </div>
                                                         <div style={{ width: '150px' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -2716,6 +2722,7 @@ const Repairs: React.FC = () => {
                                                                         value={formState.hourMeter}
                                                                         onChange={handleInputChange}
                                                                         placeholder="1234.5"
+                                                                        style={(!!formState.machineModel && !formState.hourMeter) ? { backgroundColor: '#fff8e1', borderColor: '#ffc107', borderWidth: '2px' } : undefined}
                                                                     />
                                                                 </div>
                                                                 <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
