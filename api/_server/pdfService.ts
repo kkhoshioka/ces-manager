@@ -111,7 +111,7 @@ interface Project {
 }
 
 const formatCurrency = (amount: number | string) => {
-    return `¥${Number(amount).toLocaleString()}`;
+    return `\\${Number(amount).toLocaleString()}`;
 };
 
 const formatHourMeter = (hm?: string | null) => {
@@ -552,7 +552,7 @@ export const generateInvoice = (project: Project) => {
                     dontBreakRows: true,
                     // Col widths: Date, Code/Name, Qty, Unit, Price, Amount, Check?
                     widths: [55, '*', 25, 25, 55, 60, 40],
-                    heights: 24, // FIXED HEIGHT FOR ALL ROWS
+                    heights: (rowIndex: number) => (rowIndex > processedDetails.length) ? 14 : 24,
                     body: [
                         [
                             { text: '日付/伝票番号', style: 'tableHeaderMain' },
@@ -677,8 +677,8 @@ export const generateInvoice = (project: Project) => {
             },
             summaryCell: {
                 fontSize: 10,
-                alignment: 'center',
-                margin: [0, 5]
+                alignment: 'right',
+                margin: [0, 5, 5, 5]
             }
         }
     };
@@ -903,7 +903,7 @@ export const generateDeliveryNote = (project: Project) => {
                     dontBreakRows: true,
                     // Col widths: Date, Code/Name, Qty, Unit, Price, Amount, Check?
                     widths: [55, '*', 25, 25, 55, 60, 40],
-                    heights: 24, // FIXED HEIGHT FOR ALL ROWS
+                    heights: (rowIndex: number) => (rowIndex > processedDetails.length) ? 14 : 24,
                     body: [
                         [
                             { text: '日付/伝票番号', style: 'tableHeaderMain' },
@@ -1233,7 +1233,7 @@ export const generateQuotation = (project: Project) => {
                     // New: [Content, Qty, Unit, Price, Amount]
                     // Removed Date column. Old widths: [50, '*', 30, 25, 60, 60]
                     widths: ['*', 30, 25, 60, 60],
-                    heights: 24,
+                    heights: (rowIndex: number) => (rowIndex > processedDetails.length) ? 14 : 24,
                     body: [
                         [
                             { text: '商品コード / 商品名', style: 'tableHeaderMain' },
@@ -1321,8 +1321,8 @@ export const generateQuotation = (project: Project) => {
             },
             summaryCell: {
                 fontSize: 10,
-                alignment: 'center',
-                margin: [0, 2] // Reduced from [0, 5]
+                alignment: 'right',
+                margin: [0, 2, 5, 2]
             }
         }
     };
