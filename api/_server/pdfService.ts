@@ -1011,6 +1011,19 @@ export const generateDeliveryNote = (project: Project) => {
                 fontSize: 9,
                 alignment: 'center',
                 bold: true
+            },
+            blueHeaderUnique: {
+                fillColor: PRIMARY_COLOR,
+                color: 'white',
+                fontSize: 9,
+                alignment: 'center',
+                bold: true,
+                margin: [0, 2]
+            },
+            summaryCell: {
+                fontSize: 10,
+                alignment: 'right',
+                margin: [0, 5, 5, 5]
             }
         }
     };
