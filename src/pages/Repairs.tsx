@@ -57,7 +57,7 @@ const Repairs: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [sortField, setSortField] = useState<'createdAt' | 'status'>('createdAt');
+    const [sortField, setSortField] = useState<'createdAt' | 'status' | 'projectNo'>('createdAt');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
     // Quotation State
@@ -2008,7 +2008,7 @@ const Repairs: React.FC = () => {
         );
     };
 
-    const handleSort = (field: 'createdAt' | 'status') => {
+    const handleSort = (field: 'createdAt' | 'status' | 'projectNo') => {
         if (sortField === field) {
             setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
         } else {
@@ -2036,6 +2036,10 @@ const Repairs: React.FC = () => {
                 const aVal = orderMap[a.status] || 99;
                 const bVal = orderMap[b.status] || 99;
                 return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+            } else if (sortField === 'projectNo') {
+                const aNo = a.projectNo || '';
+                const bNo = b.projectNo || '';
+                return sortOrder === 'asc' ? aNo.localeCompare(bNo) : bNo.localeCompare(aNo);
             } else {
                 const aDate = a.orderDate ? new Date(a.orderDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
                 const bDate = b.orderDate ? new Date(b.orderDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
@@ -2308,7 +2312,12 @@ const Repairs: React.FC = () => {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th style={{ width: '80px', minWidth: '80px', whiteSpace: 'nowrap' }}>案件No.</th>
+                            <th
+                                style={{ width: '100px', minWidth: '100px', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}
+                                onClick={() => handleSort('projectNo')}
+                            >
+                                案件No. {sortField === 'projectNo' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
                             <th style={{ width: '60px', minWidth: '60px', padding: '1rem 0.5rem', textAlign: 'center' }}>タイプ</th>
                             <th
                                 style={{ width: '90px', minWidth: '90px', padding: '1rem 0.5rem', cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}
