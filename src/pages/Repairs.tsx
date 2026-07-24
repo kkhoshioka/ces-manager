@@ -1882,7 +1882,7 @@ const Repairs: React.FC = () => {
                                                     input: (base) => ({ ...base, margin: 0, padding: 0 }),
                                                     dropdownIndicator: (base) => ({ ...base, padding: '0 4px' }),
                                                     clearIndicator: () => ({ display: 'none' }),
-                                                    menu: (base) => ({ ...base, zIndex: 9999 }),
+                                                    menu: (base) => ({ ...base, zIndex: 9999, width: 'max-content', minWidth: '100%', whiteSpace: 'nowrap' }),
                                                     menuPortal: (base) => ({ ...base, zIndex: 9999 })
                                                 }}
                                                 menuPortalTarget={document.body}
