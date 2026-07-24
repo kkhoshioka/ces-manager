@@ -615,9 +615,18 @@ app.get('/api/projects', async (req, res) => {
             const searchStr = String(search);
             // Search across Customer Name, Machine Model, Serial Number
             where.OR = [
-                { customer: { name: { contains: searchStr } } }, // SQLite contains is case-insensitive usually, or lowercase match
+                { customer: { name: { contains: searchStr } } },
                 { machineModel: { contains: searchStr } },
-                { serialNumber: { contains: searchStr } }
+                { serialNumber: { contains: searchStr } },
+                { projectNo: { contains: searchStr } },
+                { notes: { contains: searchStr } },
+                { internalMemo: { contains: searchStr } },
+                { customerContactName: { contains: searchStr } },
+                { internalRep: { contains: searchStr } },
+                { customerMachine: { machineModel: { contains: searchStr } } },
+                { details: { some: { description: { contains: searchStr } } } },
+                { details: { some: { partNumber: { contains: searchStr } } } },
+                { details: { some: { remarks: { contains: searchStr } } } }
             ];
             // If search is numeric, maybe search ID?
             if (!isNaN(Number(searchStr))) {
