@@ -4,6 +4,7 @@ import { X, Save } from 'lucide-react';
 import type { Customer, CustomerMachine } from '../../types/customer';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Select from 'react-select';
 import Textarea from '../../components/ui/Textarea';
 import styles from './MachineRegistry.module.css';
 import { API_BASE_URL } from '../../config';
@@ -64,6 +65,12 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!customerId) {
+            alert('顧客を選択してください');
+            return;
+        }
+
         const payload = {
             customerId: Number(customerId),
             machineModel,
@@ -106,17 +113,21 @@ const MachineForm: React.FC<Props> = ({ isOpen, onClose, onSave, machine }) => {
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <div className={styles.formGroup}>
                         <label className={styles.label}>顧客 (必須)</label>
-                        <select
-                            required
-                            className={styles.select}
-                            value={customerId}
-                            onChange={e => setCustomerId(e.target.value)}
-                        >
-                            <option value="">選択してください</option>
-                            {customers.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
+                        <Select
+                            options={customers.map(c => ({ label: c.name, value: String(c.id) }))}
+                            value={customerId ? { label: customers.find(c => String(c.id) === String(customerId))?.name || '', value: String(customerId) } : null}
+                            onChange={(option) => setCustomerId(option ? option.value : '')}
+                            placeholder="顧客を検索・選択..."
+                            isClearable
+                            isSearchable
+                            styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    borderColor: '#cbd5e1',
+                                    padding: '2px'
+                                })
+                            }}
+                        />
                     </div>
 
 
