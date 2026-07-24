@@ -100,6 +100,19 @@
     background-color: #f1f5f9;
 }
 
+.highlightRow {
+    animation: highlightFade 4s ease-out forwards;
+}
+
+@keyframes highlightFade {
+    0% {
+        background-color: #fef08a; /* Soft yellow for highlight */
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
 .statusBadge {
     display: inline-block;
     padding: 0.25rem 0.75rem;

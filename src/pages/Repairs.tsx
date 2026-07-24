@@ -64,6 +64,7 @@ const Repairs: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'details' | 'quotations'>('details');
     const [showQuotationEdit, setShowQuotationEdit] = useState(false);
     const [editingQuotationId, setEditingQuotationId] = useState<number | null>(null);
+    const [lastEditedProjectId, setLastEditedProjectId] = useState<number | null>(null);
 
     // Form State
     const [formType, setFormType] = useState<'repair' | 'sales' | 'inspection' | 'maintenance' | 'rental' | 'other'>('repair');
@@ -852,6 +853,10 @@ const Repairs: React.FC = () => {
                 await loadProjectDetails(selectedProjectId);
                 alert('更新しました。');
             } else {
+                if (projectId) {
+                    setLastEditedProjectId(projectId);
+                    setTimeout(() => setLastEditedProjectId(null), 5000);
+                }
                 resetForm();
             }
         } catch (error) {
@@ -890,6 +895,16 @@ const Repairs: React.FC = () => {
         setSelectedProjectId(null);
         setIsFormOpen(false);
         setFormType('repair'); // Default reset
+    };
+
+    const handleCloseForm = () => {
+        if (selectedProjectId) {
+            setLastEditedProjectId(selectedProjectId);
+            setTimeout(() => {
+                setLastEditedProjectId(null);
+            }, 5000);
+        }
+        setIsFormOpen(false);
     };
 
     const openNewForm = async (type: 'repair' | 'sales' | 'rental' | 'inspection' | 'other') => {
@@ -2350,7 +2365,12 @@ const Repairs: React.FC = () => {
                             </tr>
                         ) : (
                             displayProjects.map(project => (
-                                <tr key={project.id} onClick={() => handleRowClick(project)} style={{ cursor: 'pointer' }}>
+                                <tr 
+                                    key={project.id} 
+                                    onClick={() => handleRowClick(project)} 
+                                    style={{ cursor: 'pointer' }}
+                                    className={project.id === lastEditedProjectId ? styles.highlightRow : ''}
+                                >
                                     <td><span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{project.projectNo || '-'}</span></td>
                                     <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
                                         <span style={{
@@ -2519,7 +2539,7 @@ const Repairs: React.FC = () => {
                                         <Copy size={16} style={{ marginRight: '0.25rem' }} /> 複製して新規作成
                                     </Button>
                                 )}
-                                <button className={styles.closeButton} onClick={() => setIsFormOpen(false)}><X size={24} /></button>
+                                <button className={styles.closeButton} onClick={handleCloseForm}><X size={24} /></button>
                             </div>
                         </div>
 
