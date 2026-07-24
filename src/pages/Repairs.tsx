@@ -1553,11 +1553,11 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'center', width: '65px' }}></th>}
-                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
-                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
+                            {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'center', width: '65px' }}></th>}
+                            {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
+                            {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
 
-                            {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
+                            {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
                             {/* Travel Type has split columns */}
                             {type === 'travel' ? (
                                 <>
@@ -1569,8 +1569,8 @@ const Repairs: React.FC = () => {
                                     {(type === 'outsourcing' && subType === 'travel') && (
                                         <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>日付</th>
                                     )}
-                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: (type === 'outsourcing' && subType === 'travel') ? '40%' : (type === 'part' ? '25%' : (type === 'outsourcing' && subType === 'part' ? '25%' : (type === 'labor' ? '44%' : '55%'))) }}>
-                                        {(type === 'part' || (type === 'outsourcing' && subType === 'part')) ? '内容・品名' : '内容'}
+                                    <th style={{ padding: '0.5rem', textAlign: 'left', width: (type === 'outsourcing' && subType === 'travel') ? '40%' : ((type === 'part' || type === 'inventory') ? '25%' : (type === 'outsourcing' && subType === 'part' ? '25%' : (type === 'labor' ? '44%' : '55%'))) }}>
+                                        {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) ? '内容・品名' : '内容'}
                                     </th>
                                 </>
                             )}
@@ -1657,7 +1657,7 @@ const Repairs: React.FC = () => {
                             return (
                                 <React.Fragment key={detail.originalIndex}>
                                 <tr style={{ borderBottom: expandedDetails.has(detail.originalIndex) ? 'none' : '1px solid #f1f5f9' }}>
-                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
+                                    {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem', textAlign: 'center' }}>
                                             <button
                                                 type="button"
@@ -1675,7 +1675,7 @@ const Repairs: React.FC = () => {
                                             </button>
                                         </td>
                                     )}
-                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
+                                    {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -1692,7 +1692,7 @@ const Repairs: React.FC = () => {
                                             </select>
                                         </td>
                                     )}
-                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
+                                    {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -1717,7 +1717,7 @@ const Repairs: React.FC = () => {
                                         </td>
                                     )}
 
-                                    {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && (
+                                    {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <input
                                                 type="text"
@@ -1995,7 +1995,7 @@ const Repairs: React.FC = () => {
                                         </div>
                                     </td>
                                 </tr>
-                                {(type === 'part' || (type === 'outsourcing' && subType === 'part')) && expandedDetails.has(detail.originalIndex) && (
+                                {(type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType === 'part')) && expandedDetails.has(detail.originalIndex) && (
                                     <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                         <td></td>
                                         <td colSpan={showSupplier ? 12 : 11} style={{ padding: '0.5rem 1rem 1rem 1rem' }}>
@@ -2024,7 +2024,7 @@ const Repairs: React.FC = () => {
                         })}
                         {/* Subtotal Row */}
                         <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                            <td colSpan={type === 'part' ? (showSupplier ? 6 : 5) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
+                            <td colSpan={(type === 'part' || type === 'inventory') ? (showSupplier ? 6 : 5) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
                             {(type !== 'discount') && (
                                 <>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
