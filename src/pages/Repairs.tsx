@@ -3130,7 +3130,7 @@ const Repairs: React.FC = () => {
                                             </Button>
                                         </>
                                     )}
-                                    <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>キャンセル</Button>
+                                    <Button type="button" variant="secondary" onClick={handleCloseForm}>キャンセル</Button>
                                     <Button type="submit" disabled={isSubmitting}>
                                         {isSubmitting ? '保存中...' : (selectedProjectId ? '更新する' : '保存する')}
                                     </Button>
