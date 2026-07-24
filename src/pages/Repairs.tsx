@@ -2282,7 +2282,7 @@ const Repairs: React.FC = () => {
                     <Search className={styles.searchIcon} size={18} />
                     <input
                         type="text"
-                        placeholder="顧客名、機種、シリアル番号で検索..."
+                        placeholder="顧客名、機種、シリアル、部品名、内容、メモ等で検索..."
                         className={styles.searchInput}
                         value={searchQuery}
                         onChange={handleSearch}
