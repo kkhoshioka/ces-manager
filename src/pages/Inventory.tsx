@@ -562,12 +562,16 @@ const Inventory: React.FC = () => {
                                 />
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>単位</label>
-                                    <select
+                                    <input
+                                        type="text"
+                                        list="unit-options"
                                         name="unit"
                                         value={formData.unit || '個'}
                                         onChange={handleInputChange}
-                                        className={styles.select}
-                                    >
+                                        className={styles.input}
+                                        autoComplete="off"
+                                    />
+                                    <datalist id="unit-options">
                                         <option value="個">個</option>
                                         <option value="本">本</option>
                                         <option value="L">L (リットル)</option>
@@ -576,7 +580,7 @@ const Inventory: React.FC = () => {
                                         <option value="枚">枚</option>
                                         <option value="台">台</option>
                                         <option value="式">式</option>
-                                    </select>
+                                    </datalist>
                                 </div>
                             </div>
 

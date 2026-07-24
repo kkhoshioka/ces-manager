@@ -1902,7 +1902,9 @@ const Repairs: React.FC = () => {
                                             />
                                             {/* Unit Logic */}
                                             {/* Unit Selection Dropdown */}
-                                            <select
+                                            <input
+                                                type="text"
+                                                list={`unit-options-${detail.originalIndex}`}
                                                 className={styles.tableInput}
                                                 style={{ fontSize: '0.8rem', padding: '0.1rem', marginLeft: '4px', width: '45px' }}
                                                 value={detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType || '式'))}
@@ -1913,11 +1915,12 @@ const Repairs: React.FC = () => {
                                                     else if (val === '式') laborTypeVal = 'fixed';
                                                     handleDetailChange(detail.originalIndex, 'laborType', laborTypeVal);
                                                 }}
-                                            >
+                                            />
+                                            <datalist id={`unit-options-${detail.originalIndex}`}>
                                                 {['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'].map(u => (
                                                     <option key={u} value={u}>{u}</option>
                                                 ))}
-                                            </select>
+                                            </datalist>
                                         </div>
                                     </td>
                                     {(type !== 'discount') && (
