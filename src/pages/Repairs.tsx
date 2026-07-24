@@ -1914,7 +1914,7 @@ const Repairs: React.FC = () => {
                                                     handleDetailChange(detail.originalIndex, 'laborType', laborTypeVal);
                                                 }}
                                             >
-                                                {['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱'].map(u => (
+                                                {['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'].map(u => (
                                                     <option key={u} value={u}>{u}</option>
                                                 ))}
                                             </select>
