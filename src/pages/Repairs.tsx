@@ -1284,6 +1284,7 @@ const Repairs: React.FC = () => {
         // Get categories that actually have parts
         const inventoryCategoryIds = new Set(inventoryParts.map(p => p.categoryId));
         const activeCategories = categories.filter(c => inventoryCategoryIds.has(c.id));
+        const sections = Array.from(new Set(categories.map(c => c.section)));
 
         return (
             <div className={styles.detailTableWrapper}>
