@@ -54,6 +54,16 @@ function App() {
     };
 
     checkServer();
+
+    // Global listener to auto-select number input contents on focus
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLInputElement;
+      if (target && target.tagName === 'INPUT' && target.type === 'number') {
+        setTimeout(() => target.select(), 0);
+      }
+    };
+    document.addEventListener('focusin', handleFocusIn);
+    return () => document.removeEventListener('focusin', handleFocusIn);
   }, []);
 
   if (isChecking && !isServerReady) {

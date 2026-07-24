@@ -37,6 +37,11 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({ value, onChange, o
         const rawValue = String(value).replace(/,/g, '');
         setDisplayValue(rawValue);
         if (onFocus) onFocus(e);
+        
+        const target = e.target;
+        setTimeout(() => {
+            target.select();
+        }, 0);
     };
 
     const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
