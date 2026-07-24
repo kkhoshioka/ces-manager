@@ -1307,10 +1307,11 @@ const Repairs: React.FC = () => {
                         <thead>
                             <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
                                 <th style={{ padding: '0.5rem', textAlign: 'center', width: '65px' }}></th>
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>カテゴリー</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '25%' }}>部品選択</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>品番</th>
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%' }}>内容・品名</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%' }}>部品選択</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>品番</th>
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '16%' }}>内容・品名</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '90px', whiteSpace: 'nowrap' }}>数量</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>原価</th>
                                 <th style={{ padding: '0.5rem', textAlign: 'right', width: '100px', minWidth: '100px', whiteSpace: 'nowrap' }}>売価</th>
@@ -1319,6 +1320,8 @@ const Repairs: React.FC = () => {
                         </thead>
                         <tbody>
                             {sectionDetails.map((detail) => {
+                                const selectedCategory = categories.find(c => c.id === detail.productCategoryId);
+                                const currentSection = detail.section || selectedCategory?.section || '';
                                 const availableParts = inventoryParts.filter(p => p.categoryId === detail.productCategoryId);
                                 
                                 return (
@@ -1343,11 +1346,12 @@ const Repairs: React.FC = () => {
                                             <td style={{ padding: '0.25rem' }}>
                                                 <select
                                                     className={styles.tableInput}
-                                                    value={detail.productCategoryId || ''}
+                                                    value={currentSection}
                                                     onChange={(e) => {
-                                                        const val = e.target.value ? Number(e.target.value) : null;
-                                                        handleDetailChange(detail.originalIndex, 'productCategoryId', val);
-                                                        // Reset part selection when category changes
+                                                        const newSec = e.target.value;
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                        handleDetailChange(detail.originalIndex, 'section' as any, newSec);
+                                                        handleDetailChange(detail.originalIndex, 'productCategoryId', null);
                                                         handleDetailChange(detail.originalIndex, 'productId', null);
                                                         handleDetailChange(detail.originalIndex, 'productCode', '');
                                                         handleDetailChange(detail.originalIndex, 'description', '');
@@ -1356,7 +1360,30 @@ const Repairs: React.FC = () => {
                                                     }}
                                                 >
                                                     <option value="">-</option>
-                                                    {activeCategories.map(c => (
+                                                    {sections.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                            </td>
+                                            <td style={{ padding: '0.25rem' }}>
+                                                <select
+                                                    className={styles.tableInput}
+                                                    value={detail.productCategoryId || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value ? Number(e.target.value) : null;
+                                                        handleDetailChange(detail.originalIndex, 'productCategoryId', val);
+                                                        const cat = categories.find(c => c.id === val);
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                        if (cat) handleDetailChange(detail.originalIndex, 'section' as any, cat.section);
+                                                        // Reset part selection when category changes
+                                                        handleDetailChange(detail.originalIndex, 'productId', null);
+                                                        handleDetailChange(detail.originalIndex, 'productCode', '');
+                                                        handleDetailChange(detail.originalIndex, 'description', '');
+                                                        handleDetailChange(detail.originalIndex, 'unitPrice', 0);
+                                                        handleDetailChange(detail.originalIndex, 'unitCost', 0);
+                                                    }}
+                                                    disabled={!currentSection}
+                                                >
+                                                    <option value="">-</option>
+                                                    {activeCategories.filter(c => c.section === currentSection).map(c => (
                                                         <option key={c.id} value={c.id}>{c.name}</option>
                                                     ))}
                                                 </select>
@@ -1422,7 +1449,7 @@ const Repairs: React.FC = () => {
                                         {expandedDetails.has(detail.originalIndex) && (
                                             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                                 <td></td>
-                                                <td colSpan={8} style={{ padding: '0.5rem 1rem 1rem 1rem' }}>
+                                                <td colSpan={9} style={{ padding: '0.5rem 1rem 1rem 1rem' }}>
                                                     <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                                                         <div style={{ width: '150px' }}>
                                                             <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>仕入日</label>
@@ -1447,9 +1474,9 @@ const Repairs: React.FC = () => {
                                 );
                             })}
                             <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                                <td colSpan={6} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
-                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
+                                <td colSpan={7} style={{ padding: '0.5rem', textAlign: 'right' }}>小計</td>
                                 <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
+                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
                                 <td></td>
                             </tr>
                         </tbody>
