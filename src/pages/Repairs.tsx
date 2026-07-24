@@ -851,11 +851,8 @@ const Repairs: React.FC = () => {
 
             loadProjects();
             if (selectedProjectId) {
-                if (projectId) {
-                    setLastEditedProjectId(projectId);
-                    setTimeout(() => setLastEditedProjectId(null), 5000);
-                }
-                resetForm();
+                await loadProjectDetails(selectedProjectId);
+                alert('更新しました。');
             } else {
                 if (projectId) {
                     setLastEditedProjectId(projectId);
