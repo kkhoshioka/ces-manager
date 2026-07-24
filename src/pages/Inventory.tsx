@@ -6,6 +6,7 @@ import { InventoryService } from '../utils/inventoryService';
 import { formatNumber, formatCurrency } from '../utils/formatting';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import CreatableSelect from 'react-select/creatable';
 import styles from './Inventory.module.css';
 
 const Inventory: React.FC = () => {
@@ -562,25 +563,18 @@ const Inventory: React.FC = () => {
                                 />
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>単位</label>
-                                    <input
-                                        type="text"
-                                        list="unit-options"
+                                    <CreatableSelect
                                         name="unit"
-                                        value={formData.unit || '個'}
-                                        onChange={handleInputChange}
-                                        className={styles.input}
-                                        autoComplete="off"
+                                        options={['個', '本', 'L', '箱', 'セット', '枚', '台', '式'].map(u => ({ label: u, value: u }))}
+                                        value={{ label: formData.unit || '個', value: formData.unit || '個' }}
+                                        onChange={(selected) => handleInputChange({ target: { name: 'unit', value: selected?.value || '' } } as any)}
+                                        styles={{
+                                            control: (base) => ({ ...base, borderColor: '#cbd5e1', borderRadius: '0.375rem', minHeight: '38px' }),
+                                            menu: (base) => ({ ...base, zIndex: 100 })
+                                        }}
+                                        formatCreateLabel={(inputValue) => `"${inputValue}" を追加`}
+                                        placeholder="単位を選択または入力..."
                                     />
-                                    <datalist id="unit-options">
-                                        <option value="個">個</option>
-                                        <option value="本">本</option>
-                                        <option value="L">L (リットル)</option>
-                                        <option value="箱">箱</option>
-                                        <option value="セット">セット</option>
-                                        <option value="枚">枚</option>
-                                        <option value="台">台</option>
-                                        <option value="式">式</option>
-                                    </datalist>
                                 </div>
                             </div>
 

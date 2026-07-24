@@ -10,6 +10,7 @@ import { API_BASE_URL } from '../config';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
+import CreatableSelect from 'react-select/creatable';
 import styles from './Repairs.module.css';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
@@ -1902,25 +1903,34 @@ const Repairs: React.FC = () => {
                                             />
                                             {/* Unit Logic */}
                                             {/* Unit Selection Dropdown */}
-                                            <input
-                                                type="text"
-                                                list={`unit-options-${detail.originalIndex}`}
-                                                className={styles.tableInput}
-                                                style={{ fontSize: '0.8rem', padding: '0.1rem', marginLeft: '4px', width: '45px' }}
-                                                value={detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType || '式'))}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    let laborTypeVal = val;
-                                                    if (val === 'H') laborTypeVal = 'time';
-                                                    else if (val === '式') laborTypeVal = 'fixed';
-                                                    handleDetailChange(detail.originalIndex, 'laborType', laborTypeVal);
-                                                }}
-                                            />
-                                            <datalist id={`unit-options-${detail.originalIndex}`}>
-                                                {['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'].map(u => (
-                                                    <option key={u} value={u}>{u}</option>
-                                                ))}
-                                            </datalist>
+                                            <div style={{ width: '75px', marginLeft: '4px' }}>
+                                                <CreatableSelect
+                                                    options={['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'].map(u => ({ label: u, value: u }))}
+                                                    value={{ 
+                                                        label: (detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType || '式'))), 
+                                                        value: (detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType || '式'))) 
+                                                    }}
+                                                    onChange={(selected) => {
+                                                        const val = selected?.value || '';
+                                                        let laborTypeVal = val;
+                                                        if (val === 'H') laborTypeVal = 'time';
+                                                        else if (val === '式') laborTypeVal = 'fixed';
+                                                        handleDetailChange(detail.originalIndex, 'laborType', laborTypeVal);
+                                                    }}
+                                                    styles={{
+                                                        control: (base) => ({ ...base, minHeight: '26px', height: '26px', fontSize: '0.8rem', padding: 0 }),
+                                                        valueContainer: (base) => ({ ...base, padding: '0 2px' }),
+                                                        input: (base) => ({ ...base, margin: 0, padding: 0 }),
+                                                        dropdownIndicator: (base) => ({ ...base, padding: '0 2px' }),
+                                                        clearIndicator: () => ({ display: 'none' }),
+                                                        menu: (base) => ({ ...base, zIndex: 9999 }),
+                                                        menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                                                    }}
+                                                    menuPortalTarget={document.body}
+                                                    formatCreateLabel={(inputValue) => `"${inputValue}" を追加`}
+                                                    placeholder=""
+                                                />
+                                            </div>
                                         </div>
                                     </td>
                                     {(type !== 'discount') && (
