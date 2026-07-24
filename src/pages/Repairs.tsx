@@ -1872,19 +1872,24 @@ const Repairs: React.FC = () => {
                                     )}
                                     {showSupplier && (
                                         <td style={{ padding: '0.25rem' }}>
-                                            <input
-                                                type="text"
-                                                className={styles.tableInput}
-                                                value={detail.supplier}
-                                                list={`supplier-list-${detail.originalIndex}`}
-                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'supplier', e.target.value)}
+                                            <CreatableSelect
+                                                options={suppliers.map(s => ({ label: s.name, value: s.name }))}
+                                                value={detail.supplier ? { label: detail.supplier, value: detail.supplier } : null}
+                                                onChange={(selected) => handleDetailChange(detail.originalIndex, 'supplier', selected?.value || '')}
+                                                styles={{
+                                                    control: (base) => ({ ...base, minHeight: '30px', height: '30px', fontSize: '0.8rem', padding: 0 }),
+                                                    valueContainer: (base) => ({ ...base, padding: '0 4px' }),
+                                                    input: (base) => ({ ...base, margin: 0, padding: 0 }),
+                                                    dropdownIndicator: (base) => ({ ...base, padding: '0 4px' }),
+                                                    clearIndicator: () => ({ display: 'none' }),
+                                                    menu: (base) => ({ ...base, zIndex: 9999 }),
+                                                    menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                                                }}
+                                                menuPortalTarget={document.body}
+                                                formatCreateLabel={(inputValue) => `"${inputValue}" を追加`}
                                                 placeholder="仕入先"
+                                                isClearable
                                             />
-                                            <datalist id={`supplier-list-${detail.originalIndex}`}>
-                                                {suppliers.map(s => (
-                                                    <option key={s.id} value={s.name}>{s.name}</option>
-                                                ))}
-                                            </datalist>
                                         </td>
                                     )}
                                     <td style={{ padding: '0.25rem' }}>
