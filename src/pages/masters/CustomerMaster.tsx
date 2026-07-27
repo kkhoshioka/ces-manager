@@ -85,13 +85,14 @@ const CustomerMaster: React.FC = () => {
     };
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const query = e.target.value.toLowerCase();
+        const query = e.target.value;
         setSearchQuery(query);
+        const lowerQuery = query.toLowerCase();
         setFilteredCustomers(
             customers.filter(c =>
-                c.name.toLowerCase().includes(query) ||
-                c.code.toLowerCase().includes(query) ||
-                (c.type && c.type.toLowerCase().includes(query))
+                c.name.toLowerCase().includes(lowerQuery) ||
+                c.code.toLowerCase().includes(lowerQuery) ||
+                (c.type && c.type.toLowerCase().includes(lowerQuery))
             )
         );
     };
