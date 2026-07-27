@@ -3576,20 +3576,22 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
 
                 // Refined Logic for Cost Mapping:
                 let costLabel = 'その他';
-                if (label === '新車販売' || label === '中古車販売' || label === 'アタッチメント販売') costLabel = '商品仕入';
-                else if (label === 'レンタル') costLabel = 'レンタル仕入';
-                else if (label === '美容品販売') costLabel = '美容品仕入'; // If exists? Or just mapping
-                else if (label === '修理') {
-                    if (d.lineType === 'outsourcing') costLabel = '外注費';
-                    else if (d.lineType === 'part' || d.lineType === 'inventory') costLabel = '材料費'; // Parts in repair = Materials
-                    else costLabel = 'その他';
-                } else if (label === '部品・他') {
-                    costLabel = '荷造運賃'; // Wait, "shipping" is unlikely default. Maybe 'その他'?
-                    // If lineType is 'other', maybe 'その他'.
-                }
 
-                // *Override* if user specifically selected a category that looks like a cost name?
-                // Unlikely. The user selects "Product Category".
+                if (d.lineType === 'forwarding') {
+                    costLabel = '荷造運賃';
+                } else if (d.lineType === 'outsourcing') {
+                    costLabel = '外注費';
+                } else if (d.lineType === 'part' || d.lineType === 'inventory') {
+                    if (label.includes('販売')) {
+                        costLabel = '商品仕入';
+                    } else if (label === 'レンタル') {
+                        costLabel = 'レンタル仕入';
+                    } else {
+                        costLabel = '材料費';
+                    }
+                } else {
+                    costLabel = 'その他';
+                }
 
                 // Special handling for predefined names matching exact categories
                 if (salesCategories.includes(label)) {
@@ -3597,21 +3599,6 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                 } else {
                     monthlyData[key].sales['部品・他'] += sales; // Fallback
                 }
-
-                // For now, map cost to specific target if possible, else 'その他'
-                // Or maybe aggregation targets:
-                // "商品仕入": New/Used/Attachment sales cost
-                // "レンタル仕入": Rental cost
-                // "外注費": Outsourcing
-                // "材料費": Parts cost in Repair
-                // "荷造運賃": Shipping? (No clear source unless lineType/category says so)
-                // "美容品仕入": Beauty sales cost
-
-                if (d.lineType === 'outsourcing') costLabel = '外注費';
-                else if (label.includes('販売')) costLabel = '商品仕入';
-                else if (label === '美容品販売') costLabel = '美容品仕入';
-                else if (label === 'レンタル') costLabel = 'レンタル仕入';
-                else if (label === '修理' && (d.lineType === 'part' || d.lineType === 'inventory')) costLabel = '材料費';
 
                 if (costCategories.includes(costLabel)) {
                     monthlyData[key].cost[costLabel] += cost;
