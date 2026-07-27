@@ -56,6 +56,7 @@ export interface Repair {
     status: RepairStatus;
     totalAmount: number;
     notes?: string | null;
+    sectionOrderJson?: string | null;
 
     // Rental fields
     rentalStartDate?: string | null;

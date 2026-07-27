@@ -203,7 +203,7 @@ const Repairs: React.FC = () => {
 
     // Details State
     interface DetailItem {
-        lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other' | 'inventory' | 'expense' | 'discount';
+        lineType: 'labor' | 'part' | 'outsourcing' | 'travel' | 'other' | 'inventory' | 'expense' | 'discount' | 'forwarding';
         travelType?: 'time' | 'distance' | 'area'; // New field for Travel rows
         productCode?: string; // New field for Product Code
         description: string;
@@ -246,10 +246,11 @@ const Repairs: React.FC = () => {
 
     const DEFAULT_REPAIR_SECTIONS: SectionDef[] = [
         { title: '自社工賃', type: 'labor', description: '請求単価0で登録した内容は明細には表示されません' },
-        { title: '自社出張費', type: 'travel', description: '請求単価0で登録した内容は明細には表示されません' },
-        { title: '在庫部品・商品', type: 'inventory', description: '在庫管理に登録されている部品を選択します' },
-        { title: '発注部品・商品', type: 'part', subType: 'part', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '外注費', type: 'outsourcing', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '発注部品・商品', type: 'part', subType: 'part', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '在庫部品・商品', type: 'inventory', description: '在庫管理に登録されている部品を選択します' },
+        { title: '回送費', type: 'forwarding', description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '自社出張費', type: 'travel', description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '諸経費', type: 'expense', description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '値引き', type: 'discount', description: '値引き額はマイナスを付けずに入力してください。自動的に値引きとして計算されます。' },
         { title: 'その他', type: 'other', description: '請求単価0で登録した場合は、内容のみ明細に表示されます' }
@@ -476,6 +477,7 @@ const Repairs: React.FC = () => {
             outsourcing: { cost: 0, sales: 0 },
             travel: { cost: 0, sales: 0 },
             inventory: { cost: 0, sales: 0 },
+            forwarding: { cost: 0, sales: 0 },
             expense: { cost: 0, sales: 0 },
             discount: { cost: 0, sales: 0 },
             other: { cost: 0, sales: 0 }
@@ -736,6 +738,7 @@ const Repairs: React.FC = () => {
                 actualReturnDate: formState.actualReturnDate ? new Date(formState.actualReturnDate) : null,
                 rentalStatus: formState.rentalStatus,
                 totalAmount: totals.totalSales,
+                sectionOrderJson: JSON.stringify(sectionOrder),
                 details: [...details].sort((a, b) => {
                     const getSectionIdx = (item: DetailItem) => {
                         const idx = sectionOrder.findIndex(s => s.type === item.lineType && (s.subType === item.outsourcingDetailType || !s.subType));
@@ -1032,34 +1035,51 @@ const Repairs: React.FC = () => {
                     const isRental = fullProject.type === 'rental';
                     const defaultSections = isRental ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS;
                     
-                    const newSectionOrder: SectionDef[] = [];
-                    const seenSections = new Set<string>();
+                    if (fullProject.sectionOrderJson) {
+                        try {
+                            setSectionOrder(JSON.parse(fullProject.sectionOrderJson));
+                        } catch (e) {
+                            console.error('Failed to parse sectionOrderJson', e);
+                            setSectionOrder(defaultSections);
+                        }
+                    } else {
+                        const newSectionOrder: SectionDef[] = [];
+                        const seenSections = new Set<string>();
 
-                    // 1. Extract sections from loaded details
-                    for (const d of loadedDetails) {
-                        const secKey = `${d.lineType}-${d.outsourcingDetailType || ''}`;
-                        if (!seenSections.has(secKey)) {
-                            seenSections.add(secKey);
-                            const matchedDef = defaultSections.find(s => s.type === d.lineType && (s.subType === d.outsourcingDetailType || !s.subType));
-                            if (matchedDef) {
-                                newSectionOrder.push(matchedDef);
+                        // 1. Extract sections from loaded details
+                        for (const d of loadedDetails) {
+                            const secKey = `${d.lineType}-${d.outsourcingDetailType || ''}`;
+                            if (!seenSections.has(secKey)) {
+                                seenSections.add(secKey);
+                                const matchedDef = defaultSections.find(s => s.type === d.lineType && (s.subType === d.outsourcingDetailType || !s.subType));
+                                if (matchedDef) {
+                                    newSectionOrder.push(matchedDef);
+                                }
                             }
                         }
-                    }
 
-                    // 2. Append missing sections from defaults
-                    for (const def of defaultSections) {
-                        const secKey = `${def.type}-${def.subType || ''}`;
-                        if (!seenSections.has(secKey)) {
-                            newSectionOrder.push(def);
+                        // 2. Append missing sections from defaults
+                        for (const def of defaultSections) {
+                            const secKey = `${def.type}-${def.subType || ''}`;
+                            if (!seenSections.has(secKey)) {
+                                newSectionOrder.push(def);
+                            }
                         }
-                    }
 
-                    setSectionOrder(newSectionOrder);
+                        setSectionOrder(newSectionOrder);
+                    }
 
                 } else {
                     setDetails([]);
-                    setSectionOrder(fullProject.type === 'rental' ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS);
+                    if (fullProject.sectionOrderJson) {
+                        try {
+                            setSectionOrder(JSON.parse(fullProject.sectionOrderJson));
+                        } catch (e) {
+                            setSectionOrder(fullProject.type === 'rental' ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS);
+                        }
+                    } else {
+                        setSectionOrder(fullProject.type === 'rental' ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS);
+                    }
                 }
 
                 setPhotos(fullProject.photos || []);

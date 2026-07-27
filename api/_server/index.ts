@@ -902,6 +902,7 @@ app.post('/api/projects', async (req, res) => {
                     customerContactName: data.customerContactName || null,
                     internalMemo: data.internalMemo || null,
                     internalRep: data.internalRep || null,
+                    sectionOrderJson: data.sectionOrderJson || null,
                     customer: { connect: { id: Number(customerId) } },
                     ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
                     ...(details && { details: { create: details } })
