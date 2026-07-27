@@ -249,7 +249,7 @@ const Repairs: React.FC = () => {
         { title: '外注費', type: 'outsourcing', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '発注部品・商品', type: 'part', subType: 'part', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '在庫部品・商品', type: 'inventory', description: '在庫管理に登録されている部品を選択します' },
-        { title: '回送費', type: 'forwarding', description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '回送費', type: 'forwarding', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '自社出張費', type: 'travel', description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '諸経費', type: 'expense', description: '請求単価0で登録した内容は明細には表示されません' },
         { title: '値引き', type: 'discount', description: '値引き額はマイナスを付けずに入力してください。自動的に値引きとして計算されます。' },
@@ -1037,7 +1037,12 @@ const Repairs: React.FC = () => {
                     
                     if (fullProject.sectionOrderJson) {
                         try {
-                            setSectionOrder(JSON.parse(fullProject.sectionOrderJson));
+                            const parsed = JSON.parse(fullProject.sectionOrderJson) as SectionDef[];
+                            const merged = parsed.map(sec => {
+                                const defaultDef = defaultSections.find(ds => ds.type === sec.type && ds.subType === sec.subType);
+                                return defaultDef ? { ...sec, showSupplier: defaultDef.showSupplier } : sec;
+                            });
+                            setSectionOrder(merged);
                         } catch (e) {
                             console.error('Failed to parse sectionOrderJson', e);
                             setSectionOrder(defaultSections);
@@ -1071,9 +1076,17 @@ const Repairs: React.FC = () => {
 
                 } else {
                     setDetails([]);
+                    const isRental = fullProject.type === 'rental';
+                    const defaultSections = isRental ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS;
+                    
                     if (fullProject.sectionOrderJson) {
                         try {
-                            setSectionOrder(JSON.parse(fullProject.sectionOrderJson));
+                            const parsed = JSON.parse(fullProject.sectionOrderJson) as SectionDef[];
+                            const merged = parsed.map(sec => {
+                                const defaultDef = defaultSections.find(ds => ds.type === sec.type && ds.subType === sec.subType);
+                                return defaultDef ? { ...sec, showSupplier: defaultDef.showSupplier } : sec;
+                            });
+                            setSectionOrder(merged);
                         } catch (e) {
                             setSectionOrder(fullProject.type === 'rental' ? DEFAULT_RENTAL_SECTIONS : DEFAULT_REPAIR_SECTIONS);
                         }
