@@ -2920,8 +2920,32 @@ const Repairs: React.FC = () => {
                                     <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
                                 </div>
 
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem', borderTop: '1px solid #e2e8f0', marginTop: '1rem' }}>
+                                    <Button type="button" variant="outline" size="sm" onClick={openPastProjectsModal}>
+                                        <Copy size={16} style={{ marginRight: '0.25rem' }} /> 過去の案件から明細をコピー
+                                    </Button>
+                                </div>
+
+                                {/* Details Sections */}
+                                <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
+                                    {sectionOrder.map((section, index) => {
+                                        if (formType === 'sales' && (section.type === 'labor' || section.type === 'travel')) return null;
+
+                                        const key = `${section.type}-${section.subType || ''}`;
+                                        if (formType === 'rental') {
+                                            return <React.Fragment key={key}>{renderRentalDetailTable(section.title, section.type as 'part'|'outsourcing', section.description, index)}</React.Fragment>;
+                                        }
+
+                                        if (section.type === 'inventory') {
+                                            return <React.Fragment key={key}>{renderInventoryDetailTable(section.title, section.type, section.description, index)}</React.Fragment>;
+                                        }
+
+                                        return <React.Fragment key={key}>{renderDetailTable(section.title, section.type, section.subType, section.showSupplier, section.description, index)}</React.Fragment>;
+                                    })}
+                                </div>
+
                                 {/* Photos Section */}
-                                <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#f8fafc' }}>
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.5rem', backgroundColor: '#f8fafc', marginTop: '2rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                         <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>{formType === 'rental' ? '出庫前写真' : '写真管理'}</h3>
                                         <div>
@@ -3077,30 +3101,6 @@ const Repairs: React.FC = () => {
                                         />
                                     </div>
                                 )}
-
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem', borderTop: '1px solid #e2e8f0', marginTop: '1rem' }}>
-                                    <Button type="button" variant="outline" size="sm" onClick={openPastProjectsModal}>
-                                        <Copy size={16} style={{ marginRight: '0.25rem' }} /> 過去の案件から明細をコピー
-                                    </Button>
-                                </div>
-
-                                {/* Details Sections */}
-                                <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
-                                    {sectionOrder.map((section, index) => {
-                                        if (formType === 'sales' && (section.type === 'labor' || section.type === 'travel')) return null;
-
-                                        const key = `${section.type}-${section.subType || ''}`;
-                                        if (formType === 'rental') {
-                                            return <React.Fragment key={key}>{renderRentalDetailTable(section.title, section.type as 'part'|'outsourcing', section.description, index)}</React.Fragment>;
-                                        }
-
-                                        if (section.type === 'inventory') {
-                                            return <React.Fragment key={key}>{renderInventoryDetailTable(section.title, section.type, section.description, index)}</React.Fragment>;
-                                        }
-
-                                        return <React.Fragment key={key}>{renderDetailTable(section.title, section.type, section.subType, section.showSupplier, section.description, index)}</React.Fragment>;
-                                    })}
-                                </div>
 
                                 <div className={styles.formActions}>
                                     {selectedProjectId && (
