@@ -3111,6 +3111,25 @@ const Repairs: React.FC = () => {
                                             <Button
                                                 type="button"
                                                 variant="secondary"
+                                                onClick={() => {
+                                                    window.open(`${API_BASE_URL}/projects/${selectedProjectId}/pdf/delivery`, '_blank');
+                                                    setFormState(prev => ({ ...prev, isDeliveryNoteIssued: true }));
+                                                    loadProjects(); // Refresh the list in background
+                                                }}
+                                                icon={<FileText size={18} />}
+                                                style={{ 
+                                                    color: formState.isDeliveryNoteIssued ? '#166534' : '#059669', 
+                                                    fontWeight: 'bold',
+                                                    background: formState.isDeliveryNoteIssued ? '#dcfce7' : undefined,
+                                                    border: formState.isDeliveryNoteIssued ? '1px solid #86efac' : undefined,
+                                                    marginRight: '0.5rem'
+                                                }}
+                                            >
+                                                {formState.isDeliveryNoteIssued ? '納品書発行(済)' : '納品書発行'}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
                                                 onClick={async () => {
                                                     if (formState.status === 'received') {
                                                         if (window.confirm('ステータスが「仮登録」です。請求書を発行するために「完了」に変更してもよろしいですか？')) {
