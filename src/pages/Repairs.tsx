@@ -1971,7 +1971,7 @@ const Repairs: React.FC = () => {
                                                     type="text"
                                                     className={styles.tableInput}
                                                     style={{ width: '100%', textAlign: 'center' }}
-                                                    value={detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType || '式'))}
+                                                    value={detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType ?? '式'))}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
                                                         let laborTypeVal = val;
