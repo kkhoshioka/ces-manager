@@ -395,7 +395,7 @@ export const generateInvoice = (project: Project) => {
                 columns: [
                     // LEFT COLUMN (Recipient Info)
                     {
-                        width: 250, // Fixed width to prevent squishing title
+                        width: 220, // Fixed width to prevent squishing title
                         stack: [
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
                                 { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
@@ -411,9 +411,9 @@ export const generateInvoice = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 'auto',
+                        width: 120,
                         table: {
-                            widths: ['auto'],
+                            widths: ['*'],
                             body: [[
                                 {
                                     text: '　請　求　書　',
@@ -423,7 +423,7 @@ export const generateInvoice = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [15, 4]
+                                    margin: [0, 4]
                                 }
                             ]]
                         },
@@ -761,7 +761,7 @@ export const generateDeliveryNote = (project: Project) => {
                 columns: [
                     // LEFT COLUMN (Recipient Info)
                     {
-                        width: 250, // Fixed width
+                        width: 220, // Fixed width
                         stack: [
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
                                 { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
@@ -789,9 +789,9 @@ export const generateDeliveryNote = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 'auto',
+                        width: 120, // Fixed width
                         table: {
-                            widths: ['auto'],
+                            widths: ['*'],
                             body: [[
                                 {
                                     text: '　納　品　書　',
@@ -801,7 +801,7 @@ export const generateDeliveryNote = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [15, 4]
+                                    margin: [0, 4]
                                 }
                             ]]
                         },
@@ -1069,7 +1069,7 @@ export const generateQuotation = (project: Project) => {
                 columns: [
                     // LEFT COLUMN (Recipient Info)
                     {
-                        width: 250, // Fixed width
+                        width: 220, // Fixed width
                         stack: [
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
                                 { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
@@ -1089,9 +1089,9 @@ export const generateQuotation = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 'auto',
+                        width: 120, // Fixed width
                         table: {
-                            widths: ['auto'],
+                            widths: ['*'],
                             body: [[
                                 {
                                     text: '　御　見　積　書　',
@@ -1101,7 +1101,7 @@ export const generateQuotation = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [15, 4]
+                                    margin: [0, 4]
                                 }
                             ]]
                         },
