@@ -395,7 +395,7 @@ export const generateInvoice = (project: Project) => {
                 columns: [
                     // LEFT COLUMN (Recipient Info)
                     {
-                        width: '*',
+                        width: 250, // Fixed width to prevent squishing title
                         stack: [
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
                                 { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
@@ -411,7 +411,7 @@ export const generateInvoice = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 'auto',
+                        width: 100, // Fixed width to prevent wrapping
                         table: {
                             body: [[
                                 {
@@ -422,7 +422,7 @@ export const generateInvoice = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [30, 4]
+                                    margin: [0, 4] // Remove 30px side margins so it fits in 100px
                                 }
                             ]]
                         },
@@ -431,19 +431,19 @@ export const generateInvoice = (project: Project) => {
                     },
                     // RIGHT COLUMN (Company Info)
                     {
-                        width: '*',
+                        width: '*', // Takes remaining space (around 185px)
                         stack: [
                             {
                                 columns: [
                                     { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 80, alignment: 'right', fontSize: 10, bold: true }
                                 ],
                                 margin: [0, 0, 0, 2]
                             },
                             {
                                 columns: [
                                     { text: '請求日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 100, alignment: 'right', fontSize: 10 }
+                                    { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 80, alignment: 'right', fontSize: 10 }
                                 ]
                             },
                             { text: '\n' },
@@ -453,10 +453,34 @@ export const generateInvoice = (project: Project) => {
                                     image: logo,
                                     width: 140,
                                     alignment: 'left',
-                                    margin: [0, 0, 0, 5]
+                                    margin: [15, 0, 0, 5] // Shift company info slightly to the right
                                 }] : [];
                             })() ),
-                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
+                            {
+                                columns: [
+                                    {
+                                        width: 'auto',
+                                        text: '株式会社シーイーエス中国',
+                                        fontSize: 12,
+                                        bold: true,
+                                        alignment: 'left',
+                                        margin: [15, 0, 0, 0] // Shift slightly to the right
+                                    },
+                                    {
+                                        width: 0,
+                                        stack: [
+                                            ...( (() => {
+                                                const seal = getSealImage();
+                                                return seal ? [{
+                                                    image: seal,
+                                                    width: 48, // Slightly reduced to fit nicely
+                                                    margin: [-5, -15, 0, 0] // Shift left to overlap with company name, shift up to center
+                                                }] : [];
+                                            })() )
+                                        ]
+                                    }
+                                ]
+                            },
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
@@ -467,14 +491,14 @@ export const generateInvoice = (project: Project) => {
                                 fontSize: 9,
                                 alignment: 'left',
                                 color: '#555',
-                                margin: [0, 5, 0, 10]
+                                margin: [15, 5, 0, 10] // Shift slightly to the right
                             },
                             {
                                 text: '【お振込先】',
                                 fontSize: 8,
                                 bold: true,
                                 alignment: 'left',
-                                margin: [0, 2, 0, 0]
+                                margin: [15, 2, 0, 0]
                             },
                             {
                                 text: [
@@ -483,6 +507,7 @@ export const generateInvoice = (project: Project) => {
                                 ],
                                 fontSize: 8,
                                 alignment: 'left',
+                                margin: [15, 0, 0, 0],
                                 lineHeight: 1.2
                             },
                             {
@@ -490,17 +515,8 @@ export const generateInvoice = (project: Project) => {
                                 fontSize: 7,
                                 alignment: 'left',
                                 color: '#555',
-                                margin: [0, 2, 0, 0]
-                            },
-                            ...( (() => {
-                                const seal = getSealImage();
-                                return seal ? [{
-                                    image: seal,
-                                    width: 55,
-                                    alignment: 'right',
-                                    margin: [0, -90, -10, 0]
-                                }] : [];
-                            })() )
+                                margin: [15, 2, 0, 0]
+                            }
                         ]
                     }
                 ],
@@ -744,7 +760,7 @@ export const generateDeliveryNote = (project: Project) => {
                 columns: [
                     // LEFT COLUMN (Recipient Info)
                     {
-                        width: '*',
+                        width: 250, // Fixed width
                         stack: [
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
                                 { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
@@ -772,7 +788,7 @@ export const generateDeliveryNote = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 'auto',
+                        width: 100, // Fixed width
                         table: {
                             body: [[
                                 {
@@ -783,7 +799,7 @@ export const generateDeliveryNote = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [30, 4]
+                                    margin: [0, 4]
                                 }
                             ]]
                         },
@@ -792,19 +808,19 @@ export const generateDeliveryNote = (project: Project) => {
                     },
                     // RIGHT COLUMN (Company Info)
                     {
-                        width: '*',
+                        width: '*', // Takes remaining space
                         stack: [
                             {
                                 columns: [
                                     { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 80, alignment: 'right', fontSize: 10, bold: true }
                                 ],
                                 margin: [0, 0, 0, 2]
                             },
                             {
                                 columns: [
                                     { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
+                                    { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 80, alignment: 'right', fontSize: 10 }
                                 ]
                             },
                             { text: '\n' },
@@ -814,10 +830,10 @@ export const generateDeliveryNote = (project: Project) => {
                                     image: logo,
                                     width: 140,
                                     alignment: 'left',
-                                    margin: [0, 0, 0, 5]
+                                    margin: [15, 0, 0, 5]
                                 }] : [];
                             })() ),
-                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
+                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left', margin: [15, 0, 0, 0] },
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
@@ -828,7 +844,7 @@ export const generateDeliveryNote = (project: Project) => {
                                 fontSize: 9,
                                 alignment: 'left',
                                 color: '#555',
-                                margin: [0, 5, 0, 10]
+                                margin: [15, 5, 0, 10]
                             }
                         ]
                     }
@@ -1051,7 +1067,7 @@ export const generateQuotation = (project: Project) => {
                 columns: [
                     // LEFT COLUMN (Recipient Info)
                     {
-                        width: '*',
+                        width: 250, // Fixed width
                         stack: [
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
                                 { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
@@ -1071,7 +1087,7 @@ export const generateQuotation = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 'auto',
+                        width: 100, // Fixed width
                         table: {
                             body: [[
                                 {
@@ -1082,7 +1098,7 @@ export const generateQuotation = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [30, 4]
+                                    margin: [0, 4]
                                 }
                             ]]
                         },
@@ -1091,19 +1107,19 @@ export const generateQuotation = (project: Project) => {
                     },
                     // RIGHT COLUMN (Company Info)
                     {
-                        width: '*',
+                        width: '*', // Takes remaining space
                         stack: [
                             {
                                 columns: [
                                     { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 80, alignment: 'right', fontSize: 10, bold: true }
                                 ],
                                 margin: [0, 0, 0, 2]
                             },
                             {
                                 columns: [
                                     { text: '発行日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
+                                    { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 80, alignment: 'right', fontSize: 10 }
                                 ]
                             },
                             { text: '\n' },
@@ -1113,10 +1129,34 @@ export const generateQuotation = (project: Project) => {
                                     image: logo,
                                     width: 140,
                                     alignment: 'left',
-                                    margin: [0, 0, 0, 5]
+                                    margin: [15, 0, 0, 5]
                                 }] : [];
                             })() ),
-                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
+                            {
+                                columns: [
+                                    {
+                                        width: 'auto',
+                                        text: '株式会社シーイーエス中国',
+                                        fontSize: 12,
+                                        bold: true,
+                                        alignment: 'left',
+                                        margin: [15, 0, 0, 0]
+                                    },
+                                    {
+                                        width: 0,
+                                        stack: [
+                                            ...( (() => {
+                                                const seal = getSealImage();
+                                                return seal ? [{
+                                                    image: seal,
+                                                    width: 48,
+                                                    margin: [-5, -15, 0, 0]
+                                                }] : [];
+                                            })() )
+                                        ]
+                                    }
+                                ]
+                            },
                             {
                                 text: [
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
@@ -1127,17 +1167,8 @@ export const generateQuotation = (project: Project) => {
                                 fontSize: 9,
                                 alignment: 'left',
                                 color: '#555',
-                                margin: [0, 5, 0, 10]
-                            },
-                            ...( (() => {
-                                const seal = getSealImage();
-                                return seal ? [{
-                                    image: seal,
-                                    width: 55,
-                                    alignment: 'right',
-                                    margin: [0, -90, -10, 0]
-                                }] : [];
-                            })() )
+                                margin: [15, 5, 0, 10]
+                            }
                         ]
                     }
                 ],
