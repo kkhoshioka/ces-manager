@@ -389,7 +389,6 @@ export const generateInvoice = (project: Project) => {
                     { text: `Page 1`, alignment: 'right', fontSize: 9 }
                 ]
             },
-            { text: '', margin: [0, 5] },
 
             // NEW Title Block (Centered) MOVED UP
             {
@@ -401,13 +400,13 @@ export const generateInvoice = (project: Project) => {
                             body: [[
                                 {
                                     text: '　請　求　書　',
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     bold: true,
                                     alignment: 'center',
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [30, 5]
+                                    margin: [30, 4]
                                 }
                             ]]
                         },
@@ -441,15 +440,15 @@ export const generateInvoice = (project: Project) => {
             {
                 columns: [
                     {
-                        width: 250,
+                        width: 340,
                         stack: [
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
-                                { text: `\n〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                                { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
                             ] : []),
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
-                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}`, fontSize: 9 }
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り御請求申し上げます。', fontSize: 9 }
@@ -759,7 +758,6 @@ export const generateDeliveryNote = (project: Project) => {
                     { text: `Page 1`, alignment: 'right', fontSize: 9 }
                 ]
             },
-            { text: '', margin: [0, 5] },
 
             // NEW Title Block (Centered) MOVED UP
             {
@@ -771,13 +769,13 @@ export const generateDeliveryNote = (project: Project) => {
                             body: [[
                                 {
                                     text: '　納　品　書　',
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     bold: true,
                                     alignment: 'center',
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [30, 5]
+                                    margin: [30, 4]
                                 }
                             ]]
                         },
@@ -811,15 +809,15 @@ export const generateDeliveryNote = (project: Project) => {
             {
                 columns: [
                     {
-                        width: 250,
+                        width: 340,
                         stack: [
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
-                                { text: `\n〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                                { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
                             ] : []),
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
-                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}`, fontSize: 9 }
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 11, margin: [10, 0, 0, 0] }] : []),
                             { text: '\n' },
                             { 
@@ -1093,7 +1091,6 @@ export const generateQuotation = (project: Project) => {
                     { text: `Page 1`, alignment: 'right', fontSize: 9 }
                 ]
             },
-            { text: '', margin: [0, 5] },
 
             // NEW Title Block (Centered) MOVED UP
             {
@@ -1105,13 +1102,13 @@ export const generateQuotation = (project: Project) => {
                             body: [[
                                 {
                                     text: '　御　見　積　書　',
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     bold: true,
                                     alignment: 'center',
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [30, 5]
+                                    margin: [30, 4]
                                 }
                             ]]
                         },
@@ -1145,15 +1142,15 @@ export const generateQuotation = (project: Project) => {
             {
                 columns: [
                     {
-                        width: 250,
+                        width: 340,
                         stack: [
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
-                                { text: `\n〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                                { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
                             ] : []),
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
-                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}`, fontSize: 9 }
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
                             // Add customerContactName if it exists, otherwise omit this line
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
                             { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },
