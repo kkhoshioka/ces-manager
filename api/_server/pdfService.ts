@@ -87,6 +87,10 @@ interface Customer {
     code?: string;
     name: string;
     closingDate?: string | null;
+    postalCode?: string | null;
+    address?: string | null;
+    invoicePostalCode?: string | null;
+    invoiceMailingAddress?: string | null;
 }
 
 interface Project {
@@ -387,68 +391,6 @@ export const generateInvoice = (project: Project) => {
             },
             { text: '', margin: [0, 5] },
 
-            // NEW Title Block
-            {
-                table: {
-                    widths: ['*'],
-                    body: [[
-                        {
-                            columns: [
-                                // Left: Title Box
-                                {
-                                    width: 'auto',
-                                    table: {
-                                        body: [[
-                                            {
-                                                text: '　請　求　書　',
-                                                style: 'titleLabel',
-                                                alignment: 'center',
-                                                fillColor: PRIMARY_COLOR,
-                                                color: 'white',
-                                                border: [false, false, false, false],
-                                                margin: [40, 5]
-                                            }
-                                        ]]
-                                    },
-                                    layout: 'noBorders',
-                                },
-                                // Right: Date and No
-                                {
-                                    width: '*',
-                                    stack: [
-                                        {
-                                            columns: [
-                                                { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
-                                            ],
-                                            margin: [0, 0, 0, 2]
-                                        },
-                                        {
-                                            columns: [
-                                                { text: '請求日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 100, alignment: 'right', fontSize: 10 }
-                                            ]
-                                        }
-                                    ],
-                                    alignment: 'right',
-                                    margin: [0, 0, 0, 0]
-                                }
-                            ]
-                        }
-                    ]]
-                },
-                layout: {
-                    hLineWidth: (i: number) => i === 1 ? 1 : 0, // Bottom line only
-                    vLineWidth: () => 0,
-                    hLineColor: PRIMARY_COLOR,
-                    paddingLeft: () => 0,
-                    paddingRight: () => 0,
-                    paddingTop: () => 0,
-                    paddingBottom: (i: number) => 0
-                },
-                margin: [0, 0, 0, 20]
-            },
-
             // Recipient and Company Info
             {
                 columns: [
@@ -456,7 +398,12 @@ export const generateInvoice = (project: Project) => {
                         width: 280,
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
-                            { text: '\n' },
+                            ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
+                                { text: `\n〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                            ] : []),
+                            ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}`, fontSize: 9 }
+                            ] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り御請求申し上げます。', fontSize: 9 }
@@ -496,7 +443,6 @@ export const generateInvoice = (project: Project) => {
                                 color: '#555',
                                 margin: [0, 0, 0, 10]
                             },
-                            // Bank Info moved here
                             {
                                 text: '【お振込先】',
                                 fontSize: 8,
@@ -520,10 +466,56 @@ export const generateInvoice = (project: Project) => {
                                 color: '#555',
                                 margin: [0, 2, 0, 0]
                             }
-                            // Han (Stamp) placeholder would go here
                         ]
                     }
-                ]
+                ],
+                margin: [0, 0, 0, 15]
+            },
+
+            // NEW Title Block (Centered)
+            {
+                columns: [
+                    { text: '', width: '*' }, // Left spacer
+                    {
+                        width: 'auto',
+                        table: {
+                            body: [[
+                                {
+                                    text: '　請　求　書　',
+                                    fontSize: 16,
+                                    bold: true,
+                                    alignment: 'center',
+                                    fillColor: PRIMARY_COLOR,
+                                    color: 'white',
+                                    border: [false, false, false, false],
+                                    margin: [30, 5]
+                                }
+                            ]]
+                        },
+                        layout: 'noBorders',
+                        margin: [0, 10, 0, 0]
+                    },
+                    {
+                        width: '*',
+                        stack: [
+                            {
+                                columns: [
+                                    { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                ],
+                                margin: [0, 0, 0, 2]
+                            },
+                            {
+                                columns: [
+                                    { text: '請求日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 100, alignment: 'right', fontSize: 10 }
+                                ]
+                            }
+                        ],
+                        margin: [0, 15, 0, 0]
+                    }
+                ],
+                margin: [0, 0, 0, 20]
             },
             // Summary Table (Top)
             {
@@ -759,68 +751,6 @@ export const generateDeliveryNote = (project: Project) => {
             },
             { text: '', margin: [0, 5] },
 
-            // Title Block
-            {
-                table: {
-                    widths: ['*'],
-                    body: [[
-                        {
-                            columns: [
-                                // Left: Title Box
-                                {
-                                    width: 'auto',
-                                    table: {
-                                        body: [[
-                                            {
-                                                text: '　納　品　書　',
-                                                style: 'titleLabel',
-                                                alignment: 'center',
-                                                fillColor: PRIMARY_COLOR,
-                                                color: 'white',
-                                                border: [false, false, false, false],
-                                                margin: [40, 5]
-                                            }
-                                        ]]
-                                    },
-                                    layout: 'noBorders',
-                                },
-                                // Right: Date and No
-                                {
-                                    width: '*',
-                                    stack: [
-                                        {
-                                            columns: [
-                                                { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
-                                            ],
-                                            margin: [0, 0, 0, 2]
-                                        },
-                                        {
-                                            columns: [
-                                                { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
-                                            ]
-                                        }
-                                    ],
-                                    alignment: 'right',
-                                    margin: [0, 0, 0, 0]
-                                }
-                            ]
-                        }
-                    ]]
-                },
-                layout: {
-                    hLineWidth: (i: number) => i === 1 ? 1 : 0,
-                    vLineWidth: () => 0,
-                    hLineColor: PRIMARY_COLOR,
-                    paddingLeft: () => 0,
-                    paddingRight: () => 0,
-                    paddingTop: () => 0,
-                    paddingBottom: (i: number) => 0
-                },
-                margin: [0, 0, 0, 20]
-            },
-
             // Recipient and Company Info
             {
                 columns: [
@@ -828,6 +758,12 @@ export const generateDeliveryNote = (project: Project) => {
                         width: 280,
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
+                                { text: `\n〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                            ] : []),
+                            ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}`, fontSize: 9 }
+                            ] : []),
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 11, margin: [10, 0, 0, 0] }] : []),
                             { text: '\n' },
                             { 
@@ -873,7 +809,54 @@ export const generateDeliveryNote = (project: Project) => {
                             }
                         ]
                     }
-                ]
+                ],
+                margin: [0, 0, 0, 15]
+            },
+
+            // Title Block (Centered)
+            {
+                columns: [
+                    { text: '', width: '*' }, // Left spacer
+                    {
+                        width: 'auto',
+                        table: {
+                            body: [[
+                                {
+                                    text: '　納　品　書　',
+                                    fontSize: 16,
+                                    bold: true,
+                                    alignment: 'center',
+                                    fillColor: PRIMARY_COLOR,
+                                    color: 'white',
+                                    border: [false, false, false, false],
+                                    margin: [30, 5]
+                                }
+                            ]]
+                        },
+                        layout: 'noBorders',
+                        margin: [0, 10, 0, 0]
+                    },
+                    {
+                        width: '*',
+                        stack: [
+                            {
+                                columns: [
+                                    { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                ],
+                                margin: [0, 0, 0, 2]
+                            },
+                            {
+                                columns: [
+                                    { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
+                                ]
+                            }
+                        ],
+                        margin: [0, 15, 0, 0]
+                    }
+                ],
+                margin: [0, 0, 0, 20]
             },
 
                         // Summary Table (Top)
@@ -1087,68 +1070,6 @@ export const generateQuotation = (project: Project) => {
             },
             { text: '', margin: [0, 5] },
 
-            // Title Block
-            {
-                table: {
-                    widths: ['*'],
-                    body: [[
-                        {
-                            columns: [
-                                // Left: Title Box
-                                {
-                                    width: 'auto',
-                                    table: {
-                                        body: [[
-                                            {
-                                                text: '　御　見　積　書　',
-                                                style: 'titleLabel',
-                                                alignment: 'center',
-                                                fillColor: PRIMARY_COLOR,
-                                                color: 'white',
-                                                border: [false, false, false, false],
-                                                margin: [40, 5]
-                                            }
-                                        ]]
-                                    },
-                                    layout: 'noBorders',
-                                },
-                                // Right: Date and No
-                                {
-                                    width: '*',
-                                    stack: [
-                                        {
-                                            columns: [
-                                                { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
-                                            ],
-                                            margin: [0, 0, 0, 2]
-                                        },
-                                        {
-                                            columns: [
-                                                { text: '発行日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                                { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
-                                            ]
-                                        }
-                                    ],
-                                    alignment: 'right',
-                                    margin: [0, 0, 0, 0]
-                                }
-                            ]
-                        }
-                    ]]
-                },
-                layout: {
-                    hLineWidth: (i: number) => i === 1 ? 1 : 0, // Bottom line only
-                    vLineWidth: () => 0,
-                    hLineColor: PRIMARY_COLOR,
-                    paddingLeft: () => 0,
-                    paddingRight: () => 0,
-                    paddingTop: () => 0,
-                    paddingBottom: (i: number) => 0
-                },
-                margin: [0, 0, 0, 20]
-            },
-
             // Recipient and Company Info
             {
                 columns: [
@@ -1156,8 +1077,14 @@ export const generateQuotation = (project: Project) => {
                         width: 280,
                         stack: [
                             { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
+                                { text: `\n〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                            ] : []),
+                            ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}`, fontSize: 9 }
+                            ] : []),
                             // Add customerContactName if it exists, otherwise omit this line
-                            ...(project.customerContactName ? [{ text: `${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
+                            ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
                             { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },
                             ...(machineInfo ? [{ text: machineInfo, fontSize: 9, margin: [0, 2, 0, 0] }] : []),
                             { text: '毎度ありがとうございます。', fontSize: 9, margin: [0, 8, 0, 0] },
@@ -1201,7 +1128,54 @@ export const generateQuotation = (project: Project) => {
                             }
                         ]
                     }
-                ]
+                ],
+                margin: [0, 0, 0, 15]
+            },
+
+            // Title Block (Centered)
+            {
+                columns: [
+                    { text: '', width: '*' }, // Left spacer
+                    {
+                        width: 'auto',
+                        table: {
+                            body: [[
+                                {
+                                    text: '　御　見　積　書　',
+                                    fontSize: 16,
+                                    bold: true,
+                                    alignment: 'center',
+                                    fillColor: PRIMARY_COLOR,
+                                    color: 'white',
+                                    border: [false, false, false, false],
+                                    margin: [30, 5]
+                                }
+                            ]]
+                        },
+                        layout: 'noBorders',
+                        margin: [0, 10, 0, 0]
+                    },
+                    {
+                        width: '*',
+                        stack: [
+                            {
+                                columns: [
+                                    { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                ],
+                                margin: [0, 0, 0, 2]
+                            },
+                            {
+                                columns: [
+                                    { text: '発行日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
+                                ]
+                            }
+                        ],
+                        margin: [0, 15, 0, 0]
+                    }
+                ],
+                margin: [0, 0, 0, 20]
             },
             // Summary Table (Top)
             {

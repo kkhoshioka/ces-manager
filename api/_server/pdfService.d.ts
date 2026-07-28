@@ -22,6 +22,10 @@ interface Customer {
     code?: string;
     name: string;
     closingDate?: string | null;
+    postalCode?: string | null;
+    address?: string | null;
+    invoicePostalCode?: string | null;
+    invoiceMailingAddress?: string | null;
 }
 interface Project {
     id: number | string;

@@ -3065,7 +3065,14 @@ app.post('/api/invoices/batch-pdf', async (req, res) => {
             // Create a pseudo-project for the PDF generation
             const pdfData = {
                 id: custProjects.map(p => p.id).join(', '), // List IDs or just leave blank. Let's use first project ID for No. or just rely on customer.
-                customer: { name: customer.name, code: customer.code },
+                customer: { 
+                    name: customer.name, 
+                    code: customer.code,
+                    postalCode: customer.postalCode,
+                    address: customer.address,
+                    invoicePostalCode: customer.invoicePostalCode,
+                    invoiceMailingAddress: customer.invoiceMailingAddress
+                },
                 machineModel: '複数案件合算',
                 serialNumber: '-',
                 details: combinedDetails,
@@ -3198,7 +3205,14 @@ app.get('/api/invoices/customer-pdf', async (req, res) => {
 
         const pdfData = {
             id: customId,
-            customer: { name: customer.name, code: customer.code },
+            customer: { 
+                name: customer.name, 
+                code: customer.code,
+                postalCode: customer.postalCode,
+                address: customer.address,
+                invoicePostalCode: customer.invoicePostalCode,
+                invoiceMailingAddress: customer.invoiceMailingAddress
+            },
             machineModel: '複数案件合算',
             serialNumber: '-',
             details: combinedDetails,
