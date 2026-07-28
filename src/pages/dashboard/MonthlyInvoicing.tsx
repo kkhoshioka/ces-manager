@@ -445,7 +445,12 @@ const MonthlyInvoicing = () => {
                                                                 </thead>
                                                                 <tbody>
                                                                     {item.projects.map(p => (
-                                                                        <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                                        <tr 
+                                                                            key={p.id} 
+                                                                            style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                                                                            onClick={() => window.open(`/repairs?id=${p.id}`, '_blank')}
+                                                                            className={styles.clickableRow}
+                                                                        >
                                                                             <td style={{ padding: '0.5rem' }}>{format(new Date(p.date), 'MM/dd')}</td>
                                                                             <td style={{ padding: '0.5rem' }}>{p.title}</td>
                                                                             <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(p.amount)}</td>

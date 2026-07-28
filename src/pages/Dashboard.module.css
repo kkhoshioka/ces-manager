@@ -384,6 +384,10 @@
     cursor: default !important;
 }
 
+.clickableRow:hover {
+    background-color: #e2e8f0 !important;
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
