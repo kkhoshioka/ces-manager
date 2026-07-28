@@ -437,14 +437,14 @@ export const generateInvoice = (project: Project) => {
                             {
                                 columns: [
                                     { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 80, alignment: 'right', fontSize: 10, bold: true }
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 110, alignment: 'right', fontSize: 10, bold: true }
                                 ],
                                 margin: [0, 0, 0, 2]
                             },
                             {
                                 columns: [
                                     { text: '請求日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 80, alignment: 'right', fontSize: 10 }
+                                    { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 110, alignment: 'right', fontSize: 10 }
                                 ]
                             },
                             { text: '\n' },
@@ -487,7 +487,7 @@ export const generateInvoice = (project: Project) => {
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
                                     'TEL 086-441-3741\n',
                                     'FAX 086-441-3742\n',
-                                    '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
+                                    '登録番号 T4260001033325' + (project.internalRep ? `\n担当: ${project.internalRep}` : '')
                                 ],
                                 fontSize: 9,
                                 alignment: 'left',
@@ -521,7 +521,7 @@ export const generateInvoice = (project: Project) => {
                         ]
                     }
                 ],
-                margin: [0, 0, 0, 15]
+                margin: [0, 0, 0, 5]
             },
             // Summary Table (Top)
             {
@@ -815,14 +815,14 @@ export const generateDeliveryNote = (project: Project) => {
                             {
                                 columns: [
                                     { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 80, alignment: 'right', fontSize: 10, bold: true }
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 110, alignment: 'right', fontSize: 10, bold: true }
                                 ],
                                 margin: [0, 0, 0, 2]
                             },
                             {
                                 columns: [
                                     { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 80, alignment: 'right', fontSize: 10 }
+                                    { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 110, alignment: 'right', fontSize: 10 }
                                 ]
                             },
                             { text: '\n' },
@@ -841,7 +841,7 @@ export const generateDeliveryNote = (project: Project) => {
                                     '〒710-0825 岡山県倉敷市安江374-1\n',
                                     'TEL 086-441-3741\n',
                                     'FAX 086-441-3742\n',
-                                    '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
+                                    '登録番号 T4260001033325' + (project.internalRep ? `\n担当: ${project.internalRep}` : '')
                                 ],
                                 fontSize: 9,
                                 alignment: 'left',
@@ -1115,14 +1115,14 @@ export const generateQuotation = (project: Project) => {
                             {
                                 columns: [
                                     { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 80, alignment: 'right', fontSize: 10, bold: true }
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 110, alignment: 'right', fontSize: 10, bold: true }
                                 ],
                                 margin: [0, 0, 0, 2]
                             },
                             {
                                 columns: [
                                     { text: '発行日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 80, alignment: 'right', fontSize: 10 }
+                                    { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 110, alignment: 'right', fontSize: 10 }
                                 ]
                             },
                             { text: '\n' },
