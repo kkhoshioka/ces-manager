@@ -689,7 +689,7 @@ export const generateDeliveryNote = (project: Project) => {
     let processedDetails = processProjectDetails(project.details, { hideZeroAmountLabor: true });
 
     // Pad with empty rows
-    const MIN_ROWS = 8;
+    const MIN_ROWS = 14;
     if (processedDetails.length < MIN_ROWS) {
         const paddingCount = MIN_ROWS - processedDetails.length;
         for (let i = 0; i < paddingCount; i++) {
@@ -869,7 +869,7 @@ export const generateDeliveryNote = (project: Project) => {
                         }
                     }
                 ],
-                margin: [0, 20, 0, 15]
+                margin: [0, 0, 0, 15]
             },
 
             // Detail Table
