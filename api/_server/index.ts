@@ -3303,27 +3303,43 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
         const startYear = Number(year);
         const startMonth = month ? Number(month) : 1;
 
-        const startDate = new Date(startYear, startMonth - 1, 1);
-        const endDate = month
+        const startDateCalendar = new Date(startYear, startMonth - 1, 1);
+        const endDateCalendar = month
             ? new Date(startYear, startMonth, 0, 23, 59, 59)
             : new Date(startYear, 11, 31, 23, 59, 59);
 
-        // Fetch Projects in period
-        // For Sales Management, we care about "completed" projects usually? 
-        // Or all active projects? 
-        // If it's for Billing, usually it's based on completionDate or orderDate.
-        // Let's use completionDate for consistency with Sales Dashboard if possible, 
-        // OR createdAt if completionDate is null?
-        // Requirement implies managing billing for "cases". 
-        // Let's broaden to include projects created OR completed in this month to be safe,
-        // or just stick to completionDate if that defines "Sales".
-        // HOWEVER, "Invoice" might be issued before completion.
-        // Let's use a wide net: Created OR Completed in this period.
-        const projects = await prisma.project.findMany({
+        // Fetch a wider range to account for different closing dates (e.g. from previous month)
+        let projectStartDate: Date;
+        let projectEndDate: Date;
+        if (month) {
+            projectStartDate = new Date(startYear, startMonth - 2, 1); // Allow for 1st closing (starts previous month 2nd)
+            projectEndDate = new Date(startYear, startMonth, 31, 23, 59, 59);
+        } else {
+            projectStartDate = new Date(startYear - 1, 11, 1);
+            projectEndDate = new Date(startYear + 1, 0, 31, 23, 59, 59);
+        }
+
+        const getBillingMonth = (date: Date, closingDay: number) => {
+            const y = date.getFullYear();
+            const m = date.getMonth() + 1;
+            const d = date.getDate();
+            if (closingDay >= 28) return { year: y, month: m };
+            if (d <= closingDay) return { year: y, month: m };
+            
+            let nextM = m + 1;
+            let nextY = y;
+            if (nextM > 12) {
+                nextM = 1;
+                nextY++;
+            }
+            return { year: nextY, month: nextM };
+        };
+
+        const projectsRaw = await prisma.project.findMany({
             where: {
                 OR: [
-                    { completionDate: { gte: startDate, lte: endDate } },
-                    { createdAt: { gte: startDate, lte: endDate } }
+                    { completionDate: { gte: projectStartDate, lte: projectEndDate } },
+                    { createdAt: { gte: projectStartDate, lte: projectEndDate } }
                 ]
             },
             include: {
@@ -3332,6 +3348,20 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
                 details: true
             },
             orderBy: { createdAt: 'desc' }
+        });
+
+        // Filter projects by their specific billing month
+        const projects = projectsRaw.filter(p => {
+            const closingDay = p.customer?.closingDate && !isNaN(Number(p.customer.closingDate)) 
+                               ? Number(p.customer.closingDate) 
+                               : 99;
+            const dateToUse = p.completionDate || p.createdAt;
+            const bm = getBillingMonth(dateToUse, closingDay);
+            if (month) {
+                return bm.year === startYear && bm.month === startMonth;
+            } else {
+                return bm.year === startYear;
+            }
         });
 
         // Fetch Monthly Invoice Status
@@ -3347,11 +3377,26 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const customerStats: Record<string, any> = {};
 
-        const paymentsInPeriod = await prisma.payment.findMany({
+        const paymentsRaw = await prisma.payment.findMany({
             where: {
-                paymentDate: { gte: startDate, lte: endDate }
+                paymentDate: { gte: projectStartDate, lte: projectEndDate }
             },
             include: { customer: true }
+        });
+
+        // Filter payments by their specific billing month
+        const paymentsInPeriod = paymentsRaw.filter(p => {
+            const closingDay = p.customer?.closingDate && !isNaN(Number(p.customer.closingDate)) 
+                               ? Number(p.customer.closingDate) 
+                               : 99;
+            // The billing period for payments received is the exact same window.
+            // So if a payment is on June 20, and closing is 20th, it's June billing month.
+            const bm = getBillingMonth(p.paymentDate, closingDay);
+            if (month) {
+                return bm.year === startYear && bm.month === startMonth;
+            } else {
+                return bm.year === startYear;
+            }
         });
 
         paymentsInPeriod.forEach(p => {
