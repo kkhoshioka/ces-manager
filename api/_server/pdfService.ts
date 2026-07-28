@@ -390,10 +390,26 @@ export const generateInvoice = (project: Project) => {
                 ]
             },
 
-            // NEW Title Block (Centered) MOVED UP
+            // Combined Title, Recipient, and Company Info Block
             {
                 columns: [
-                    { text: '', width: '*' }, // Left spacer
+                    // LEFT COLUMN (Recipient Info)
+                    {
+                        width: '*',
+                        stack: [
+                            ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
+                                { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                            ] : []),
+                            ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
+                            ] : []),
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            { text: '\n\n' },
+                            { text: '毎度ありがとうございます。', fontSize: 9 },
+                            { text: '下記の通り御請求申し上げます。', fontSize: 9 }
+                        ]
+                    },
+                    // CENTER COLUMN (Title Block)
                     {
                         width: 'auto',
                         table: {
@@ -413,6 +429,7 @@ export const generateInvoice = (project: Project) => {
                         layout: 'noBorders',
                         margin: [0, 0, 0, 0]
                     },
+                    // RIGHT COLUMN (Company Info)
                     {
                         width: '*',
                         stack: [
@@ -428,99 +445,62 @@ export const generateInvoice = (project: Project) => {
                                     { text: '請求日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
                                     { text: getInvoiceDateString(project.completionDate, project.customer?.closingDate), width: 100, alignment: 'right', fontSize: 10 }
                                 ]
-                            }
-                        ],
-                        margin: [0, 5, 0, 0]
-                    }
-                ],
-                margin: [0, 0, 0, 20]
-            },
-
-            // Recipient and Company Info
-            {
-                columns: [
-                    {
-                        width: 340,
-                        stack: [
-                            ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
-                                { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
-                            ] : []),
-                            ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
-                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
-                            ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
-                            { text: '\n\n' },
-                            { text: '毎度ありがとうございます。', fontSize: 9 },
-                            { text: '下記の通り御請求申し上げます。', fontSize: 9 }
-                        ]
-                    },
-                    {
-                        width: '*',
-                        columns: [
+                            },
+                            { text: '\n' },
+                            ...( (() => {
+                                const logo = getLogoImage();
+                                return logo ? [{
+                                    image: logo,
+                                    width: 140,
+                                    alignment: 'left',
+                                    margin: [0, 0, 0, 5]
+                                }] : [];
+                            })() ),
+                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
                             {
-                                width: 'auto',
-                                stack: [
-                                    ...( (() => {
-                                        const logo = getLogoImage();
-                                        return logo ? [{
-                                            image: logo,
-                                            width: 140,
-                                            alignment: 'left',
-                                            margin: [0, 0, 0, 5]
-                                        }] : [];
-                                    })() ),
-                                    { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
-                                    {
-                                        text: [
-                                            '〒710-0825 岡山県倉敷市安江374-1\n',
-                                            'TEL 086-441-3741\n',
-                                            'FAX 086-441-3742\n',
-                                            '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
-                                        ],
-                                        fontSize: 9,
-                                        alignment: 'left',
-                                        color: '#555',
-                                        margin: [0, 5, 0, 10]
-                                    },
-                                    {
-                                        text: '【お振込先】',
-                                        fontSize: 8,
-                                        bold: true,
-                                        alignment: 'left',
-                                        margin: [0, 2, 0, 0]
-                                    },
-                                    {
-                                        text: [
-                                            '中国銀行 倉敷駅前支店 普通 2533151\n',
-                                            '玉島信用金庫 八王寺支店 普通 0159950'
-                                        ],
-                                        fontSize: 8,
-                                        alignment: 'left',
-                                        lineHeight: 1.2
-                                    },
-                                    {
-                                        text: '※振込手数料は貴社ご負担にてお願いいたします。',
-                                        fontSize: 7,
-                                        alignment: 'left',
-                                        color: '#555',
-                                        margin: [0, 2, 0, 0]
-                                    }
-                                ]
+                                text: [
+                                    '〒710-0825 岡山県倉敷市安江374-1\n',
+                                    'TEL 086-441-3741\n',
+                                    'FAX 086-441-3742\n',
+                                    '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
+                                ],
+                                fontSize: 9,
+                                alignment: 'left',
+                                color: '#555',
+                                margin: [0, 5, 0, 10]
                             },
                             {
-                                width: '*',
-                                stack: [
-                                    ...( (() => {
-                                        const seal = getSealImage();
-                                        return seal ? [{
-                                            image: seal,
-                                            width: 55,
-                                            alignment: 'right',
-                                            margin: [0, 20, -10, 0]
-                                        }] : [];
-                                    })() )
-                                ]
-                            }
+                                text: '【お振込先】',
+                                fontSize: 8,
+                                bold: true,
+                                alignment: 'left',
+                                margin: [0, 2, 0, 0]
+                            },
+                            {
+                                text: [
+                                    '中国銀行 倉敷駅前支店 普通 2533151\n',
+                                    '玉島信用金庫 八王寺支店 普通 0159950'
+                                ],
+                                fontSize: 8,
+                                alignment: 'left',
+                                lineHeight: 1.2
+                            },
+                            {
+                                text: '※振込手数料は貴社ご負担にてお願いいたします。',
+                                fontSize: 7,
+                                alignment: 'left',
+                                color: '#555',
+                                margin: [0, 2, 0, 0]
+                            },
+                            ...( (() => {
+                                const seal = getSealImage();
+                                return seal ? [{
+                                    image: seal,
+                                    width: 55,
+                                    alignment: 'right',
+                                    margin: [0, -90, -10, 0]
+                                }] : [];
+                            })() )
                         ]
                     }
                 ],
@@ -759,57 +739,12 @@ export const generateDeliveryNote = (project: Project) => {
                 ]
             },
 
-            // NEW Title Block (Centered) MOVED UP
+            // Combined Title, Recipient, and Company Info Block
             {
                 columns: [
-                    { text: '', width: '*' }, // Left spacer
-                    {
-                        width: 'auto',
-                        table: {
-                            body: [[
-                                {
-                                    text: '　納　品　書　',
-                                    fontSize: 15,
-                                    bold: true,
-                                    alignment: 'center',
-                                    fillColor: PRIMARY_COLOR,
-                                    color: 'white',
-                                    border: [false, false, false, false],
-                                    margin: [30, 4]
-                                }
-                            ]]
-                        },
-                        layout: 'noBorders',
-                        margin: [0, 0, 0, 0]
-                    },
+                    // LEFT COLUMN (Recipient Info)
                     {
                         width: '*',
-                        stack: [
-                            {
-                                columns: [
-                                    { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
-                                ],
-                                margin: [0, 0, 0, 2]
-                            },
-                            {
-                                columns: [
-                                    { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
-                                    { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
-                                ]
-                            }
-                        ],
-                        margin: [0, 5, 0, 0]
-                    }
-                ],
-                margin: [0, 0, 0, 20]
-            },
-
-            // Recipient and Company Info
-            {
-                columns: [
-                    {
-                        width: 340,
                         stack: [
                             ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
                                 { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
@@ -835,46 +770,65 @@ export const generateDeliveryNote = (project: Project) => {
                             { text: '下記の通り納品いたしました。', fontSize: 9 }
                         ]
                     },
+                    // CENTER COLUMN (Title Block)
+                    {
+                        width: 'auto',
+                        table: {
+                            body: [[
+                                {
+                                    text: '　納　品　書　',
+                                    fontSize: 15,
+                                    bold: true,
+                                    alignment: 'center',
+                                    fillColor: PRIMARY_COLOR,
+                                    color: 'white',
+                                    border: [false, false, false, false],
+                                    margin: [30, 4]
+                                }
+                            ]]
+                        },
+                        layout: 'noBorders',
+                        margin: [0, 0, 0, 0]
+                    },
+                    // RIGHT COLUMN (Company Info)
                     {
                         width: '*',
-                        columns: [
+                        stack: [
                             {
-                                width: 'auto',
-                                stack: [
-                                    ...( (() => {
-                                        const logo = getLogoImage();
-                                        return logo ? [{
-                                            image: logo,
-                                            width: 140,
-                                            alignment: 'left',
-                                            margin: [0, 0, 0, 5]
-                                        }] : [];
-                                    })() ),
-                                    { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
-                                    {
-                                        text: [
-                                            '〒710-0825 岡山県倉敷市安江374-1\n',
-                                            'TEL 086-441-3741\n',
-                                            'FAX 086-441-3742\n',
-                                            '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
-                                        ],
-                                        fontSize: 9,
-                                        alignment: 'left',
-                                        color: '#555',
-                                        margin: [0, 5, 0, 10]
-                                    }
-                                ]
+                                columns: [
+                                    { text: 'No. :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: ` ${project.id.toString().padStart(6, '0')}`, width: 100, alignment: 'right', fontSize: 10, bold: true }
+                                ],
+                                margin: [0, 0, 0, 2]
                             },
                             {
-                                width: '*',
-                                stack: [
-                                    ...( (() => {
-                                        // Usually no seal on delivery note, but if there is...
-                                        // Wait, the delivery note originally didn't have a seal in the code:
-                                        // only logo and text. So we leave this empty.
-                                        return [];
-                                    })() )
+                                columns: [
+                                    { text: '納品日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
+                                    { text: `令和 ${noteDate.getFullYear() - 2018} 年 ${noteDate.getMonth() + 1} 月 ${noteDate.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
                                 ]
+                            },
+                            { text: '\n' },
+                            ...( (() => {
+                                const logo = getLogoImage();
+                                return logo ? [{
+                                    image: logo,
+                                    width: 140,
+                                    alignment: 'left',
+                                    margin: [0, 0, 0, 5]
+                                }] : [];
+                            })() ),
+                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
+                            {
+                                text: [
+                                    '〒710-0825 岡山県倉敷市安江374-1\n',
+                                    'TEL 086-441-3741\n',
+                                    'FAX 086-441-3742\n',
+                                    '登録番号 T4260001033325' + (project.internalRep ? `\n\n担当: ${project.internalRep}` : '')
+                                ],
+                                fontSize: 9,
+                                alignment: 'left',
+                                color: '#555',
+                                margin: [0, 5, 0, 10]
                             }
                         ]
                     }
@@ -1092,10 +1046,30 @@ export const generateQuotation = (project: Project) => {
                 ]
             },
 
-            // NEW Title Block (Centered) MOVED UP
+            // Combined Title, Recipient, and Company Info Block
             {
                 columns: [
-                    { text: '', width: '*' }, // Left spacer
+                    // LEFT COLUMN (Recipient Info)
+                    {
+                        width: '*',
+                        stack: [
+                            ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
+                                { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
+                            ] : []),
+                            ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
+                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
+                            ] : []),
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            // Add customerContactName if it exists, otherwise omit this line
+                            ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
+                            { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },
+                            ...(machineInfo ? [{ text: machineInfo, fontSize: 9, margin: [0, 2, 0, 0] }] : []),
+                            { text: '毎度ありがとうございます。', fontSize: 9, margin: [0, 8, 0, 0] },
+                            { text: '下記の通り御見積申し上げます。', fontSize: 9 },
+                            { text: 'ご検討の程、宜しくお願い致します。', fontSize: 9 }
+                        ]
+                    },
+                    // CENTER COLUMN (Title Block)
                     {
                         width: 'auto',
                         table: {
@@ -1115,6 +1089,7 @@ export const generateQuotation = (project: Project) => {
                         layout: 'noBorders',
                         margin: [0, 0, 0, 0]
                     },
+                    // RIGHT COLUMN (Company Info)
                     {
                         width: '*',
                         stack: [
@@ -1130,80 +1105,39 @@ export const generateQuotation = (project: Project) => {
                                     { text: '発行日 :', width: '*', alignment: 'right', fontSize: 10, color: '#555' },
                                     { text: `令和 ${now.getFullYear() - 2018} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`, width: 100, alignment: 'right', fontSize: 10 }
                                 ]
-                            }
-                        ],
-                        margin: [0, 5, 0, 0]
-                    }
-                ],
-                margin: [0, 0, 0, 20]
-            },
-
-            // Recipient and Company Info
-            {
-                columns: [
-                    {
-                        width: 340,
-                        stack: [
-                            ...(project.customer?.invoicePostalCode || project.customer?.postalCode ? [
-                                { text: `〒${project.customer.invoicePostalCode || project.customer.postalCode}`, fontSize: 9 }
-                            ] : []),
-                            ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
-                                { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
-                            ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
-                            // Add customerContactName if it exists, otherwise omit this line
-                            ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
-                            { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },
-                            ...(machineInfo ? [{ text: machineInfo, fontSize: 9, margin: [0, 2, 0, 0] }] : []),
-                            { text: '毎度ありがとうございます。', fontSize: 9, margin: [0, 8, 0, 0] },
-                            { text: '下記の通り御見積申し上げます。', fontSize: 9 },
-                            { text: 'ご検討の程、宜しくお願い致します。', fontSize: 9 }
-                        ]
-                    },
-                    {
-                        width: '*',
-                        columns: [
-                            {
-                                width: 'auto',
-                                stack: [
-                                    ...( (() => {
-                                        const logo = getLogoImage();
-                                        return logo ? [{
-                                            image: logo,
-                                            width: 140,
-                                            alignment: 'left',
-                                            margin: [0, 0, 0, 5]
-                                        }] : [];
-                                    })() ),
-                                    { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
-                                    {
-                                        text: [
-                                            '〒710-0825 岡山県倉敷市安江374-1\n',
-                                            'TEL 086-441-3741\n',
-                                            'FAX 086-441-3742\n',
-                                            '登録番号 T4260001033325'
-                                        ],
-                                        fontSize: 9,
-                                        alignment: 'left',
-                                        color: '#555',
-                                        margin: [0, 5, 0, 10]
-                                    }
-                                ]
                             },
+                            { text: '\n' },
+                            ...( (() => {
+                                const logo = getLogoImage();
+                                return logo ? [{
+                                    image: logo,
+                                    width: 140,
+                                    alignment: 'left',
+                                    margin: [0, 0, 0, 5]
+                                }] : [];
+                            })() ),
+                            { text: '株式会社シーイーエス中国', fontSize: 12, bold: true, alignment: 'left' },
                             {
-                                width: '*',
-                                stack: [
-                                    ...( (() => {
-                                        const seal = getSealImage();
-                                        return seal ? [{
-                                            image: seal,
-                                            width: 55,
-                                            alignment: 'right',
-                                            margin: [0, 20, -10, 0]
-                                        }] : [];
-                                    })() )
-                                ]
-                            }
+                                text: [
+                                    '〒710-0825 岡山県倉敷市安江374-1\n',
+                                    'TEL 086-441-3741\n',
+                                    'FAX 086-441-3742\n',
+                                    '登録番号 T4260001033325'
+                                ],
+                                fontSize: 9,
+                                alignment: 'left',
+                                color: '#555',
+                                margin: [0, 5, 0, 10]
+                            },
+                            ...( (() => {
+                                const seal = getSealImage();
+                                return seal ? [{
+                                    image: seal,
+                                    width: 55,
+                                    alignment: 'right',
+                                    margin: [0, -90, -10, 0]
+                                }] : [];
+                            })() )
                         ]
                     }
                 ],
