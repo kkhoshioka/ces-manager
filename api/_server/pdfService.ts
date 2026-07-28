@@ -411,9 +411,9 @@ export const generateInvoice = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 130, // Fixed width
+                        width: 'auto',
                         table: {
-                            widths: ['*'],
+                            widths: ['auto'],
                             body: [[
                                 {
                                     text: '　請　求　書　',
@@ -423,7 +423,7 @@ export const generateInvoice = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [0, 4]
+                                    margin: [15, 4]
                                 }
                             ]]
                         },
@@ -789,9 +789,9 @@ export const generateDeliveryNote = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 130, // Fixed width
+                        width: 'auto',
                         table: {
-                            widths: ['*'],
+                            widths: ['auto'],
                             body: [[
                                 {
                                     text: '　納　品　書　',
@@ -801,7 +801,7 @@ export const generateDeliveryNote = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [0, 4]
+                                    margin: [15, 4]
                                 }
                             ]]
                         },
@@ -1089,9 +1089,9 @@ export const generateQuotation = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 130, // Fixed width
+                        width: 'auto',
                         table: {
-                            widths: ['*'],
+                            widths: ['auto'],
                             body: [[
                                 {
                                     text: '　御　見　積　書　',
@@ -1101,7 +1101,7 @@ export const generateQuotation = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [0, 4]
+                                    margin: [15, 4]
                                 }
                             ]]
                         },
