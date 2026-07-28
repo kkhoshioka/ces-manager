@@ -411,8 +411,9 @@ export const generateInvoice = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 100, // Fixed width to prevent wrapping
+                        width: 130, // Fixed width
                         table: {
+                            widths: ['*'],
                             body: [[
                                 {
                                     text: '　請　求　書　',
@@ -422,7 +423,7 @@ export const generateInvoice = (project: Project) => {
                                     fillColor: PRIMARY_COLOR,
                                     color: 'white',
                                     border: [false, false, false, false],
-                                    margin: [0, 4] // Remove 30px side margins so it fits in 100px
+                                    margin: [0, 4]
                                 }
                             ]]
                         },
@@ -788,8 +789,9 @@ export const generateDeliveryNote = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 100, // Fixed width
+                        width: 130, // Fixed width
                         table: {
+                            widths: ['*'],
                             body: [[
                                 {
                                     text: '　納　品　書　',
@@ -1087,8 +1089,9 @@ export const generateQuotation = (project: Project) => {
                     },
                     // CENTER COLUMN (Title Block)
                     {
-                        width: 100, // Fixed width
+                        width: 130, // Fixed width
                         table: {
+                            widths: ['*'],
                             body: [[
                                 {
                                     text: '　御　見　積　書　',
