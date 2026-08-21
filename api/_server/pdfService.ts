@@ -153,6 +153,19 @@ const formatDate = (date: Date | string | null) => {
     return new Date(date).toLocaleDateString('ja-JP');
 };
 
+// Estimate the printed width of a string (full-width chars ~1 char unit, half-width ~0.55)
+// and shrink the font size so the text still fits on a single line instead of wrapping.
+const fitFontSizeToWidth = (text: string, maxWidth: number, baseFontSize: number, minFontSize = 8): number => {
+    let weight = 0;
+    for (const ch of text) {
+        weight += ch.charCodeAt(0) > 0xFF ? 1 : 0.55;
+    }
+    const estimatedWidth = weight * baseFontSize;
+    if (estimatedWidth <= maxWidth) return baseFontSize;
+    const fitted = maxWidth / weight;
+    return Math.max(minFontSize, Math.floor(fitted * 2) / 2);
+};
+
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
 const processProjectDetails = (details: ProjectDetail[], options?: { includeZeroAmount?: boolean, hideZeroAmountLabor?: boolean }): ProjectDetail[] => {
     const processed: ProjectDetail[] = [];
@@ -403,7 +416,7 @@ export const generateInvoice = (project: Project) => {
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
                                 { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: fitFontSizeToWidth(`${project.customer?.name || '得意先不明'} 御中`, 210, 13), bold: true, decoration: 'underline' },
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り御請求申し上げます。', fontSize: 9 }
@@ -769,7 +782,7 @@ export const generateDeliveryNote = (project: Project) => {
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
                                 { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: fitFontSizeToWidth(`${project.customer?.name || '得意先不明'} 御中`, 210, 13), bold: true, decoration: 'underline' },
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 11, margin: [10, 0, 0, 0] }] : []),
                             { text: '\n' },
                             { 
@@ -1077,7 +1090,7 @@ export const generateQuotation = (project: Project) => {
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
                                 { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: 13, bold: true, decoration: 'underline' },
+                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: fitFontSizeToWidth(`${project.customer?.name || '得意先不明'} 御中`, 210, 13), bold: true, decoration: 'underline' },
                             // Add customerContactName if it exists, otherwise omit this line
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
                             { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },
