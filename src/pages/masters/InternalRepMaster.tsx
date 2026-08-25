@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
+import { preventImplicitSubmit, isUnchanged } from '../../utils/formUtils';
 
 interface InternalRep {
     id: number;
@@ -17,6 +18,8 @@ const InternalRepMaster: React.FC = () => {
     const [reps, setReps] = useState<InternalRep[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
+    // 編集画面を開いたときの内容。保存時に見比べて、変更が無ければ更新しない。
+    const originalFormData = useRef<{ name: string; isActive: boolean } | null>(null);
     const [formData, setFormData] = useState<{ name: string; isActive: boolean }>({
         name: '',
         isActive: true
@@ -45,6 +48,12 @@ const InternalRepMaster: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (editingId && isUnchanged(formData, originalFormData.current)) {
+            alert('更新データがありません');
+            setIsModalOpen(false);
+            return;
+        }
         setError(null);
         try {
             const url = editingId
@@ -90,16 +99,19 @@ const InternalRepMaster: React.FC = () => {
 
     const openEdit = (item: InternalRep) => {
         setEditingId(item.id);
-        setFormData({
+        const initial = {
             name: item.name,
             isActive: item.isActive
-        });
+        };
+        setFormData(initial);
+        originalFormData.current = initial;
         setError(null);
         setIsModalOpen(true);
     };
 
     const openAdd = () => {
         setEditingId(null);
+        originalFormData.current = null;
         setFormData({ name: '', isActive: true });
         setError(null);
         setIsModalOpen(true);
@@ -186,7 +198,7 @@ const InternalRepMaster: React.FC = () => {
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className={styles.form}>
+                        <form onSubmit={handleSubmit} onKeyDown={preventImplicitSubmit} className={styles.form}>
                             <Input
                                 label="自社担当者名"
                                 value={formData.name}

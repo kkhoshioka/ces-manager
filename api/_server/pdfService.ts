@@ -81,6 +81,7 @@ interface ProjectDetail {
     rentalCompensationDays?: number | string;
     rentalCompensationFee?: number | string;
     isTaxExempt?: boolean;
+    forcePrint?: boolean;
 }
 
 interface Customer {
@@ -153,17 +154,89 @@ const formatDate = (date: Date | string | null) => {
     return new Date(date).toLocaleDateString('ja-JP');
 };
 
-// Estimate the printed width of a string (full-width chars ~1 char unit, half-width ~0.55)
-// and shrink the font size so the text still fits on a single line instead of wrapping.
-const fitFontSizeToWidth = (text: string, maxWidth: number, baseFontSize: number, minFontSize = 8): number => {
+// Estimate the printed width of a string, in units of one full-width character.
+const estimateTextWidth = (text: string): number => {
     let weight = 0;
     for (const ch of text) {
-        weight += ch.charCodeAt(0) > 0xFF ? 1 : 0.55;
+        const code = ch.codePointAt(0) ?? 0;
+        if (code <= 0x7F) {
+            weight += 0.55; // ASCII
+        } else if (code >= 0xFF61 && code <= 0xFF9F) {
+            weight += 0.5; // half-width katakana
+        } else {
+            weight += 1; // full-width
+        }
     }
-    const estimatedWidth = weight * baseFontSize;
-    if (estimatedWidth <= maxWidth) return baseFontSize;
-    const fitted = maxWidth / weight;
-    return Math.max(minFontSize, Math.floor(fitted * 2) / 2);
+    return weight;
+};
+
+// Shrink the font size so the text still fits on a single line instead of wrapping.
+const fitFontSizeToWidth = (text: string, maxWidth: number, baseFontSize: number, minFontSize = 8): number => {
+    const weight = estimateTextWidth(text);
+    if (weight === 0) return baseFontSize;
+    if (weight * baseFontSize <= maxWidth) return baseFontSize;
+    return Math.max(minFontSize, Math.floor((maxWidth / weight) * 2) / 2);
+};
+
+// The recipient column is 220pt wide; leave a little room so the underline never touches the edge.
+const RECIPIENT_MAX_WIDTH = 200;
+const RECIPIENT_BASE_FONT_SIZE = 13;
+const RECIPIENT_MIN_FONT_SIZE = 8;
+
+// 縮小しても収まらないときの改行位置。会社名と営業所名は全角スペースで区切られることが多いので
+// それを最優先し、無ければ左右の長さが近くなる半角スペースを選ぶ（末尾で切ると "Ltd." だけが残る）。
+const findRecipientSplitIndex = (name: string): number => {
+    const fullWidthSpace = name.lastIndexOf('　');
+    if (fullWidthSpace > 0) return fullWidthSpace;
+
+    let best = -1;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    const middle = name.length / 2;
+    for (let i = 0; i < name.length; i++) {
+        if (name[i] !== ' ') continue;
+        const distance = Math.abs(i - middle);
+        if (distance < bestDistance) {
+            best = i;
+            bestDistance = distance;
+        }
+    }
+    return best;
+};
+
+// Build the "<customer name> 御中" block for invoices / delivery notes / quotations.
+// Long names such as "西尾レントオール（全角スペース）岡山営業所" must never break mid-name, so the text is
+// shrunk to fit and wrapping is disabled. When even the minimum size does not fit, the name is
+// split at its own space so the break lands on a real boundary (company / branch office).
+const buildRecipientName = (customerName?: string | null) => {
+    const name = customerName || '得意先不明';
+    const singleLine = `${name} 御中`;
+    // Spaces are where pdfmake would break the line, so make them non-breaking.
+    const noBreak = (text: string) => text.replace(/[ \u3000]/g, '\u00A0');
+    const style = { bold: true, decoration: 'underline', noWrap: true };
+
+    const fontSize = fitFontSizeToWidth(singleLine, RECIPIENT_MAX_WIDTH, RECIPIENT_BASE_FONT_SIZE, RECIPIENT_MIN_FONT_SIZE);
+    if (estimateTextWidth(singleLine) * fontSize <= RECIPIENT_MAX_WIDTH) {
+        return [{ text: noBreak(singleLine), fontSize, ...style }];
+    }
+
+    // Still too wide at the minimum size: break at a space instead of mid-name.
+    const splitAt = findRecipientSplitIndex(name);
+    if (splitAt > 0) {
+        const head = name.slice(0, splitAt);
+        const tail = `${name.slice(splitAt + 1)} 御中`;
+        const lineFontSize = Math.min(
+            fitFontSizeToWidth(head, RECIPIENT_MAX_WIDTH, RECIPIENT_BASE_FONT_SIZE, RECIPIENT_MIN_FONT_SIZE),
+            fitFontSizeToWidth(tail, RECIPIENT_MAX_WIDTH, RECIPIENT_BASE_FONT_SIZE, RECIPIENT_MIN_FONT_SIZE)
+        );
+        return [
+            { text: noBreak(head), fontSize: lineFontSize, ...style },
+            { text: noBreak(tail), fontSize: lineFontSize, ...style }
+        ];
+    }
+
+    // No space to break at: keep it on one line at the minimum size rather than
+    // splitting the name at an arbitrary character.
+    return [{ text: noBreak(singleLine), fontSize: RECIPIENT_MIN_FONT_SIZE, ...style }];
 };
 
 // Helper: Group Travel Time/Distance into one "Travel Expenses" line
@@ -274,7 +347,7 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
 
         } else if (current.lineType === 'labor') {
             const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
-            if (options?.hideZeroAmountLabor && amount === 0) {
+            if (options?.hideZeroAmountLabor && amount === 0 && !current.forcePrint) {
                 processedIds.add(currentId);
                 continue;
             }
@@ -294,7 +367,7 @@ const processProjectDetails = (details: ProjectDetail[], options?: { includeZero
         } else {
             // Skip 0 yen items unless they are 'other' or explicitly requested
             const amount = Number(current.quantity || 0) * Number(current.unitPrice || 0);
-            if (amount === 0 && current.lineType !== 'padding' && current.lineType !== 'other' && !options?.includeZeroAmount) {
+            if (amount === 0 && current.lineType !== 'padding' && current.lineType !== 'other' && !options?.includeZeroAmount && !current.forcePrint) {
                 processedIds.add(currentId);
                 continue;
             }
@@ -416,7 +489,7 @@ export const generateInvoice = (project: Project) => {
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
                                 { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: fitFontSizeToWidth(`${project.customer?.name || '得意先不明'} 御中`, 210, 13), bold: true, decoration: 'underline' },
+                            ...buildRecipientName(project.customer?.name),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },
                             { text: '下記の通り御請求申し上げます。', fontSize: 9 }
@@ -782,7 +855,7 @@ export const generateDeliveryNote = (project: Project) => {
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
                                 { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: fitFontSizeToWidth(`${project.customer?.name || '得意先不明'} 御中`, 210, 13), bold: true, decoration: 'underline' },
+                            ...buildRecipientName(project.customer?.name),
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 11, margin: [10, 0, 0, 0] }] : []),
                             { text: '\n' },
                             { 
@@ -1090,7 +1163,7 @@ export const generateQuotation = (project: Project) => {
                             ...(project.customer?.invoiceMailingAddress || project.customer?.address ? [
                                 { text: `${project.customer.invoiceMailingAddress || project.customer.address}\n\n`, fontSize: 9 }
                             ] : []),
-                            { text: `${project.customer?.name || '得意先不明'} 御中`, fontSize: fitFontSizeToWidth(`${project.customer?.name || '得意先不明'} 御中`, 210, 13), bold: true, decoration: 'underline' },
+                            ...buildRecipientName(project.customer?.name),
                             // Add customerContactName if it exists, otherwise omit this line
                             ...(project.customerContactName ? [{ text: `\n${project.customerContactName} 様`, fontSize: 13, bold: true, decoration: 'underline', margin: [0, 4, 0, 0] }] : []),
                             { text: subjectLine, fontSize: 9, margin: [0, project.customerContactName ? 4 : 8, 0, 0] },

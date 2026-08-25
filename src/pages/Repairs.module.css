@@ -100,17 +100,24 @@
     background-color: #f1f5f9;
 }
 
-.highlightRow {
-    animation: highlightFade 4s ease-out forwards;
+/* 翌月に回す案件。一覧でひと目で分かるよう行全体を色分けする */
+.carriedOverRow,
+.carriedOverRow td {
+    background-color: #fff1f2;
 }
 
-@keyframes highlightFade {
-    0% {
-        background-color: #fef08a; /* Soft yellow for highlight */
-    }
-    100% {
-        background-color: transparent;
-    }
+.carriedOverRow td:first-child {
+    box-shadow: inset 3px 0 0 #fb7185;
+}
+
+/* 直前に更新した案件。次に別の案件を開くまで色を残す（すぐ消えると見失うため） */
+.highlightRow,
+.highlightRow td {
+    background-color: #fef9c3;
+}
+
+.highlightRow td:first-child {
+    box-shadow: inset 3px 0 0 #eab308;
 }
 
 .statusBadge {
@@ -269,7 +276,8 @@
     gap: 2rem;
     margin-bottom: 1rem;
     background: #f8fafc;
-    padding: 1rem;
+    /* 13インチでも 症状・メモ・備考 が一画面に収まるよう余白は控えめにする */
+    padding: 0.75rem 1rem;
     border-radius: 8px;
 }
 
@@ -280,10 +288,19 @@
     font-size: 0.9rem;
 }
 
+/* 集計・社内メモ・全体備考を積む右カラム */
+.rightColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+}
+
+/* 症状と同じ画面内に収めるため縦積みにする */
 .notesGrid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
 }
 
 .detailTableWrapper {
@@ -303,6 +320,10 @@
     .summaryStats,
     .notesGrid {
         grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .rightColumn {
         gap: 1rem;
     }
 
@@ -428,6 +449,15 @@
     background: transparent;
     transition: all 0.2s;
     font-size: inherit;
+}
+
+/* 内容欄は改行して入力できるようにする（帳票にもそのまま改行で印字される） */
+.contentTextarea {
+    min-width: 160px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.4;
+    overflow-y: auto;
 }
 
 .tableInput:hover,

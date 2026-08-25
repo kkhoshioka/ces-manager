@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Search, X, FileText, Trash2, ShoppingCart, Wrench, Camera, ChevronDown, ChevronUp, Copy, ArrowUp, ArrowDown } from 'lucide-react';
@@ -10,6 +10,7 @@ import { API_BASE_URL } from '../config';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
+import ComboBox from '../components/ui/ComboBox';
 import CreatableSelect from 'react-select/creatable';
 import styles from './Repairs.module.css';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -23,10 +24,17 @@ import QuotationList from '../components/quotations/QuotationList';
 import QuotationEdit from '../components/quotations/QuotationEdit';
 
 // Status helper
+// 明細行の単位候補
+const UNIT_OPTIONS = ['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'];
+
+// 未登録項目のハイライト（機種名・号機・アワーメーターで共通）
+const UNREGISTERED_FIELD_STYLE = { backgroundColor: '#fff8e1', borderColor: '#ffc107', borderWidth: '2px' };
+
 const getStatusStyle = (status: string) => {
     switch (status) {
         case 'received': return { bg: '#e2e8f0', color: '#1e293b', label: '仮登録' };
         case 'estimating': return { bg: '#fef08a', color: '#854d0e', label: '見積中' };
+        case 'carried_over': return { bg: '#ffe4e6', color: '#9f1239', label: '翌月繰越' };
         case 'in_progress': return { bg: '#dbeafe', color: '#1e40af', label: '作業中' }; // Legacy
         case 'on_rental': return { bg: '#d1fae5', color: '#065f46', label: '貸出中' };
         case 'completed': return { bg: '#dcfce7', color: '#166534', label: '完了' };
@@ -66,6 +74,7 @@ const Repairs: React.FC = () => {
     const [showQuotationEdit, setShowQuotationEdit] = useState(false);
     const [editingQuotationId, setEditingQuotationId] = useState<number | null>(null);
     const [lastEditedProjectId, setLastEditedProjectId] = useState<number | null>(null);
+    const lastEditedRowRef = useRef<HTMLTableRowElement | null>(null);
 
     // Form State
     const [formType, setFormType] = useState<'repair' | 'sales' | 'inspection' | 'maintenance' | 'rental' | 'other'>('repair');
@@ -139,6 +148,7 @@ const Repairs: React.FC = () => {
     const [allMachines, setAllMachines] = useState<CustomerMachine[]>([]);
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const supplierNames = useMemo(() => suppliers.map(s => s.name).filter(Boolean), [suppliers]);
     const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
     const [travelExpenses, setTravelExpenses] = useState<any[]>([]);
     const [internalReps, setInternalReps] = useState<{ id: number, name: string }[]>([]);
@@ -232,6 +242,7 @@ const Repairs: React.FC = () => {
         rentalCompensationFee?: number | null;
         rentalCompensationDays?: number | null;
         isTaxExempt?: boolean;
+        forcePrint?: boolean; // 請求単価0でも帳票に印字する（摘要行）
         purchaseDate?: string;
         listPrice?: number | null;
     }
@@ -245,13 +256,13 @@ const Repairs: React.FC = () => {
     }
 
     const DEFAULT_REPAIR_SECTIONS: SectionDef[] = [
-        { title: '自社工賃', type: 'labor', description: '請求単価0で登録した内容は明細には表示されません' },
-        { title: '外注費', type: 'outsourcing', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
-        { title: '発注部品・商品', type: 'part', subType: 'part', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '自社工賃', type: 'labor', description: '請求単価0の行は「単価0でも帳票に印字する」にチェックすると明細に印字されます' },
+        { title: '外注費', type: 'outsourcing', showSupplier: true, description: '請求単価0の行は「単価0でも帳票に印字する」にチェックすると明細に印字されます' },
+        { title: '発注部品・商品', type: 'part', subType: 'part', showSupplier: true, description: '請求単価0の行は「単価0でも帳票に印字する」にチェックすると明細に印字されます' },
         { title: '在庫部品・商品', type: 'inventory', description: '在庫管理に登録されている部品を選択します' },
-        { title: '回送費', type: 'forwarding', showSupplier: true, description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '回送費', type: 'forwarding', showSupplier: true, description: '請求単価0の行は「単価0でも帳票に印字する」にチェックすると明細に印字されます' },
         { title: '自社出張費', type: 'travel', description: '請求単価0で登録した内容は明細には表示されません' },
-        { title: '諸経費', type: 'expense', description: '請求単価0で登録した内容は明細には表示されません' },
+        { title: '諸経費', type: 'expense', description: '請求単価0の行は「単価0でも帳票に印字する」にチェックすると明細に印字されます' },
         { title: '値引き', type: 'discount', description: '値引き額はマイナスを付けずに入力してください。自動的に値引きとして計算されます。' },
         { title: 'その他', type: 'other', description: '請求単価0で登録した場合は、内容のみ明細に表示されます' }
     ];
@@ -506,11 +517,16 @@ const Repairs: React.FC = () => {
     }, [details]);
 
 
-    const loadProjects = async () => {
+    // 検索中に再読込すると検索結果が既定の一覧に置き換わり、見ていた案件が消えてしまうため、
+    // 現在の検索条件をそのまま引き継いで読み直す。
+    const loadProjects = async (query: string = searchQuery) => {
         setIsLoadingList(true);
         try {
+            const trimmed = query.trim();
             // Default to loading top 50 for performance
-            const data = await RepairService.getAll({ limit: 50 });
+            const data = trimmed
+                ? await RepairService.search(trimmed)
+                : await RepairService.getAll({ limit: 50 });
             setProjects(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to load projects', error);
@@ -550,17 +566,17 @@ const Repairs: React.FC = () => {
         init();
     }, []);
 
+    useEffect(() => {
+        if (!isFormOpen && lastEditedProjectId) {
+            lastEditedRowRef.current?.scrollIntoView({ block: 'nearest' });
+        }
+    }, [isFormOpen, lastEditedProjectId]);
+
     const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;
         setSearchQuery(query);
         try {
-            if (query.trim() === '') {
-                await loadProjects();
-            } else {
-                // Now uses backend search via Service
-                const results = await RepairService.search(query);
-                setProjects(results);
-            }
+            await loadProjects(query);
         } catch (error) {
             console.error('Search failed', error);
         }
@@ -802,7 +818,8 @@ const Repairs: React.FC = () => {
                         rentalBasicFee: Number(d.rentalBasicFee) || 0,
                         rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
                         rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
-                        isTaxExempt: d.isTaxExempt || false
+                        isTaxExempt: d.isTaxExempt || false,
+                        forcePrint: d.forcePrint || false
                     };
                 })
             };
@@ -852,14 +869,25 @@ const Repairs: React.FC = () => {
                 }
             }
 
-            loadProjects();
             if (selectedProjectId) {
+                // 一覧を丸ごと取り直すと並び順・検索結果が変わって行が動くため、
+                // 更新した1件だけを差し替えて位置を保つ。
+                try {
+                    const updated = await RepairService.getById(selectedProjectId);
+                    if (updated) {
+                        setProjects(prev => prev.map(p => (p.id === selectedProjectId ? { ...p, ...updated } : p)));
+                    }
+                } catch (refreshErr) {
+                    console.error('Failed to refresh the updated row', refreshErr);
+                }
+                setLastEditedProjectId(selectedProjectId);
                 await loadProjectDetails(selectedProjectId);
                 alert('更新しました。');
             } else {
+                // 新規登録は一覧に無い案件なので読み直す
+                await loadProjects();
                 if (projectId) {
                     setLastEditedProjectId(projectId);
-                    setTimeout(() => setLastEditedProjectId(null), 5000);
                 }
                 resetForm();
             }
@@ -903,10 +931,8 @@ const Repairs: React.FC = () => {
 
     const handleCloseForm = () => {
         if (selectedProjectId) {
+            // 直前に触った案件が分かるよう、次に別の案件を開くまで色を残す
             setLastEditedProjectId(selectedProjectId);
-            setTimeout(() => {
-                setLastEditedProjectId(null);
-            }, 5000);
         }
         setIsFormOpen(false);
     };
@@ -1025,6 +1051,7 @@ const Repairs: React.FC = () => {
                             rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
                             productId: d.productId || null,
                             isTaxExempt: d.isTaxExempt || false,
+                            forcePrint: d.forcePrint || false,
                             originalIndex: Date.now() + Math.random() // Unique initial key
                         } as DetailItem;
                     });
@@ -1215,6 +1242,7 @@ const Repairs: React.FC = () => {
                         rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
                         productId: d.productId || null,
                         isTaxExempt: d.isTaxExempt || false,
+                        forcePrint: d.forcePrint || false,
                         originalIndex: Date.now() + Math.random()
                     } as DetailItem;
                 });
@@ -1909,15 +1937,28 @@ const Repairs: React.FC = () => {
                                                 </td>
                                             )}
                                             <td style={{ padding: '0.25rem' }}>
-                                                <input
-                                                    type="text"
-                                                    className={styles.tableInput}
+                                                <textarea
+                                                    className={`${styles.tableInput} ${styles.contentTextarea}`}
                                                     value={detail.description}
                                                     onChange={(e) => handleDetailChange(detail.originalIndex, 'description', e.target.value)}
+                                                    rows={Math.min(6, Math.max(1, (detail.description || '').split('\n').length))}
                                                     placeholder={
-                                                        type === 'labor' ? '作業内容' : '詳細内容'
+                                                        type === 'labor' ? '作業内容（改行できます）' : '詳細内容（改行できます）'
                                                     }
                                                 />
+                                                {/* 請求単価0の行は既定で帳票に出ないため、摘要として印字するかを選べるようにする */}
+                                                {salesTotal === 0 && (
+                                                    <div style={{ marginTop: '4px' }}>
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem', color: '#475569' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={detail.forcePrint || false}
+                                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'forcePrint', e.target.checked)}
+                                                            />
+                                                            単価0でも帳票に印字する
+                                                        </label>
+                                                    </div>
+                                                )}
                                                 {type === 'other' && (
                                                     <div style={{ marginTop: '4px' }}>
                                                         <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem', color: '#475569' }}>
@@ -1935,20 +1976,14 @@ const Repairs: React.FC = () => {
                                     )}
                                     {showSupplier && (
                                         <td style={{ padding: '0.25rem' }}>
-                                            <input
-                                                type="text"
-                                                className={styles.tableInput}
-                                                style={{ width: '100%', minWidth: '120px' }}
+                                            <ComboBox
                                                 value={detail.supplier || ''}
-                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'supplier', e.target.value)}
-                                                list={`supplier-list-${detail.originalIndex}`}
+                                                options={supplierNames}
+                                                onChange={(val) => handleDetailChange(detail.originalIndex, 'supplier', val)}
+                                                inputClassName={styles.tableInput}
+                                                inputStyle={{ width: '100%', minWidth: '120px' }}
                                                 placeholder="仕入先"
                                             />
-                                            <datalist id={`supplier-list-${detail.originalIndex}`}>
-                                                {suppliers.map(s => (
-                                                    <option key={s.id} value={s.name} />
-                                                ))}
-                                            </datalist>
                                         </td>
                                     )}
                                     <td style={{ padding: '0.25rem' }}>
@@ -1967,25 +2002,18 @@ const Repairs: React.FC = () => {
                                             />
                                             {/* Unit Logic */}
                                             <div style={{ width: '75px', marginLeft: '4px' }}>
-                                                <input
-                                                    type="text"
-                                                    className={styles.tableInput}
-                                                    style={{ width: '100%', textAlign: 'center' }}
+                                                <ComboBox
                                                     value={detail.laborType === 'time' ? 'H' : (detail.laborType === 'fixed' ? '式' : (detail.laborType ?? '式'))}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
+                                                    options={UNIT_OPTIONS}
+                                                    onChange={(val) => {
                                                         let laborTypeVal = val;
                                                         if (val === 'H') laborTypeVal = 'time';
                                                         else if (val === '式') laborTypeVal = 'fixed';
                                                         handleDetailChange(detail.originalIndex, 'laborType', laborTypeVal);
                                                     }}
-                                                    list={`unit-list-${detail.originalIndex}`}
+                                                    inputClassName={styles.tableInput}
+                                                    inputStyle={{ width: '100%', textAlign: 'center' }}
                                                 />
-                                                <datalist id={`unit-list-${detail.originalIndex}`}>
-                                                    {['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'].map(u => (
-                                                        <option key={u} value={u} />
-                                                    ))}
-                                                </datalist>
                                             </div>
                                         </div>
                                     </td>
@@ -2113,9 +2141,10 @@ const Repairs: React.FC = () => {
                 const orderMap: Record<string, number> = {
                     'estimating': 1,
                     'received': 2,
-                    'in_progress': 3, // Legacy
-                    'completed': 4,
-                    'delivered': 5 // Legacy
+                    'carried_over': 3,
+                    'in_progress': 4, // Legacy
+                    'completed': 5,
+                    'delivered': 6 // Legacy
                 };
                 const aVal = orderMap[a.status] || 99;
                 const bVal = orderMap[b.status] || 99;
@@ -2201,12 +2230,13 @@ const Repairs: React.FC = () => {
                                 </td>
                                 {isWRental && (
                                     <td style={{ padding: '0.5rem' }}>
-                                        <Input
-                                            type="text"
+                                        <ComboBox
                                             value={detail.supplier || ''}
-                                            onChange={(e) => handleDetailChange(detail.originalIndex, 'supplier', e.target.value)}
+                                            options={supplierNames}
+                                            onChange={(val) => handleDetailChange(detail.originalIndex, 'supplier', val)}
+                                            inputClassName={styles.tableInput}
+                                            inputStyle={{ padding: '0.2rem', fontSize: '0.8rem', width: '100%' }}
                                             placeholder="仕入先"
-                                            style={{ padding: '0.2rem', fontSize: '0.8rem' }}
                                         />
                                     </td>
                                 )}
@@ -2388,6 +2418,7 @@ const Repairs: React.FC = () => {
                         <option value="all">すべてのステータス</option>
                         <option value="received">仮登録</option>
                         <option value="estimating">見積中</option>
+                        <option value="carried_over">翌月繰越</option>
                         <option value="completed">完了</option>
                     </select>
                 </div>
@@ -2438,9 +2469,13 @@ const Repairs: React.FC = () => {
                             displayProjects.map(project => (
                                 <tr 
                                     key={project.id} 
+                                    ref={project.id === lastEditedProjectId ? lastEditedRowRef : null}
                                     onClick={() => handleRowClick(project)} 
                                     style={{ cursor: 'pointer' }}
-                                    className={project.id === lastEditedProjectId ? styles.highlightRow : ''}
+                                    className={[
+                                        project.status === 'carried_over' ? styles.carriedOverRow : '',
+                                        project.id === lastEditedProjectId ? styles.highlightRow : ''
+                                    ].filter(Boolean).join(' ')}
                                 >
                                     <td><span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{project.projectNo || '-'}</span></td>
                                     <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
@@ -2708,6 +2743,7 @@ const Repairs: React.FC = () => {
                                                     >
                                                         <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
                                                         <option value="estimating" style={{ backgroundColor: '#fef08a', color: '#854d0e' }}>見積中</option>
+                                                        <option value="carried_over" style={{ backgroundColor: '#ffe4e6', color: '#9f1239' }}>翌月繰越</option>
                                                         {formType === 'rental' && <option value="on_rental" style={{ backgroundColor: '#d1fae5', color: '#065f46' }}>貸出中</option>}
                                                         <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
                                                     </select>
@@ -2831,7 +2867,13 @@ const Repairs: React.FC = () => {
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                                                         <div style={{ flex: 1 }}>
-                                                            <Input label="機種名" name="machineModel" value={formState.machineModel} onChange={handleInputChange} />
+                                                            <Input
+                                                                label="機種名"
+                                                                name="machineModel"
+                                                                value={formState.machineModel}
+                                                                onChange={handleInputChange}
+                                                                style={!formState.machineModel ? UNREGISTERED_FIELD_STYLE : undefined}
+                                                            />
                                                         </div>
                                                         <div style={{ flex: 1 }}>
                                                             <Input 
@@ -2839,7 +2881,7 @@ const Repairs: React.FC = () => {
                                                                 name="serialNumber" 
                                                                 value={formState.serialNumber} 
                                                                 onChange={handleInputChange} 
-                                                                style={(!!formState.machineModel && !formState.serialNumber) ? { backgroundColor: '#fff8e1', borderColor: '#ffc107', borderWidth: '2px' } : undefined}
+                                                                style={(!!formState.machineModel && !formState.serialNumber) ? UNREGISTERED_FIELD_STYLE : undefined}
                                                             />
                                                         </div>
                                                         <div style={{ width: '150px' }}>
@@ -2851,7 +2893,7 @@ const Repairs: React.FC = () => {
                                                                         value={formState.hourMeter}
                                                                         onChange={handleInputChange}
                                                                         placeholder="1234.5"
-                                                                        style={(!!formState.machineModel && !formState.hourMeter) ? { backgroundColor: '#fff8e1', borderColor: '#ffc107', borderWidth: '2px' } : undefined}
+                                                                        style={(!!formState.machineModel && !formState.hourMeter) ? UNREGISTERED_FIELD_STYLE : undefined}
                                                                     />
                                                                 </div>
                                                                 <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
@@ -2871,7 +2913,7 @@ const Repairs: React.FC = () => {
                                                                 value={formState.issueDescription} 
                                                                 onChange={handleInputChange} 
                                                                 required 
-                                                                style={{ minHeight: '80px' }}
+                                                                style={{ height: 'auto', minHeight: '70px', padding: '0.5rem' }}
                                                             />
                                                             <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書等の件名として複数行で印字されます。</div>
                                                         </div>
@@ -2884,41 +2926,53 @@ const Repairs: React.FC = () => {
                                     </div>
                                     
                                     
-                                    <div className={styles.summaryStats}>
-                                        <div style={{ textAlign: 'right', fontSize: '1.05rem', color: '#64748b' }}>
-                                            {formType === 'rental' ? (
-                                                <>
-                                                    <div>自社在庫レンタル: {totals.categoryTotals.part.sales.toLocaleString()}</div>
-                                                    <div>他社Wレンタル: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div>自社工賃: {totals.categoryTotals.labor.sales.toLocaleString()}</div>
-                                                    <div>自社出張費: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
-                                                    <div>部品・商品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
-                                                    <div>外注費: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
-                                                </>
-                                            )}
+                                    {/* 右カラム: 集計・社内メモ・全体備考。症状と同じ画面内に収めるため
+                                        メモと備考をここに移動している（13インチでもスクロール不要） */}
+                                    <div className={styles.rightColumn}>
+                                        <div className={styles.summaryStats}>
+                                            <div style={{ textAlign: 'right', fontSize: '1.05rem', color: '#64748b' }}>
+                                                {formType === 'rental' ? (
+                                                    <>
+                                                        <div>自社在庫レンタル: {totals.categoryTotals.part.sales.toLocaleString()}</div>
+                                                        <div>他社Wレンタル: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div>自社工賃: {totals.categoryTotals.labor.sales.toLocaleString()}</div>
+                                                        <div>自社出張費: {totals.categoryTotals.travel.sales.toLocaleString()}</div>
+                                                        <div>部品・商品: {totals.categoryTotals.part.sales.toLocaleString()}</div>
+                                                        <div>外注費: {totals.categoryTotals.outsourcing.sales.toLocaleString()}</div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: 'auto' }}>
+                                                <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>原価計: {totals.totalCost.toLocaleString()}円</div>
+                                                <div style={{ fontSize: '2rem', color: '#0f172a', lineHeight: '1.2' }}>請求計: {totals.totalSales.toLocaleString()}円</div>
+                                                <div style={{ fontSize: '1.2rem', color: '#10b981', marginTop: '0.5rem' }}>粗利額: {totals.grossProfit.toLocaleString()}円</div>
+                                                <div style={{ fontSize: '1.1rem' }}>粗利率: {Math.round(totals.profitRate)}%</div>
+                                            </div>
                                         </div>
-                                        <div style={{ textAlign: 'right', fontWeight: 'bold', marginLeft: 'auto' }}>
-                                            <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>原価計: {totals.totalCost.toLocaleString()}円</div>
-                                            <div style={{ fontSize: '2rem', color: '#0f172a', lineHeight: '1.2' }}>請求計: {totals.totalSales.toLocaleString()}円</div>
-                                            <div style={{ fontSize: '1.2rem', color: '#10b981', marginTop: '0.5rem' }}>粗利額: {totals.grossProfit.toLocaleString()}円</div>
-                                            <div style={{ fontSize: '1.1rem' }}>粗利率: {Math.round(totals.profitRate)}%</div>
+
+                                        <div className={styles.notesGrid}>
+                                            <Textarea
+                                                label="社内メモ (帳票には印字されません)"
+                                                name="internalMemo"
+                                                value={formState.internalMemo || ''}
+                                                onChange={handleInputChange}
+                                                placeholder="例: 要件確認中、〇〇部品の手配必要"
+                                                style={{ height: 'auto', minHeight: '80px', padding: '0.5rem' }}
+                                            />
+                                            <Textarea
+                                                label="全体備考"
+                                                name="notes"
+                                                value={formState.notes}
+                                                onChange={handleInputChange}
+                                                style={{ height: 'auto', minHeight: '80px', padding: '0.5rem' }}
+                                            />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className={styles.notesGrid}>
-                                    <Textarea 
-                                        label="社内メモ (帳票には印字されません)" 
-                                        name="internalMemo" 
-                                        value={formState.internalMemo || ''} 
-                                        onChange={handleInputChange} 
-                                        placeholder="例: 要件確認中、〇〇部品の手配必要" 
-                                    />
-                                    <Textarea label="全体備考" name="notes" value={formState.notes} onChange={handleInputChange} />
-                                </div>
 
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem', borderTop: '1px solid #e2e8f0', marginTop: '1rem' }}>
                                     <Button type="button" variant="outline" size="sm" onClick={openPastProjectsModal}>

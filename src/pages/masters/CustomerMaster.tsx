@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Edit, Trash2, X, Search } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { preventImplicitSubmit, isUnchanged } from '../../utils/formUtils';
 
 interface CustomerContact {
     id?: number;
@@ -37,7 +38,6 @@ interface Customer {
 
 const CustomerMaster: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
-    const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -61,6 +61,8 @@ const CustomerMaster: React.FC = () => {
         contacts: []
     });
     const [isLoading, setIsLoading] = useState(false);
+    // 編集画面を開いたときの内容。保存時に見比べて、変更が無ければ更新しない。
+    const originalFormData = useRef<Omit<Customer, 'id'> | null>(null);
     const { isAdmin } = useAuth();
 
     useEffect(() => {
@@ -75,7 +77,6 @@ const CustomerMaster: React.FC = () => {
                 const data = await res.json();
                 data.sort((a: Customer, b: Customer) => a.code.localeCompare(b.code));
                 setCustomers(data);
-                setFilteredCustomers(data);
             }
         } catch (error) {
             console.error('Failed to fetch customers', error);
@@ -84,21 +85,28 @@ const CustomerMaster: React.FC = () => {
         }
     };
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const query = e.target.value;
-        setSearchQuery(query);
-        const lowerQuery = query.toLowerCase();
-        setFilteredCustomers(
-            customers.filter(c =>
-                c.name.toLowerCase().includes(lowerQuery) ||
-                c.code.toLowerCase().includes(lowerQuery) ||
-                (c.type && c.type.toLowerCase().includes(lowerQuery))
-            )
+    // 一覧を読み直しても検索条件がそのまま効くよう、絞り込みは常に派生値として計算する
+    const filteredCustomers = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return customers;
+        return customers.filter(c =>
+            c.name.toLowerCase().includes(query) ||
+            c.code.toLowerCase().includes(query) ||
+            (c.type && c.type.toLowerCase().includes(query)) ||
+            (c.address && c.address.toLowerCase().includes(query)) ||
+            (c.phone && c.phone.toLowerCase().includes(query))
         );
-    };
+    }, [customers, searchQuery]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (editingId && isUnchanged(formData, originalFormData.current)) {
+            alert('更新データがありません');
+            setIsModalOpen(false);
+            return;
+        }
+
         try {
             const url = editingId
                 ? `${API_BASE_URL}/customers/${editingId}`
@@ -144,7 +152,7 @@ const CustomerMaster: React.FC = () => {
 
     const openEdit = (customer: Customer) => {
         setEditingId(customer.id);
-        setFormData({
+        const initial = {
             code: customer.code,
             name: customer.name,
             address: customer.address || '',
@@ -162,12 +170,15 @@ const CustomerMaster: React.FC = () => {
             postalCode: customer.postalCode || '',
             invoicePostalCode: customer.invoicePostalCode || '',
             contacts: customer.contacts || []
-        });
+        };
+        setFormData(initial);
+        originalFormData.current = initial;
         setIsModalOpen(true);
     };
 
     const openAdd = () => {
         setEditingId(null);
+        originalFormData.current = null;
         setFormData({
             code: '',
             name: '',
@@ -197,12 +208,31 @@ const CustomerMaster: React.FC = () => {
                     <Search className={styles.searchIcon} size={18} />
                     <input
                         type="text"
-                        placeholder="顧客名、コード、種別で検索..."
+                        placeholder="顧客名、コード、種別、住所、電話番号で検索..."
                         className={styles.searchInput}
                         value={searchQuery}
-                        onChange={handleSearch}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                fetchCustomers();
+                            }
+                        }}
                     />
                 </div>
+                {/* 入力するとその場で絞り込まれるが、検索欄が分かりにくいので
+                    最新データを取り直して検索し直すボタンも用意する */}
+                <Button icon={<Search size={18} />} onClick={fetchCustomers} disabled={isLoading}>
+                    検索
+                </Button>
+                <Button
+                    variant="secondary"
+                    icon={<X size={18} />}
+                    onClick={() => setSearchQuery('')}
+                    disabled={!searchQuery}
+                >
+                    クリア
+                </Button>
                 <Button icon={<Plus size={18} />} onClick={openAdd}>
                     新規登録
                 </Button>
@@ -224,7 +254,7 @@ const CustomerMaster: React.FC = () => {
                         {isLoading ? (
                             <tr><td colSpan={6} style={{ padding: '2rem' }}><LoadingSpinner /></td></tr>
                         ) : filteredCustomers.length === 0 ? (
-                            <tr><td colSpan={5} className={styles.emptyState}>データがありません</td></tr>
+                            <tr><td colSpan={6} className={styles.emptyState}>データがありません</td></tr>
                         ) : (
                             filteredCustomers.map(customer => (
                                 <tr key={customer.id}>
@@ -262,7 +292,7 @@ const CustomerMaster: React.FC = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className={styles.form}>
+                        <form onSubmit={handleSubmit} onKeyDown={preventImplicitSubmit} className={styles.form}>
                             
                             {/* --- 基本情報 --- */}
                             <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>

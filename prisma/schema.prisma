@@ -243,6 +243,8 @@ model ProjectDetail {
 
   date            DateTime? // Date of the expense/work (New)
   isTaxExempt     Boolean  @default(false)
+  // 摘要行: 請求単価が0でも帳票に内容を印字する（弥生の「摘要」相当）
+  forcePrint      Boolean  @default(false)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

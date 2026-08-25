@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
+import { isUnchanged } from '../../utils/formUtils';
 
 interface SystemSettings {
     defaultLaborRate: string;
@@ -20,6 +21,8 @@ const SystemSettingsMaster: React.FC = () => {
         defaultTravelCost: '1500'
     });
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    // 読み込んだ時点の設定。保存時に見比べて、変更が無ければ更新しない。
+    const originalSettings = useRef<typeof settings | null>(null);
 
     useEffect(() => {
         fetchSettings();
@@ -31,7 +34,11 @@ const SystemSettingsMaster: React.FC = () => {
             const res = await fetch(`${API_BASE_URL}/system-settings`);
             if (res.ok) {
                 const data = await res.json();
-                setSettings(prev => ({ ...prev, ...data }));
+                setSettings(prev => {
+                    const merged = { ...prev, ...data };
+                    originalSettings.current = merged;
+                    return merged;
+                });
             }
         } catch (error) {
             console.error('Failed to load settings', error);
@@ -44,6 +51,12 @@ const SystemSettingsMaster: React.FC = () => {
     };
 
     const handleSave = async () => {
+        if (isUnchanged(settings, originalSettings.current)) {
+            setMessage({ type: 'error', text: '更新データがありません' });
+            setTimeout(() => setMessage(null), 3000);
+            return;
+        }
+
         try {
             const res = await fetch(`${API_BASE_URL}/system-settings`, {
                 method: 'POST',
@@ -52,6 +65,7 @@ const SystemSettingsMaster: React.FC = () => {
             });
 
             if (res.ok) {
+                originalSettings.current = settings;
                 setMessage({ type: 'success', text: '設定を保存しました' });
                 setTimeout(() => setMessage(null), 3000);
             } else {
