@@ -27,6 +27,15 @@ import QuotationEdit from '../components/quotations/QuotationEdit';
 // 明細行の単位候補
 const UNIT_OPTIONS = ['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'];
 
+// 症状・社内メモ・全体備考の入力欄。画面の高さに合わせて伸縮させ、
+// 13インチでは詰めて表示し、大きい画面では余白を活かして行数を稼ぐ。
+const NOTE_FIELD_STYLE: React.CSSProperties = {
+    height: 'auto',
+    minHeight: 'clamp(64px, 9vh, 140px)',
+    padding: '0.5rem',
+    resize: 'vertical'
+};
+
 // 未登録項目のハイライト（機種名・号機・アワーメーターで共通）
 const UNREGISTERED_FIELD_STYLE = { backgroundColor: '#fff8e1', borderColor: '#ffc107', borderWidth: '2px' };
 
@@ -2694,7 +2703,7 @@ const Repairs: React.FC = () => {
                                 <div className={styles.summaryHeader}>
                                     <div className={styles.formGrid}>
                                             {/* Row 1: Type, Status */}
-                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div className={styles.formRow}>
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">案件タイプ</label>
                                                     <select
@@ -2751,7 +2760,7 @@ const Repairs: React.FC = () => {
                                             </div>
 
                                             {/* Row 2: Dates */}
-                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div className={styles.formRow}>
                                                 <div style={{ width: '160px' }}>
                                                     <Input
                                                         type="date"
@@ -2776,7 +2785,7 @@ const Repairs: React.FC = () => {
                                             </div>
 
                                             {/* Row 3: Project No & Internal Rep */}
-                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div className={styles.formRow}>
                                                 <div style={{ width: '160px' }}>
                                                     <Input
                                                         label="案件No."
@@ -2802,7 +2811,7 @@ const Repairs: React.FC = () => {
                                             </div>
 
                                             {/* Row 4: Customer & Customer Contact */}
-                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div className={styles.formRow}>
                                                 <div style={{ flex: 1, minWidth: '300px' }}>
                                                     <Input
                                                         label="顧客名"
@@ -2813,7 +2822,7 @@ const Repairs: React.FC = () => {
                                                         list="customer-list"
                                                         autoComplete="off"
                                                     />
-                                                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※未登録の場合は、保存時に新規顧客として自動登録されます</div>
+                                                    <div className={styles.fieldHint}>※未登録の場合は、保存時に新規顧客として自動登録されます</div>
                                                     <datalist id="customer-list">
                                                         {customers.map(c => <option key={c.id} value={c.name} />)}
                                                     </datalist>
@@ -2860,50 +2869,43 @@ const Repairs: React.FC = () => {
                                                                 </option>
                                                             ))}
                                                         </select>
-                                                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※機種名・シリアルは書類（請求書等）に印字されます</div>
+                                                        <div className={styles.fieldHint}>※機種名・シリアルは書類（請求書等）に印字されます</div>
                                                     </div>
                                                 )}
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                                                        <div style={{ flex: 1 }}>
+                                                <div className={styles.machineBlock}>
+                                                    <div className={styles.machineRow}>
+                                                        <Input
+                                                            label="機種名"
+                                                            name="machineModel"
+                                                            value={formState.machineModel}
+                                                            onChange={handleInputChange}
+                                                            style={!formState.machineModel ? UNREGISTERED_FIELD_STYLE : undefined}
+                                                        />
+                                                        <Input
+                                                            label="シリアル番号"
+                                                            name="serialNumber"
+                                                            value={formState.serialNumber}
+                                                            onChange={handleInputChange}
+                                                            style={(!!formState.machineModel && !formState.serialNumber) ? UNREGISTERED_FIELD_STYLE : undefined}
+                                                        />
+                                                        <div className={styles.hourMeterField}>
                                                             <Input
-                                                                label="機種名"
-                                                                name="machineModel"
-                                                                value={formState.machineModel}
+                                                                label="アワーメーター"
+                                                                name="hourMeter"
+                                                                value={formState.hourMeter}
                                                                 onChange={handleInputChange}
-                                                                style={!formState.machineModel ? UNREGISTERED_FIELD_STYLE : undefined}
+                                                                placeholder="1234.5"
+                                                                style={(!!formState.machineModel && !formState.hourMeter) ? UNREGISTERED_FIELD_STYLE : undefined}
                                                             />
-                                                        </div>
-                                                        <div style={{ flex: 1 }}>
-                                                            <Input 
-                                                                label="シリアル番号" 
-                                                                name="serialNumber" 
-                                                                value={formState.serialNumber} 
-                                                                onChange={handleInputChange} 
-                                                                style={(!!formState.machineModel && !formState.serialNumber) ? UNREGISTERED_FIELD_STYLE : undefined}
-                                                            />
-                                                        </div>
-                                                        <div style={{ width: '150px' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <div style={{ flex: 1 }}>
-                                                                    <Input
-                                                                        label="アワーメーター"
-                                                                        name="hourMeter"
-                                                                        value={formState.hourMeter}
-                                                                        onChange={handleInputChange}
-                                                                        placeholder="1234.5"
-                                                                        style={(!!formState.machineModel && !formState.hourMeter) ? UNREGISTERED_FIELD_STYLE : undefined}
-                                                                    />
-                                                                </div>
-                                                                <span style={{ paddingTop: '1.5rem', fontWeight: 500, color: '#4b5563' }}>hr</span>
-                                                            </div>
+                                                            <span className={styles.hourMeterUnit}>hr</span>
                                                         </div>
                                                     </div>
                                                     
                                                     {formType !== 'sales' && formType !== 'rental' && (
-                                                        <div>
+                                                        <div className={styles.issueField}>
                                                             <Textarea 
+                                                                className={styles.growNote}
                                                                 label={
                                                                     formType === 'repair' ? "症状・不具合内容 (必須)" :
                                                                     formType === 'inspection' ? "特定自主検査内容 (必須)" :
@@ -2913,9 +2915,9 @@ const Repairs: React.FC = () => {
                                                                 value={formState.issueDescription} 
                                                                 onChange={handleInputChange} 
                                                                 required 
-                                                                style={{ height: 'auto', minHeight: '70px', padding: '0.5rem' }}
+                                                                style={NOTE_FIELD_STYLE}
                                                             />
-                                                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>※請求書等の件名として複数行で印字されます。</div>
+                                                            <div className={styles.fieldHint}>※請求書等の件名として複数行で印字されます。</div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -2956,18 +2958,20 @@ const Repairs: React.FC = () => {
                                         <div className={styles.notesGrid}>
                                             <Textarea
                                                 label="社内メモ (帳票には印字されません)"
+                                                className={styles.growNote}
                                                 name="internalMemo"
                                                 value={formState.internalMemo || ''}
                                                 onChange={handleInputChange}
                                                 placeholder="例: 要件確認中、〇〇部品の手配必要"
-                                                style={{ height: 'auto', minHeight: '80px', padding: '0.5rem' }}
+                                                style={NOTE_FIELD_STYLE}
                                             />
                                             <Textarea
                                                 label="全体備考"
+                                                className={styles.growNote}
                                                 name="notes"
                                                 value={formState.notes}
                                                 onChange={handleInputChange}
-                                                style={{ height: 'auto', minHeight: '80px', padding: '0.5rem' }}
+                                                style={NOTE_FIELD_STYLE}
                                             />
                                         </div>
                                     </div>

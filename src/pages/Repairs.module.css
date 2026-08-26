@@ -267,12 +267,77 @@
 }
 
 .formGrid {
+    display: flex;
+    flex-direction: column;
+    /* 各行が自前で margin-bottom を持っているので gap は付けない */
+    gap: 0;
+    /* 左列の中身が右列（メモ・備考）に重ならないようにする */
+    min-width: 0;
+    min-height: 0;
+}
+
+/* 機種名の行と症状欄 */
+.machineBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+}
+
+.issueField {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* 基本情報の各入力行。13インチでも症状・メモ・備考が収まるよう余白は控えめ。 */
+.formRow {
+    display: flex;
     gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+/* 機種名 / シリアル番号 / アワーメーター */
+.machineRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 150px);
+    gap: 1rem;
+    align-items: end;
+}
+
+.hourMeterField {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.hourMeterField > :first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.hourMeterUnit {
+    /* 入力欄と同じ高さにして下端を揃える */
+    line-height: 40px;
+    font-weight: 500;
+    color: #4b5563;
+    white-space: nowrap;
+}
+
+.fieldHint {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .summaryHeader {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* minmax(0, 1fr) にしないと、中身の固有幅で列が押し広げられて重なる */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 2rem;
     margin-bottom: 1rem;
     background: #f8fafc;
@@ -296,11 +361,74 @@
     min-width: 0;
 }
 
-/* 症状と同じ画面内に収めるため縦積みにする */
+/* 症状と同じ画面内に収めるため縦積みにする。
+   高さは症状欄と同じ計算式にして、3つの入力欄の大きさを揃える。 */
 .notesGrid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: start;
     gap: 0.75rem;
+    min-height: 0;
+}
+
+.growNote {
+    min-height: 0;
+}
+
+/* 13インチノート（ブラウザのUI分を引くと 640〜700px 程度）でも
+   症状・社内メモ・全体備考が一画面に収まるよう、画面が低いときだけ詰める。 */
+@media (max-height: 850px) {
+    .summaryHeader {
+        padding: 0.5rem 0.75rem;
+        gap: 1.25rem;
+    }
+
+    .formRow {
+        margin-bottom: 0.4rem;
+    }
+
+    .machineBlock {
+        gap: 0.4rem;
+    }
+
+    .summaryHeader input,
+    .summaryHeader select {
+        height: 34px;
+    }
+
+    .summaryHeader label {
+        font-size: 0.8rem;
+    }
+
+    .notesGrid {
+        gap: 0.5rem;
+    }
+}
+
+/* さらに低い画面（1366x768 の実機でブラウザのUIを引いた高さ）向け */
+@media (max-height: 720px) {
+    .summaryHeader {
+        padding: 0.4rem 0.75rem;
+    }
+
+    .formRow {
+        margin-bottom: 0.25rem;
+    }
+
+    .machineBlock {
+        gap: 0.3rem;
+    }
+
+    .summaryHeader input,
+    .summaryHeader select {
+        height: 32px;
+    }
+
+    .fieldHint {
+        font-size: 0.65rem;
+        line-height: 1.2;
+    }
 }
 
 .detailTableWrapper {
