@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Plus, Search, Edit2, Trash2, Save, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import styles from '../Inventory.module.css';
 import { API_BASE_URL } from '../../config';
+import { preventImplicitSubmit, isUnchanged } from '../../utils/formUtils';
 
 interface SupplierContact {
     id?: number;
@@ -43,6 +44,8 @@ const SupplierMaster: React.FC = () => {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentSupplier, setCurrentSupplier] = useState<Partial<Supplier>>({});
+    // 編集画面を開いたときの内容。保存時に見比べて、変更が無ければ更新しない。
+    const originalSupplier = useRef<Partial<Supplier> | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -70,6 +73,13 @@ const SupplierMaster: React.FC = () => {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (currentSupplier.id && isUnchanged(currentSupplier, originalSupplier.current)) {
+            alert('更新データがありません');
+            setIsModalOpen(false);
+            return;
+        }
+
         try {
             const url = currentSupplier.id ? `${API_BASE_URL}/suppliers/${currentSupplier.id}` : `${API_BASE_URL}/suppliers`;
             const method = currentSupplier.id ? 'PUT' : 'POST';
@@ -133,7 +143,7 @@ const SupplierMaster: React.FC = () => {
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <Button icon={<Plus size={18} />} onClick={() => { setCurrentSupplier({}); setIsModalOpen(true); }}>
+                <Button icon={<Plus size={18} />} onClick={() => { setCurrentSupplier({}); originalSupplier.current = null; setIsModalOpen(true); }}>
                     新規登録
                 </Button>
             </div>
@@ -176,7 +186,7 @@ const SupplierMaster: React.FC = () => {
                                     <td>{supplier.email || '-'}</td>
                                     <td>
                                         <div className={styles.actions} style={{ justifyContent: 'center' }}>
-                                            <button className={styles.actionButton} onClick={() => { setCurrentSupplier(supplier); setIsModalOpen(true); }}>
+                                            <button className={styles.actionButton} onClick={() => { setCurrentSupplier(supplier); originalSupplier.current = supplier; setIsModalOpen(true); }}>
                                                 <Edit2 size={16} />
                                             </button>
                                             <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => handleDelete(supplier.id)}>
@@ -201,7 +211,7 @@ const SupplierMaster: React.FC = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleSave} className={styles.form}>
+                        <form onSubmit={handleSave} onKeyDown={preventImplicitSubmit} className={styles.form}>
                             
                             {/* --- 基本情報 --- */}
                             <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>

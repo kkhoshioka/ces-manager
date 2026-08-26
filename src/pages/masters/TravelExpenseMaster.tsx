@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, X, Save } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
+import { preventImplicitSubmit, isUnchanged } from '../../utils/formUtils';
 
 interface TravelExpense {
     id: number;
@@ -17,6 +18,8 @@ const TravelExpenseMaster: React.FC = () => {
     const [expenses, setExpenses] = useState<TravelExpense[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
+    // 編集画面を開いたときの内容。保存時に見比べて、変更が無ければ更新しない。
+    const originalFormData = useRef<Omit<TravelExpense, 'id'> | null>(null);
     const [formData, setFormData] = useState<Omit<TravelExpense, 'id'>>({
         area: '',
         fee: 0,
@@ -56,6 +59,12 @@ const TravelExpenseMaster: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (editingId && isUnchanged(formData, originalFormData.current)) {
+            alert('更新データがありません');
+            setIsModalOpen(false);
+            return;
+        }
         try {
             const url = editingId
                 ? `${API_BASE_URL}/travel-expenses/${editingId}`
@@ -94,16 +103,19 @@ const TravelExpenseMaster: React.FC = () => {
 
     const openEdit = (item: TravelExpense) => {
         setEditingId(item.id);
-        setFormData({
+        const initial = {
             area: item.area,
             fee: Number(item.fee),
             code: item.code || ''
-        });
+        };
+        setFormData(initial);
+        originalFormData.current = initial;
         setIsModalOpen(true);
     };
 
     const openAdd = () => {
         setEditingId(null);
+        originalFormData.current = null;
         setFormData({ area: '', fee: 0, code: '' });
         setIsModalOpen(true);
     };
@@ -202,7 +214,7 @@ const TravelExpenseMaster: React.FC = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className={styles.form}>
+                        <form onSubmit={handleSubmit} onKeyDown={preventImplicitSubmit} className={styles.form}>
                             <Input
                                 label="地区"
                                 value={formData.area}

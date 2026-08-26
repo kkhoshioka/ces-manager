@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
+import { preventImplicitSubmit, isUnchanged } from '../../utils/formUtils';
 
 interface ProductCategory {
     id: number;
@@ -33,6 +34,8 @@ const ProductTypeMaster: React.FC = () => {
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
+    // 編集画面を開いたときの内容。保存時に見比べて、変更が無ければ更新しない。
+    const originalFormData = useRef<{ section: string; code: string; name: string } | null>(null);
     const [formData, setFormData] = useState({ section: '', code: '', name: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [renameSectionModal, setRenameSectionModal] = useState<{ isOpen: boolean; oldSection: string; newSection: string }>({ isOpen: false, oldSection: '', newSection: '' });
@@ -61,6 +64,12 @@ const ProductTypeMaster: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (editingId && isUnchanged(formData, originalFormData.current)) {
+            alert('更新データがありません');
+            setIsModalOpen(false);
+            return;
+        }
         try {
             const url = editingId
                 ? `${API_BASE_URL}/categories/${editingId}`
@@ -192,11 +201,13 @@ const ProductTypeMaster: React.FC = () => {
 
     const openEdit = (category: ProductCategory) => {
         setEditingId(category.id);
-        setFormData({
+        const initial = {
             section: category.section,
             code: category.code || '',
             name: category.name
-        });
+        };
+        setFormData(initial);
+        originalFormData.current = initial;
         setIsModalOpen(true);
     };
 
@@ -215,6 +226,7 @@ const ProductTypeMaster: React.FC = () => {
             const nextNum = Math.max(0, ...numbers) + 1;
             code = `${prefix}-${nextNum.toString().padStart(2, '0')}`;
         }
+        originalFormData.current = null;
         setFormData({ section, code, name: '' });
         setIsModalOpen(true);
     };
@@ -347,7 +359,7 @@ const ProductTypeMaster: React.FC = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className={styles.form}>
+                        <form onSubmit={handleSubmit} onKeyDown={preventImplicitSubmit} className={styles.form}>
                             {/* Section Input with Datalist for suggestions */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#4b5563' }}>
@@ -407,7 +419,7 @@ const ProductTypeMaster: React.FC = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleRenameSectionSubmit} className={styles.form}>
+                        <form onSubmit={handleRenameSectionSubmit} onKeyDown={preventImplicitSubmit} className={styles.form}>
                             <Input
                                 label="新しい部門名"
                                 value={renameSectionModal.newSection}

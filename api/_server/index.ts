@@ -1152,6 +1152,7 @@ app.put('/api/projects/:id', async (req, res) => {
                         rentalCompensationDays: Number(detail.rentalCompensationDays) || 0,
                         laborType: detail.laborType || null,
                         isTaxExempt: detail.isTaxExempt === true || detail.isTaxExempt === 'true',
+                        forcePrint: detail.forcePrint === true || detail.forcePrint === 'true',
                         purchaseDate: detail.purchaseDate ? new Date(detail.purchaseDate) : null,
                         listPrice: detail.listPrice != null && detail.listPrice !== '' ? Number(detail.listPrice) : null
                     };

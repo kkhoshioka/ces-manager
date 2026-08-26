@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input';
 import { Plus, Trash2, X, Save } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
+import { preventImplicitSubmit } from '../../utils/formUtils';
 
 interface UserProfile {
     id: string;
@@ -195,7 +196,7 @@ const UserMaster: React.FC = () => {
                             </div>
                         )}
 
-                        <form onSubmit={handleCreate} className={styles.form}>
+                        <form onSubmit={handleCreate} onKeyDown={preventImplicitSubmit} className={styles.form}>
                             <div className={styles.formGroup}>
                                 <Input
                                     label="メールアドレス (必須)"
