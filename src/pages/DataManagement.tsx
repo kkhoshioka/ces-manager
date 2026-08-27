@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Download, Server, Database, Settings, Truck, Users, Package, Tags, FileSpreadsheet, RotateCcw, AlertCircle } from 'lucide-react';
+import { Download, Server, Database, Settings, Truck, Users, Package, Tags, FileSpreadsheet, Upload, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
 import { API_BASE_URL } from '../config';
@@ -115,8 +115,8 @@ const DataManagement: React.FC = () => {
         }
     };
 
-    const handleImport = async (modelId: string, file: File) => {
-        if (!window.confirm(`【警告】\n${modelId} のデータをインポートします。\n既存のデータIDが重複する場合、上書きされます。\nよろしいですか？`)) {
+    const handleImport = async (modelId: string, modelLabel: string, file: File) => {
+        if (!window.confirm(`${modelLabel}に CSV を取り込みます。\n\nファイル: ${file.name}\n\n同じデータがある場合は、CSV の内容で上書きされます。\nよろしいですか？`)) {
             return;
         }
 
@@ -232,7 +232,7 @@ const DataManagement: React.FC = () => {
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
-                                                    handleImport(model.id, file);
+                                                    handleImport(model.id, model.label, file);
                                                     e.target.value = ''; // Reset
                                                 }
                                             }}
@@ -240,10 +240,10 @@ const DataManagement: React.FC = () => {
                                         />
                                         <button
                                             disabled={loading === model.id}
-                                            className="flex items-center gap-2 px-4 py-2 bg-transparent border border-transparent rounded-lg text-sm font-medium text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all disabled:opacity-50"
+                                            className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all disabled:opacity-50"
                                         >
-                                            <RotateCcw className="w-4 h-4" />
-                                            復元
+                                            <Upload className="w-4 h-4" />
+                                            CSV取込
                                         </button>
                                     </div>
                                 </div>
