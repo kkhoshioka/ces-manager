@@ -3879,11 +3879,26 @@ app.post('/api/data/:model/import', upload.single('file'), async (req, res) => {
         // Users might want to restore deleted data or update existing.
         // Let's try to upsert loop for now. It's slower but safer relationally.
 
+        // 顧客マスターの取込では、担当者（名前・役職・携帯）も一緒に登録できるようにする。
+        // これらは Customer の列ではないので、取り出してから Prisma に渡す。
+        const contactColumns = ['contactName', 'contactPosition', 'contactMobile'] as const;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pickContact = (record: any) => {
+            const contact = {
+                name: record.contactName ?? null,
+                position: record.contactPosition ?? null,
+                mobile: record.contactMobile ?? null
+            };
+            contactColumns.forEach(key => delete record[key]);
+            return contact.name ? contact : null;
+        };
+
         await prisma.$transaction(async (tx) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const txModel: any = (tx as any)[(prismaModel as any).name]; // Access transactional model delegate
 
             for (const record of records) {
+                const contact = model === 'customers' ? pickContact(record) : null;
                 // Formatting for specific types based on model
                 // This is the tricky part of generic import.
                 // We'll try to cast known numeric fields.
@@ -3892,6 +3907,8 @@ app.post('/api/data/:model/import', upload.single('file'), async (req, res) => {
                 for (const key in record) {
                     if (key.endsWith('Id') && record[key] !== null) record[key] = Number(record[key]);
                     if ((key === 'id') && record[key] !== null && model !== 'profiles') record[key] = Number(record[key]); // Profile ID is string (UUID)
+                    // 新規行は id 列が空。null のまま渡すと作成に失敗するので落とす
+                    if (key === 'id' && record[key] === null) delete record[key];
                     if ((key === 'year' || key === 'month' || key === 'stockQuantity') && record[key] !== null) record[key] = Number(record[key]);
                     if ((key.includes('Price') || key.includes('Cost') || key.includes('Amount') || key === 'quantity') && record[key] !== null) {
                         // Decimals/Floats
@@ -3902,6 +3919,9 @@ app.post('/api/data/:model/import', upload.single('file'), async (req, res) => {
                     if (record[key] === 'false') record[key] = false;
                     // Date strings (ISO) are usually auto-parsed by Prisma Client if they match standard
                 }
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                let saved: any = null;
 
                 // If ID exists, try upsert
                 if (record.id) {
@@ -3916,7 +3936,7 @@ app.post('/api/data/:model/import', upload.single('file'), async (req, res) => {
                     // We use a try-catch per record or check existence?
                     // Prisma Upsert requires a unique constraint. ID is usually unique.
                     try {
-                        await prismaModel.upsert({
+                        saved = await prismaModel.upsert({
                             where,
                             update: record,
                             create: record
@@ -3925,14 +3945,33 @@ app.post('/api/data/:model/import', upload.single('file'), async (req, res) => {
                         console.warn(`Upsert failed for ${model} ID ${record.id}, trying naive create`, e);
                         // Fallback?
                     }
+                } else if (record.code && ['customers', 'suppliers', 'products', 'categories'].includes(model)) {
+                    // id が無い新規行。コードが一意なマスターは、同じコードがあれば更新に回す
+                    // （同じファイルを二度取り込んでも重複を作らない）
+                    saved = await prismaModel.upsert({
+                        where: { code: record.code },
+                        update: record,
+                        create: record
+                    });
                 } else {
                     // Create
-                    await prismaModel.create({ data: record });
+                    saved = await prismaModel.create({ data: record });
+                }
+
+                // 同じ名前の担当者が既にいる場合は二重に作らない
+                if (contact && saved?.id) {
+                    const existing = await prisma.customerContact.findFirst({
+                        where: { customerId: saved.id, name: contact.name }
+                    });
+                    if (!existing) {
+                        await prisma.customerContact.create({ data: { ...contact, customerId: saved.id } });
+                    }
                 }
             }
         }, {
-            maxWait: 5000, // 5s max wait
-            timeout: 20000 // 20s timeout
+            maxWait: 20000,
+            // 数百件をまとめて取り込めるように長めにする（既定の 20 秒では途中で切れる）
+            timeout: 180000
         });
 
         res.json({ success: true, count: records.length });
