@@ -2973,6 +2973,12 @@ const Repairs: React.FC = () => {
                                                 onChange={handleInputChange}
                                                 style={NOTE_FIELD_STYLE}
                                             />
+                                            {/* 症状欄の下のヒント文と同じ高さの見えないスペーサー。
+                                                全体備考の下端を症状欄の下端に揃えるために置いている。 */}
+                                            {((formType === 'repair' || formType === 'inspection' || formType === 'maintenance' || formState.machineModel)
+                                                && formType !== 'sales' && formType !== 'rental') && (
+                                                <div className={`${styles.fieldHint} ${styles.notesHintSpacer}`} aria-hidden="true">{'\u3000'}</div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

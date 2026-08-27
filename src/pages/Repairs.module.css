@@ -362,18 +362,33 @@
 }
 
 /* 症状と同じ画面内に収めるため縦積みにする。
-   高さは症状欄と同じ計算式にして、3つの入力欄の大きさを揃える。 */
+   余った高さは2つの入力欄に配って、全体備考の下端を症状欄の下端に揃える。 */
 .notesGrid {
+    --notes-gap: 0.75rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    align-content: start;
-    gap: 0.75rem;
+    grid-template-rows: 1fr 1fr;
+    /* 右カラムの余白を吸収して、左カラムの症状欄と下端を合わせる */
+    flex: 1;
+    gap: var(--notes-gap);
     min-height: 0;
 }
 
 .growNote {
     min-height: 0;
+}
+
+/* 入力欄をラベル以外の高さいっぱいに広げる（notesGrid が伸びたときに追従させる） */
+.growNote textarea {
+    flex: 1;
+}
+
+/* 左カラムの症状欄の下にあるヒント文と同じ高さの見えないスペーサー。
+   これが無いとヒント文の分だけ全体備考の下端が下にずれる。 */
+.notesHintSpacer {
+    visibility: hidden;
+    /* notesGrid の gap を打ち消して、ヒント文の margin-top と同じ間隔にする */
+    margin-top: calc(2px - var(--notes-gap));
 }
 
 /* 13インチノート（ブラウザのUI分を引くと 640〜700px 程度）でも
@@ -402,7 +417,7 @@
     }
 
     .notesGrid {
-        gap: 0.5rem;
+        --notes-gap: 0.5rem;
     }
 }
 
@@ -449,6 +464,10 @@
     .notesGrid {
         grid-template-columns: 1fr;
         gap: 1rem;
+    }
+
+    .notesGrid {
+        --notes-gap: 1rem;
     }
 
     .rightColumn {
