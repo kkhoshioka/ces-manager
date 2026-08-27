@@ -30,3 +30,6 @@ verify_*.ts
 *.tsbuildinfo
 api/_build
 # *.d.ts # Commented out to be safe, but ideally we ignore generated ones.
+
+# 顧客の個人情報を含む取込用リスト（リポジトリには入れない）
+顧客マスターリスト.csv
