@@ -11,6 +11,7 @@ export interface Customer {
     invoiceMailingAddress?: string | null;
     paymentTerms?: string | null;
     contactPerson?: string | null;
+    notes?: string | null;
     createdAt: string;
     updatedAt: string;
     customerMachines?: CustomerMachine[];

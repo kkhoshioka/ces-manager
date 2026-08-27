@@ -11,7 +11,8 @@
  *   DATABASE_URL=... npx tsx scripts/import_customer_master.ts
  *   DATABASE_URL=... npx tsx scripts/import_customer_master.ts --apply
  *
- * --with-type を付けると、得意先種別が空の会社に区分（E/D/G/O/Z）由来の種別も入れる。
+ * 得意先種別が空の会社には、区分（E/D/G/O/Z）から決めた種別も入れる。
+ * 入れたくないときは --no-type を付ける。
  */
 import { PrismaClient } from '@prisma/client';
 import { parse } from 'csv-parse/sync';
@@ -23,7 +24,7 @@ const prisma = new PrismaClient();
 
 const CSV_FILE = process.env.CUSTOMER_CSV ?? '顧客マスターリスト.csv';
 
-/** 区分（Excel のシート名）→ 得意先種別。--with-type のときだけ使う */
+/** 区分（Excel のシート名）→ 得意先種別。空文字の区分には種別を入れない */
 const TYPE_BY_SECTION: Record<string, string> = {
     E: 'ユーザー',
     D: 'ディーラー',
@@ -78,6 +79,7 @@ type CustomerFields = {
     contactPerson?: string;
     paymentTerms?: string;
     invoiceRegistrationNumber?: string;
+    notes?: string;
 };
 
 /** 「代表者」欄は代表者、それ以外（担当者・所長など）は担当者として扱う */
@@ -91,7 +93,8 @@ const fieldsFromRow = (row: CsvRow, withType: boolean): CustomerFields => {
         fax: row.fax,
         email: row.email,
         paymentTerms: row.paymentTerms,
-        invoiceRegistrationNumber: row.invoiceRegistrationNumber
+        invoiceRegistrationNumber: row.invoiceRegistrationNumber,
+        notes: row.note
     };
 
     if (isRepresentative(row)) {
@@ -119,7 +122,7 @@ const contactFromRow = (row: CsvRow) => {
 
 async function main() {
     const apply = process.argv.includes('--apply');
-    const withType = process.argv.includes('--with-type');
+    const withType = !process.argv.includes('--no-type');
     const csvPath = path.resolve(process.cwd(), CSV_FILE);
 
     if (!fs.existsSync(csvPath)) {
@@ -171,7 +174,7 @@ async function main() {
         select: {
             id: true, code: true, name: true, type: true, postalCode: true, address: true,
             phone: true, fax: true, email: true, representativeName: true, representativePhone: true,
-            contactPerson: true, paymentTerms: true, invoiceRegistrationNumber: true,
+            contactPerson: true, paymentTerms: true, invoiceRegistrationNumber: true, notes: true,
             contacts: { select: { id: true } }
         }
     });
@@ -283,12 +286,6 @@ async function main() {
     ambiguous.forEach(line => console.log(`  ${line}`));
 
     console.log(`\n--- 変更なし: ${unchanged.length} 件 ---`);
-
-    const notes = rows.filter(r => r.note);
-    if (notes.length > 0) {
-        console.log(`\n--- CSV の備考欄（自動では取り込まない）: ${notes.length} 件 ---`);
-        notes.forEach(r => console.log(`  ${r.code} ${r.name}: ${r.note}`));
-    }
 
     if (!apply) {
         console.log('\n※ dry-run のため書き込んでいません。実行するには --apply を付けてください。');

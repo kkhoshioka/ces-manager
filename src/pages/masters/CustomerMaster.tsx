@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, X, Search } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Textarea from '../../components/ui/Textarea';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,6 +34,7 @@ interface Customer {
     representativePhone?: string | null;
     postalCode?: string | null;
     invoicePostalCode?: string | null;
+    notes?: string | null;
     contacts?: CustomerContact[];
 }
 
@@ -58,6 +60,7 @@ const CustomerMaster: React.FC = () => {
         representativePhone: '',
         postalCode: '',
         invoicePostalCode: '',
+        notes: '',
         contacts: []
     });
     const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +97,8 @@ const CustomerMaster: React.FC = () => {
             c.code.toLowerCase().includes(query) ||
             (c.type && c.type.toLowerCase().includes(query)) ||
             (c.address && c.address.toLowerCase().includes(query)) ||
-            (c.phone && c.phone.toLowerCase().includes(query))
+            (c.phone && c.phone.toLowerCase().includes(query)) ||
+            (c.notes && c.notes.toLowerCase().includes(query))
         );
     }, [customers, searchQuery]);
 
@@ -196,6 +200,7 @@ const CustomerMaster: React.FC = () => {
             representativePhone: '',
             postalCode: '',
             invoicePostalCode: '',
+            notes: '',
             contacts: []
         });
         setIsModalOpen(true);
@@ -208,7 +213,7 @@ const CustomerMaster: React.FC = () => {
                     <Search className={styles.searchIcon} size={18} />
                     <input
                         type="text"
-                        placeholder="顧客名、コード、種別、住所、電話番号で検索..."
+                        placeholder="顧客名、コード、種別、住所、電話番号、備考で検索..."
                         className={styles.searchInput}
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
@@ -501,6 +506,18 @@ const CustomerMaster: React.FC = () => {
                                         ))}
                                     </div>
                                 )}
+                            </div>
+
+                            {/* --- 備考 --- */}
+                            <div style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', color: '#334155', borderBottom: '2px solid #cbd5e1', paddingBottom: '0.5rem' }}>備考</h3>
+                                <Textarea
+                                    label="備考 (帳票には印字されません)"
+                                    value={formData.notes || ''}
+                                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                                    placeholder="例: 30万円以上はでんさい　振出日より125日サイト"
+                                    style={{ height: 'auto', minHeight: '90px', padding: '0.5rem' }}
+                                />
                             </div>
 
                             <div className={styles.formActions}>

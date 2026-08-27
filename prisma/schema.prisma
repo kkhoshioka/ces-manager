@@ -32,6 +32,7 @@ model Customer {
   invoiceMailingAddress     String?
   paymentTerms              String? // 支払条件
   contactPerson             String? // 担当者名
+  notes                     String? // 備考（帳票には印字しない社内向けメモ）
   closingDate               String? // 締め日 (e.g., "20", "99" for end of month)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
