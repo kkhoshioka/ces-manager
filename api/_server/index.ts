@@ -3859,6 +3859,8 @@ app.post('/api/data/:model/import', upload.single('file'), async (req, res) => {
         const records: any[] = parse(csvContent, {
             columns: true,
             skip_empty_lines: true,
+            // エクスポートした CSV は BOM 付きなので、外さないと先頭列が「\ufeffid」になってしまう
+            bom: true,
             cast: (value, context) => {
                 if (value === '') return null;
                 // Basic type inference if needed, but Prisma usually handles string conversion well enough 
