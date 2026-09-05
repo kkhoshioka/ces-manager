@@ -776,7 +776,7 @@ async function checkBillingLock(tx: any, customerId: number, completionDate: Dat
                 throw {
                     isBillingLock: true,
                     isHardLock: true,
-                    message: `より新しい月（${ny}年${nm}月）の請求が既に締められているため、${year}年${month}月の締めを解除できません。先に新しい月の締めを解除してください。`
+                    message: `より新しい月（${ny}年${nm}月）の請求が既に締められているため、${year}年${month}月の締めを解除できません。\n「月次請求書発行」画面で${ny}年${nm}月を表示し、「締め解除」ボタンで新しい月から順に解除してください。`
                 };
             }
             
@@ -884,6 +884,15 @@ app.post('/api/projects', async (req, res) => {
 
         const isCompleted = data.status === 'completed' || data.status === 'delivered';
 
+        // 明細の日付・数値は文字列で届くので、更新時と同じ形に整えてから登録する
+        const normalizedDetails = Array.isArray(details)
+            ? details.map((d: Record<string, any>) => ({
+                ...d,
+                purchaseDate: d.purchaseDate ? new Date(d.purchaseDate) : null,
+                listPrice: d.listPrice != null && d.listPrice !== '' ? Number(d.listPrice) : null
+            }))
+            : details;
+
         const project = await prisma.$transaction(async (tx) => {
             if (isCompleted) {
                 const compDate = data.completionDate ? new Date(data.completionDate) : new Date();
@@ -905,7 +914,7 @@ app.post('/api/projects', async (req, res) => {
                     sectionOrderJson: data.sectionOrderJson || null,
                     customer: { connect: { id: Number(customerId) } },
                     ...(customerMachineId && { customerMachine: { connect: { id: Number(customerMachineId) } } }),
-                    ...(details && { details: { create: details } })
+                    ...(normalizedDetails && { details: { create: normalizedDetails } })
                 },
                 include: {
                     customer: true,
@@ -1866,8 +1875,8 @@ app.get('/api/dashboard/sales', async (req, res) => {
                 } else if (detail.product && detail.product.productCategory) {
                     label = detail.product.productCategory.section || '未分類';
                 } else {
-                    // Part without link? Or Other?
-                    label = '部品・他';
+                    // 部門が選ばれていない部品・商品の行
+                    label = '部品販売';
                 }
 
                 if (!summary.categories[label]) {
@@ -2064,7 +2073,8 @@ app.get('/api/dashboard/details', async (req, res) => {
                 } else if (detail.product && detail.product.productCategory) {
                     label = detail.product.productCategory.section || '未分類';
                 } else {
-                    label = '部品・他';
+                    // 部門が選ばれていない部品・商品の行
+                    label = '部品販売';
                 }
 
                 if (label === category) {
@@ -3306,6 +3316,94 @@ app.post('/api/invoices/batch-issue', async (req, res) => {
     }
 });
 
+// 締め解除。確定済みの月次請求を「未確定」に戻して、案件の編集・ステータス変更をできるようにする。
+// customerId を渡せば1社だけ、渡さなければ closingDate で絞った全社が対象。
+app.post('/api/invoices/batch-unissue', async (req, res) => {
+    try {
+        const { year, month, closingDate, customerId } = req.body;
+
+        if (!year || !month) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const y = Number(year);
+        const m = Number(month);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const whereClause: any = {};
+        if (customerId) {
+            whereClause.id = Number(customerId);
+        } else if (closingDate && closingDate !== 'all') {
+            if (closingDate === 'others') {
+                whereClause.NOT = { closingDate: { in: ['5', '10', '15', '20', '25', '99'] } };
+            } else {
+                whereClause.closingDate = closingDate;
+            }
+        }
+
+        const customers = await prisma.customer.findMany({
+            where: whereClause,
+            select: { id: true, name: true }
+        });
+
+        if (customers.length === 0) {
+            return res.json({ count: 0, message: 'No customers found' });
+        }
+
+        const customerIds = customers.map(c => c.id);
+
+        // より新しい月が締め済みのまま古い月を開けると、請求の繰越計算が合わなくなる。
+        // 新しい月から順に解除してもらうため、残っている場合は解除せずに知らせる。
+        const newerMonthFilter = {
+            customerId: { in: customerIds },
+            OR: [
+                { year: { gt: y } },
+                { year: y, month: { gt: m } }
+            ]
+        };
+
+        const [newerStatus, newerBilling] = await Promise.all([
+            prisma.monthlyBillStatus.findFirst({
+                where: { ...newerMonthFilter, status: 'issued' },
+                orderBy: [{ year: 'asc' }, { month: 'asc' }],
+                include: { customer: { select: { name: true } } }
+            }),
+            prisma.monthlyBilling.findFirst({
+                where: { ...newerMonthFilter, isClosed: true },
+                orderBy: [{ year: 'asc' }, { month: 'asc' }],
+                include: { customer: { select: { name: true } } }
+            })
+        ]);
+
+        const newerClosed = newerStatus || newerBilling;
+        if (newerClosed) {
+            return res.status(409).json({
+                error: 'NEWER_MONTH_CLOSED',
+                message: `より新しい月（${newerClosed.year}年${newerClosed.month}月／${newerClosed.customer?.name ?? ''}）の請求が確定済みのため、${y}年${m}月の締めを解除できません。新しい月から順に解除してください。`,
+                newerYear: newerClosed.year,
+                newerMonth: newerClosed.month
+            });
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const status = await tx.monthlyBillStatus.updateMany({
+                where: { year: y, month: m, customerId: { in: customerIds } },
+                data: { status: 'draft', issuedAt: null }
+            });
+            const billing = await tx.monthlyBilling.updateMany({
+                where: { year: y, month: m, customerId: { in: customerIds } },
+                data: { isClosed: false }
+            });
+            return { status: status.count, billing: billing.count };
+        }, { maxWait: 15000, timeout: 60000 });
+
+        res.json({ success: true, count: result.status, billingCount: result.billing });
+    } catch (error) {
+        console.error('Batch Unissue Error:', error);
+        res.status(500).json({ error: 'Failed to unissue' });
+    }
+});
+
 // Get Sales Management Report (Aggregated by Customer)
 app.get('/api/dashboard/sales-management', async (req, res) => {
     try {
@@ -3462,17 +3560,26 @@ app.get('/api/dashboard/sales-management', async (req, res) => {
             const tax = Math.floor(taxableSubtotal * 0.1);
             const totalWithTax = Number(project.totalAmount) + tax;
 
+            // 件名は「分類 → 内容 → 機種名」の順で組み立てる。
+            // 内容（症状・不具合内容）の先頭行を使い、備考は含めない。
+            const typeLabel =
+                project.type === 'repair' ? '修理' :
+                project.type === 'rental' ? 'レンタル' :
+                project.type === 'inspection' ? '特定自主検査' :
+                project.type === 'maintenance' ? '整備' : '販売';
+            const summary = (project.notes || '').split('\n\n備考:')[0].split('\n')[0].trim();
+            const machineName = project.machineModel || project.customerMachine?.machineModel || '';
+            const title = [`【${typeLabel}】`, summary, machineName]
+                .filter(Boolean)
+                .join(' ')
+                .trim();
+
             // Formatting for FE
             const p = {
                 id: project.id,
                 date: project.completionDate || project.createdAt,
                 type: project.type,
-                title: `${project.machineModel || project.customerMachine?.machineModel || ''} ${
-                    project.type === 'repair' ? '修理' : 
-                    project.type === 'rental' ? 'レンタル' : 
-                    project.type === 'inspection' ? '特定自主検査' : 
-                    project.type === 'maintenance' ? '整備' : '販売'
-                }`.trim(),
+                title,
                 serialNumber: project.serialNumber || project.customerMachine?.serialNumber,
                 amount: totalWithTax,
                 status: project.status,
@@ -3560,8 +3667,25 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
         // Months: 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6
         const months = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
 
-        // Define Categories
-        const salesCategories = ["新車販売", "中古車販売", "アタッチメント販売", "レンタル", "修理", "部品・他", "美容品販売"];
+        // 売上区分。商品種別マスターの「部門」と同じ名前で並べる。
+        // 旧名「部品・他」は「部品販売」に読み替えるので、マスターを改称する前でも同じ行に集まる。
+        const SALES_CATEGORY_ALIASES: Record<string, string> = { '部品・他': '部品販売' };
+        const normalizeSalesLabel = (label: string) => SALES_CATEGORY_ALIASES[label] || label;
+
+        const baseSalesCategories = ["新車販売", "中古車販売", "アタッチメント販売", "部品販売", "レンタル", "修理", "美容品販売"];
+
+        // マスターに独自の部門が増えていても行が消えないよう、登録済みの部門も足しておく
+        const masterCategories = await prisma.productCategory.findMany({
+            select: { section: true },
+            orderBy: { sortOrder: 'asc' }
+        });
+        const salesCategories = [...baseSalesCategories];
+        const addSalesCategory = (name: string) => {
+            if (name && !salesCategories.includes(name)) salesCategories.push(name);
+        };
+        masterCategories.forEach(({ section }) => addSalesCategory(normalizeSalesLabel(section || '')));
+        addSalesCategory('その他'); // どの区分にも当てはまらない分の受け皿
+
         const costCategories = ["商品仕入", "レンタル仕入", "外注費", "材料費", "荷造運賃", "その他", "美容品仕入"];
 
         // Helper to get month key: "YYYY-M"
@@ -3603,21 +3727,14 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                 const sales = qty * Number(d.unitPrice);
                 const cost = qty * Number(d.unitCost || 0);
 
-                // Categorize
-                let label = '未分類';
-                // Try ProductCategory first
-                if (d.category?.section) label = d.category.section;
-                else if (d.product?.productCategory?.section) label = d.product.productCategory.section;
-                else {
-                    // Fallback mapping based on lineType
-                    // "labor", "travel", "outsourcing" -> usually "修理" related in simplified logic,
-                    // BUT user wants specific rows.
-                    // Let's rely on Section names matching the hardcoded categories primarily.
-                    // If no section, map "labor/travel" -> "修理"?
-                    if (d.lineType === 'labor' || d.lineType === 'travel') label = '修理';
-                    else if (d.lineType === 'part' || d.lineType === 'inventory') label = '部品・他'; // Default part
-                    else label = '部品・他';
-                }
+                // 明細の「部門」で振り分ける。部門が選ばれていない行は明細区分から推定する。
+                let rawLabel = '';
+                if (d.category?.section) rawLabel = d.category.section;
+                else if (d.product?.productCategory?.section) rawLabel = d.product.productCategory.section;
+                else if (d.lineType === 'labor' || d.lineType === 'travel') rawLabel = '修理';
+                else rawLabel = '部品・他'; // 部品・商品・外注などの既定。下で「部品販売」に読み替わる。
+
+                const label = normalizeSalesLabel(rawLabel);
 
                 // Map label to Sales/Cost categories
                 // If label matches a Sales Category, add to Sales.
@@ -3634,7 +3751,8 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                 //   If Category is "レンタル", sales -> "レンタル", cost -> "レンタル仕入".
                 //   If Category is "修理", sales -> "修理", cost -> "材料費" or "外注費" (if outsourcing).
 
-                // Refined Logic for Cost Mapping:
+                // 原価の振り分け。売上区分の名前ではなく、読み替え前の部門名で判断する。
+                // （「部品・他」を「部品販売」に改称しても原価が商品仕入に移らないようにするため）
                 let costLabel = 'その他';
 
                 if (d.lineType === 'forwarding') {
@@ -3642,10 +3760,12 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                 } else if (d.lineType === 'outsourcing') {
                     costLabel = '外注費';
                 } else if (d.lineType === 'part' || d.lineType === 'inventory') {
-                    if (label.includes('販売')) {
-                        costLabel = '商品仕入';
-                    } else if (label === 'レンタル') {
+                    if (rawLabel === '部品・他' || rawLabel === '部品販売') {
+                        costLabel = '材料費';
+                    } else if (rawLabel === 'レンタル') {
                         costLabel = 'レンタル仕入';
+                    } else if (rawLabel.includes('販売')) {
+                        costLabel = '商品仕入';
                     } else {
                         costLabel = '材料費';
                     }
@@ -3653,11 +3773,10 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                     costLabel = 'その他';
                 }
 
-                // Special handling for predefined names matching exact categories
                 if (salesCategories.includes(label)) {
                     monthlyData[key].sales[label] += sales;
                 } else {
-                    monthlyData[key].sales['部品・他'] += sales; // Fallback
+                    monthlyData[key].sales['その他'] += sales; // 該当する区分がない場合
                 }
 
                 if (costCategories.includes(costLabel)) {

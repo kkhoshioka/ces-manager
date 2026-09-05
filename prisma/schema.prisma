@@ -159,7 +159,8 @@ model Project {
   machineModel      String?
   serialNumber      String?
   hourMeter         String? // Snapshot of hour meter at time of project
-  
+  repairLocation    String? // 修理場所（納品書にのみ印字。請求書には出さない）
+
   orderDate         DateTime?
   completionDate    DateTime?
   status            String    @default("received") // received, diagnosing, in_progress, completed, delivered

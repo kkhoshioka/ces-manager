@@ -34,6 +34,7 @@ interface Project {
     machineModel: string;
     serialNumber: string;
     hourMeter?: string | null;
+    repairLocation?: string | null;
     customerContactName?: string | null;
     internalRep?: string | null;
     orderDate?: Date | null;

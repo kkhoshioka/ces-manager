@@ -30,9 +30,13 @@ const AnnualSummary: React.FC = () => {
   const months = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
   const displayMonths = months.map(m => `${m}月`);
 
-  // Fixed categories
-  const salesCategories = ["新車販売", "中古車販売", "アタッチメント販売", "レンタル", "修理", "部品・他", "美容品販売"];
-  const costCategories = ["商品仕入", "レンタル仕入", "外注費", "材料費", "荷造運賃", "その他", "美容品仕入"];
+  // 表示する売上・原価の区分。行の並びはサーバー側（＝商品種別マスターの部門）に合わせるため、
+  // 取得したデータのキーをそのまま使う。まだデータが無いときだけ既定の並びを出す。
+  const defaultSalesCategories = ["新車販売", "中古車販売", "アタッチメント販売", "部品販売", "レンタル", "修理", "美容品販売", "その他"];
+  const defaultCostCategories = ["商品仕入", "レンタル仕入", "外注費", "材料費", "荷造運賃", "その他", "美容品仕入"];
+
+  const salesCategories = data.length > 0 ? Object.keys(data[0].sales) : defaultSalesCategories;
+  const costCategories = data.length > 0 ? Object.keys(data[0].cost) : defaultCostCategories;
 
   // More comprehensive SGA list based on seed
   const sgaBase = [

@@ -47,6 +47,7 @@ export interface Repair {
     machineModel?: string | null;
     serialNumber?: string | null;
     hourMeter?: string | null;
+    repairLocation?: string | null;
     customerContactName?: string | null;
     internalMemo?: string | null;
     internalRep?: string | null;

@@ -64,6 +64,9 @@ const CustomerMaster: React.FC = () => {
         contacts: []
     });
     const [isLoading, setIsLoading] = useState(false);
+    // 直前に更新した得意先。次に別の行を編集するまで色を残して、どれを直したか分かるようにする。
+    const [lastEditedId, setLastEditedId] = useState<number | null>(null);
+    const lastEditedRowRef = useRef<HTMLTableRowElement | null>(null);
     // 編集画面を開いたときの内容。保存時に見比べて、変更が無ければ更新しない。
     const originalFormData = useRef<Omit<Customer, 'id'> | null>(null);
     const { isAdmin } = useAuth();
@@ -88,6 +91,13 @@ const CustomerMaster: React.FC = () => {
         }
     };
 
+    // 色を付けた行が画面の外に出ないよう、一覧を読み直したら見える位置まで送る
+    useEffect(() => {
+        if (lastEditedId && !isLoading) {
+            lastEditedRowRef.current?.scrollIntoView({ block: 'nearest' });
+        }
+    }, [lastEditedId, isLoading]);
+
     // 一覧を読み直しても検索条件がそのまま効くよう、絞り込みは常に派生値として計算する
     const filteredCustomers = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
@@ -107,6 +117,7 @@ const CustomerMaster: React.FC = () => {
 
         if (editingId && isUnchanged(formData, originalFormData.current)) {
             alert('更新データがありません');
+            setLastEditedId(editingId);
             setIsModalOpen(false);
             return;
         }
@@ -125,6 +136,8 @@ const CustomerMaster: React.FC = () => {
             });
 
             if (res.ok) {
+                const saved = await res.json().catch(() => null);
+                setLastEditedId(editingId ?? (saved?.id ?? null));
                 setIsModalOpen(false);
                 fetchCustomers();
             } else {
@@ -262,7 +275,11 @@ const CustomerMaster: React.FC = () => {
                             <tr><td colSpan={6} className={styles.emptyState}>データがありません</td></tr>
                         ) : (
                             filteredCustomers.map(customer => (
-                                <tr key={customer.id}>
+                                <tr
+                                    key={customer.id}
+                                    ref={customer.id === lastEditedId ? lastEditedRowRef : null}
+                                    className={customer.id === lastEditedId ? styles.highlightRow : undefined}
+                                >
                                     <td className={styles.partNumber}>{customer.code}</td>
                                     <td>{customer.name}</td>
                                     <td>{customer.phone || '-'}</td>

@@ -333,3 +333,13 @@
 .categoryCard { background: white; padding: 1rem; border-radius: var(--radius-lg); border: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 0.25rem; box-shadow: var(--shadow-sm); border-left: 3px solid var(--color-secondary); }  
 .categoryTitle { font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600; }  
 .categoryValue { font-size: 1.25rem; font-weight: 700; color: var(--color-text-main); } 
+
+/* 直前に更新した行。次に別の行を編集するまで色を残す（すぐ消えると見失うため） */
+.highlightRow,
+.highlightRow td {
+    background-color: #fef9c3;
+}
+
+.highlightRow td:first-child {
+    box-shadow: inset 3px 0 0 #eab308;
+}

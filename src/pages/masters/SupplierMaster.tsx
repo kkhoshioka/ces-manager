@@ -141,8 +141,27 @@ const SupplierMaster: React.FC = () => {
                         className={styles.searchInput}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                fetchSuppliers();
+                            }
+                        }}
                     />
                 </div>
+                {/* 入力するとその場で絞り込まれるが、検索欄が分かりにくいので
+                    最新データを取り直して検索し直すボタンも用意する */}
+                <Button icon={<Search size={18} />} onClick={fetchSuppliers} disabled={isLoading}>
+                    検索
+                </Button>
+                <Button
+                    variant="secondary"
+                    icon={<X size={18} />}
+                    onClick={() => setSearchQuery('')}
+                    disabled={!searchQuery}
+                >
+                    クリア
+                </Button>
                 <Button icon={<Plus size={18} />} onClick={() => { setCurrentSupplier({}); originalSupplier.current = null; setIsModalOpen(true); }}>
                     新規登録
                 </Button>

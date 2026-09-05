@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Printer, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Printer, FileText, Unlock } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import styles from '../Dashboard.module.css';
@@ -45,6 +45,7 @@ const MonthlyInvoicing = () => {
     const [selectedClosingDate, setSelectedClosingDate] = useState<string>('all');
     const [expandedCustomer, setExpandedCustomer] = useState<number | null>(null);
     const [isBatchIssuing, setIsBatchIssuing] = useState(false);
+    const [isUnissuing, setIsUnissuing] = useState(false);
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
     const fetchReport = React.useCallback(async () => {
@@ -164,6 +165,51 @@ const MonthlyInvoicing = () => {
         }
     };
 
+    // 締め解除。確定を取り消して、案件の編集や「翌月繰越」への変更をできる状態に戻す。
+    const handleUnissue = async (target: { customerId: number; customerName: string } | null, e?: React.MouseEvent) => {
+        e?.preventDefault();
+        e?.stopPropagation();
+
+        const label = target
+            ? `${target.customerName} の ${year}年${month}月`
+            : `${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締め ${year}年${month}月`;
+
+        if (!confirm(`${label} の請求確定を解除しますか？\n\n解除すると案件の編集やステータス変更ができるようになります。\n※すでに発行済みの請求書がある場合は、内容を直したあとに再発行して送り直してください。`)) return;
+
+        setIsUnissuing(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/invoices/batch-unissue`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
+                body: JSON.stringify({
+                    year,
+                    month,
+                    closingDate: selectedClosingDate,
+                    ...(target ? { customerId: target.customerId } : {})
+                })
+            });
+
+            const result = await res.json().catch(() => ({}));
+
+            if (res.ok) {
+                alert('締めを解除しました。');
+                fetchReport();
+            } else if (res.status === 409) {
+                alert(result.message || '新しい月の締めが残っているため解除できません。');
+            } else {
+                throw new Error(result.error || 'Failed');
+            }
+        } catch (err) {
+            console.error('Failed to unissue', err);
+            alert('締めの解除に失敗しました。');
+        } finally {
+            setIsUnissuing(false);
+        }
+    };
+
     const handleDownloadCustomerInvoice = async (customerId: number, customerName: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -274,6 +320,9 @@ const MonthlyInvoicing = () => {
         return activeCustomers.every(c => c.monthlyStatus === 'issued');
     };
 
+    // 表示中の締め日グループに確定済みの顧客がいるか（＝締め解除ボタンを出すか）
+    const hasIssuedInGroup = groupedData.some(c => c.monthlyStatus === 'issued');
+
     // Calculate totals for displayed data
     const totalAmount = groupedData.reduce((sum, item) => sum + item.totalAmount, 0);
     const totalCount = groupedData.reduce((sum, item) => sum + item.count, 0);
@@ -339,14 +388,28 @@ const MonthlyInvoicing = () => {
                     })}
 
                     {selectedClosingDate !== 'all' && selectedClosingDate !== 'others' && (
-                        <Button
-                            onClick={handleBatchIssue}
-                            disabled={isBatchIssuing || loading || groupedData.length === 0}
-                            style={{ marginLeft: 'auto', backgroundColor: '#0f172a' }}
-                            icon={<FileText size={18} />}
-                        >
-                            {isBatchIssuing ? '処理中...' : `${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締め 請求確定 (一括)`}
-                        </Button>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            {/* 確定済みの顧客がいるときだけ出す。確定を取り消して編集できる状態に戻すためのボタン。 */}
+                            {hasIssuedInGroup && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleUnissue(null)}
+                                    disabled={isUnissuing || isBatchIssuing || loading}
+                                    icon={<Unlock size={18} />}
+                                    style={{ color: '#b45309', borderColor: '#fcd34d', background: '#fffbeb', fontWeight: 'bold' }}
+                                >
+                                    {isUnissuing ? '処理中...' : `${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締め 締め解除 (一括)`}
+                                </Button>
+                            )}
+                            <Button
+                                onClick={handleBatchIssue}
+                                disabled={isBatchIssuing || isUnissuing || loading || groupedData.length === 0}
+                                style={{ backgroundColor: '#0f172a' }}
+                                icon={<FileText size={18} />}
+                            >
+                                {isBatchIssuing ? '処理中...' : `${selectedClosingDate === '99' ? '末日' : selectedClosingDate + '日'}締め 請求確定 (一括)`}
+                            </Button>
+                        </div>
                     )}
                 </div>
 
@@ -424,15 +487,29 @@ const MonthlyInvoicing = () => {
                                                             <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#475569' }}>
                                                                 {item.customerName} の案件明細
                                                             </h3>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                disabled={downloadingId === item.customerId}
-                                                                onClick={(e) => handleDownloadCustomerInvoice(item.customerId, item.customerName, e)}
-                                                                icon={<Printer size={16} />}
-                                                            >
-                                                                {downloadingId === item.customerId ? '処理中...' : 'この顧客の請求書を発行 (当月合算)'}
-                                                            </Button>
+                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                {item.monthlyStatus === 'issued' && (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        disabled={isUnissuing}
+                                                                        onClick={(e) => handleUnissue({ customerId: item.customerId, customerName: item.customerName }, e)}
+                                                                        icon={<Unlock size={16} />}
+                                                                        style={{ color: '#b45309', borderColor: '#fcd34d', background: '#fffbeb' }}
+                                                                    >
+                                                                        {isUnissuing ? '処理中...' : 'この顧客の締めを解除'}
+                                                                    </Button>
+                                                                )}
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    disabled={downloadingId === item.customerId}
+                                                                    onClick={(e) => handleDownloadCustomerInvoice(item.customerId, item.customerName, e)}
+                                                                    icon={<Printer size={16} />}
+                                                                >
+                                                                    {downloadingId === item.customerId ? '処理中...' : 'この顧客の請求書を発行 (当月合算)'}
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                         <div style={{ overflowX: 'auto', backgroundColor: 'white', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                                                             <table style={{ width: '100%', fontSize: '0.85rem' }}>

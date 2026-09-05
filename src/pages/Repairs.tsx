@@ -20,10 +20,13 @@ import type { ProjectPhoto, RepairStatus } from '../types/repair';
 import type { Supplier } from '../types/supplier';
 import type { ProductCategory, Part } from '../types/inventory';
 import { InventoryService } from '../utils/inventoryService';
+import { compareProjectNo, parsePurchaseDateInput, formatPurchaseDateInput } from '../utils/formUtils';
 import QuotationList from '../components/quotations/QuotationList';
 import QuotationEdit from '../components/quotations/QuotationEdit';
 
-// Status helper
+// 編集画面の上部ボタンはフォームの外にあるため、form 属性でこのIDを指して送信する
+const PROJECT_FORM_ID = 'project-edit-form';
+
 // 明細行の単位候補
 const UNIT_OPTIONS = ['式', 'H', '個', '本', '台', '日', 'セット', 'Kg', 'M', 'L', '箱', '枚'];
 
@@ -50,23 +53,6 @@ const getStatusStyle = (status: string) => {
         case 'delivered': return { bg: '#f3f4f6', color: '#4b5563', label: '納品済' }; // Legacy
         default: return { bg: '#f3f4f6', color: '#4b5563', label: status };
     }
-};
-
-const StatusBadge = ({ status }: { status: string }) => {
-    const style = getStatusStyle(status);
-    return (
-        <span style={{
-            backgroundColor: style.bg,
-            color: style.color,
-            padding: '0.2rem 0.6rem',
-            borderRadius: '9999px',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            whiteSpace: 'nowrap'
-        }}>
-            {style.label}
-        </span>
-    );
 };
 
 const Repairs: React.FC = () => {
@@ -96,6 +82,7 @@ const Repairs: React.FC = () => {
         serialNumber: string;
         projectNo: string;
         hourMeter: string;
+        repairLocation: string; // 修理場所（納品書にのみ印字）
         issueDescription: string;
         notes: string;
         orderDate: string;
@@ -116,6 +103,7 @@ const Repairs: React.FC = () => {
         serialNumber: '',
         projectNo: '',
         hourMeter: '',
+        repairLocation: '',
         issueDescription: '',
         notes: '',
         orderDate: new Date().toISOString().split('T')[0], // Default to today
@@ -187,6 +175,16 @@ const Repairs: React.FC = () => {
         return allMachines.filter(m => m.customerId === customer.id);
     }, [formState.customerName, customers, allMachines]);
 
+    // 修理場所の入力候補。一覧に出ている案件で過去に使われた場所をそのまま候補にする。
+    const pastRepairLocations = useMemo(() => {
+        const seen = new Set<string>();
+        projects.forEach(p => {
+            const loc = (p.repairLocation || '').trim();
+            if (loc) seen.add(loc);
+        });
+        return Array.from(seen).sort((a, b) => a.localeCompare(b, 'ja'));
+    }, [projects]);
+
     // Lazy load masters function
     const loadFormData = async () => {
         if (isMasterDataLoaded) return;
@@ -253,6 +251,7 @@ const Repairs: React.FC = () => {
         isTaxExempt?: boolean;
         forcePrint?: boolean; // 請求単価0でも帳票に印字する（摘要行）
         purchaseDate?: string;
+        purchaseDateText?: string; // 仕入日の手入力欄に表示している文字列（例: 12/30）
         listPrice?: number | null;
     }
 
@@ -286,6 +285,9 @@ const Repairs: React.FC = () => {
     const [photos, setPhotos] = useState<ProjectPhoto[]>([]);
     const [pendingPhotos, setPendingPhotos] = useState<File[]>([]); // New state for buffering
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // 編集画面を開いたときの内容。保存時に見比べて、変更が無ければ更新しない。
+    const originalSnapshot = useRef<string | null>(null);
+    const snapshotArmed = useRef(false);
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files.length) return;
@@ -631,9 +633,42 @@ const Repairs: React.FC = () => {
         }
     };
 
+    /**
+     * 変更の有無を見るための、入力内容の写し。
+     * 行の並べ替え用に持っている originalIndex は毎回変わる値なので比較から外す。
+     */
+    const buildFormSnapshot = () =>
+        JSON.stringify({
+            formType,
+            formState,
+            sectionOrder,
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            details: details.map(({ originalIndex, ...rest }) => rest)
+        });
+
+    // 案件の読み込みが終わって画面が落ち着いたところで写しを取る。
+    // 読み込みは複数回に分けて状態が入るので、最後の更新から少し待ってから取る。
+    useEffect(() => {
+        if (!snapshotArmed.current) return;
+        const timer = window.setTimeout(() => {
+            originalSnapshot.current = buildFormSnapshot();
+            snapshotArmed.current = false;
+        }, 0);
+        return () => window.clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formState, details, sectionOrder, formType]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isSubmitting) return;
+
+        // 何も変えずに保存した場合は、更新せずそのまま一覧に戻す（マスター画面と同じ動き）
+        if (selectedProjectId && originalSnapshot.current !== null && pendingPhotos.length === 0
+            && buildFormSnapshot() === originalSnapshot.current) {
+            alert('更新データがありません');
+            handleCloseForm();
+            return;
+        }
 
         let finalCompletionDate = formState.completionDate;
         if (formState.status === 'completed' && !finalCompletionDate) {
@@ -754,6 +789,7 @@ const Repairs: React.FC = () => {
                 serialNumber: formState.serialNumber,
                 projectNo: formState.projectNo,
                 hourMeter: formState.hourMeter,
+                repairLocation: formState.repairLocation || null,
                 orderDate: formState.orderDate ? new Date(formState.orderDate) : new Date(), // Auto-fill today if empty
                 completionDate: finalCompletionDate ? new Date(finalCompletionDate) : null,
                 notes: ((formType === 'repair' || formType === 'inspection' || formType === 'maintenance') ? formState.issueDescription : '') + (formState.notes ? `\n\n備考: ${formState.notes}` : ''),
@@ -828,7 +864,12 @@ const Repairs: React.FC = () => {
                         rentalCompensationFee: Number(d.rentalCompensationFee) || 0,
                         rentalCompensationDays: Number(d.rentalCompensationDays) || 0,
                         isTaxExempt: d.isTaxExempt || false,
-                        forcePrint: d.forcePrint || false
+                        forcePrint: d.forcePrint || false,
+                        // 行内の手入力（12/30 など）があればそれを優先して日付に直す
+                        purchaseDate: d.purchaseDateText !== undefined
+                            ? parsePurchaseDateInput(d.purchaseDateText, formState.orderDate)
+                            : (d.purchaseDate || null),
+                        listPrice: d.listPrice != null && String(d.listPrice) !== '' ? Number(d.listPrice) : null
                     };
                 })
             };
@@ -909,6 +950,8 @@ const Repairs: React.FC = () => {
     };
 
     const resetForm = () => {
+        originalSnapshot.current = null;
+        snapshotArmed.current = false;
         setFormState({
             customerName: '',
             customerContactName: '',
@@ -918,6 +961,7 @@ const Repairs: React.FC = () => {
             serialNumber: '',
             projectNo: '',
             hourMeter: '',
+            repairLocation: '',
             issueDescription: '',
             notes: '',
             orderDate: new Date().toISOString().split('T')[0],
@@ -965,6 +1009,10 @@ const Repairs: React.FC = () => {
 
     const loadProjectDetails = async (id: number) => {
         setIsFormLoading(true);
+        // 読み込みが終わるまでは変更前の写しを無効にしておく
+        // （読み込みに失敗したときに前の案件の写しと見比べてしまわないように）
+        originalSnapshot.current = null;
+        snapshotArmed.current = false;
         try {
             // Parallelize loading
             const [fullProject] = await Promise.all([
@@ -989,6 +1037,7 @@ const Repairs: React.FC = () => {
                     serialNumber: fullProject.serialNumber || prev.serialNumber,
                     projectNo: fullProject.projectNo || prev.projectNo,
                     hourMeter: fullProject.hourMeter || prev.hourMeter,
+                    repairLocation: fullProject.repairLocation || '',
                     orderDate: fullProject.orderDate ? new Date(fullProject.orderDate).toISOString().split('T')[0] : prev.orderDate,
                     completionDate: fullProject.completionDate ? new Date(fullProject.completionDate).toISOString().split('T')[0] : prev.completionDate,
                     rentalStartDate: fullProject.rentalStartDate ? new Date(fullProject.rentalStartDate).toISOString().split('T')[0] : prev.rentalStartDate,
@@ -1061,6 +1110,9 @@ const Repairs: React.FC = () => {
                             productId: d.productId || null,
                             isTaxExempt: d.isTaxExempt || false,
                             forcePrint: d.forcePrint || false,
+                            purchaseDate: d.purchaseDate ? new Date(d.purchaseDate).toISOString().split('T')[0] : '',
+                            purchaseDateText: formatPurchaseDateInput(d.purchaseDate, fullProject.orderDate as string | null | undefined),
+                            listPrice: d.listPrice != null ? Number(d.listPrice) : null,
                             originalIndex: Date.now() + Math.random() // Unique initial key
                         } as DetailItem;
                     });
@@ -1132,6 +1184,9 @@ const Repairs: React.FC = () => {
                 }
 
                 setPhotos(fullProject.photos || []);
+
+                // 読み込んだ内容を「変更前」として控えるよう予約する
+                snapshotArmed.current = true;
             }
         } catch (error) {
             console.error('Failed to fetch project details', error);
@@ -1285,6 +1340,7 @@ const Repairs: React.FC = () => {
             serialNumber: project.serialNumber || '',
             projectNo: project.projectNo || '',
             hourMeter: project.hourMeter || '',
+            repairLocation: project.repairLocation || '',
             orderDate: project.orderDate ? new Date(project.orderDate).toISOString().split('T')[0] : '',
             completionDate: project.completionDate ? new Date(project.completionDate).toISOString().split('T')[0] : '',
             rentalStartDate: project.rentalStartDate ? new Date(project.rentalStartDate).toISOString().split('T')[0] : '',
@@ -1394,7 +1450,9 @@ const Repairs: React.FC = () => {
                                 const selectedCategory = categories.find(c => c.id === detail.productCategoryId);
                                 const currentSection = detail.section || selectedCategory?.section || '';
                                 const availableParts = inventoryParts.filter(p => p.categoryId === detail.productCategoryId);
-                                
+                                // 「詳細」を開かなくても入力済みだと分かるようにするための判定
+                                const hasDetailInput = !!(detail.remarks || detail.purchaseDate || (detail.listPrice != null && Number(detail.listPrice) !== 0));
+
                                 return (
                                     <React.Fragment key={detail.originalIndex}>
                                         <tr style={{ borderBottom: expandedDetails.has(detail.originalIndex) ? 'none' : '1px solid #f1f5f9' }}>
@@ -1404,14 +1462,15 @@ const Repairs: React.FC = () => {
                                                     onClick={() => toggleDetailExpand(detail.originalIndex)}
                                                     style={{
                                                         display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center',
-                                                        background: expandedDetails.has(detail.originalIndex) ? '#e2e8f0' : '#f1f5f9',
-                                                        border: '1px solid #cbd5e1', borderRadius: '4px',
-                                                        padding: '2px 6px', fontSize: '0.75rem', color: '#475569',
+                                                        background: expandedDetails.has(detail.originalIndex) ? '#e2e8f0' : (hasDetailInput ? '#fef9c3' : '#f1f5f9'),
+                                                        border: hasDetailInput ? '1px solid #eab308' : '1px solid #cbd5e1', borderRadius: '4px',
+                                                        padding: '2px 6px', fontSize: '0.75rem', color: hasDetailInput ? '#854d0e' : '#475569',
+                                                        fontWeight: hasDetailInput ? 600 : undefined,
                                                         cursor: 'pointer', whiteSpace: 'nowrap', width: '100%'
                                                     }}
-                                                    title="詳細設定を開く"
+                                                    title={hasDetailInput ? '詳細が入力されています' : '詳細設定を開く'}
                                                 >
-                                                    {expandedDetails.has(detail.originalIndex) ? <><ChevronUp size={12} /> 閉じる</> : <><ChevronDown size={12} /> 詳細</>}
+                                                    {expandedDetails.has(detail.originalIndex) ? <><ChevronUp size={12} /> 閉じる</> : <><ChevronDown size={12} /> 詳細{hasDetailInput ? '●' : ''}</>}
                                                 </button>
                                             </td>
                                             <td style={{ padding: '0.25rem' }}>
@@ -1576,7 +1635,22 @@ const Repairs: React.FC = () => {
         // Unique Sections for Dropdown
         const sections = Array.from(new Set(categories.map(c => c.section)));
 
-        const showPartColumns = type === 'part' || type === 'inventory' || type === 'labor' || (type === 'outsourcing' && subType !== 'travel');
+        // 自社工賃は部門・種別・品番も仕入日・定価も使わないため、これらの列は出さない。
+        // 代わりに備考を行内の列として持つので、詳細を開かずに入力できる。
+        const showCategoryColumns = type === 'part' || type === 'inventory' || (type === 'outsourcing' && subType !== 'travel');
+        // 仕入日は発注部品・外注費だけ。カレンダーではなく「12/30」と打てる細い手入力欄。
+        const showPurchaseDate = type === 'part' || (type === 'outsourcing' && subType !== 'travel');
+        const showDetailToggle = showCategoryColumns;
+        const showRemarksColumn = type === 'labor';
+
+        // 「数量」までに並ぶ列数。小計行の桁合わせに使う。
+        const leadingColumnCount =
+            (showDetailToggle ? 1 : 0) +
+            (showCategoryColumns ? 3 : 0) +
+            (type === 'travel' ? 2 : ((type === 'outsourcing' && subType === 'travel') ? 2 : 1)) +
+            (showSupplier ? 1 : 0) +
+            (showPurchaseDate ? 1 : 0) +
+            1; // 数量
 
         return (
             <div className={styles.detailTableWrapper}>
@@ -1653,11 +1727,11 @@ const Repairs: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                            {showPartColumns && <th style={{ padding: '0.5rem', textAlign: 'center', width: '65px' }}></th>}
-                            {showPartColumns && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
-                            {showPartColumns && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
+                            {showDetailToggle && <th style={{ padding: '0.5rem', textAlign: 'center', width: '65px' }}></th>}
+                            {showCategoryColumns && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>部門</th>}
+                            {showCategoryColumns && <th style={{ padding: '0.5rem', textAlign: 'left', width: '12%' }}>種別</th>}
 
-                            {showPartColumns && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
+                            {showCategoryColumns && <th style={{ padding: '0.5rem', textAlign: 'left', width: '10%' }}>品番</th>}
                             {/* Travel Type has split columns */}
                             {type === 'travel' ? (
                                 <>
@@ -1670,12 +1744,13 @@ const Repairs: React.FC = () => {
                                         <th style={{ padding: '0.5rem', textAlign: 'left', width: '15%' }}>日付</th>
                                     )}
                                     <th style={{ padding: '0.5rem', textAlign: 'left', width: (type === 'outsourcing' && subType === 'travel') ? '40%' : '25%' }}>
-                                        {showPartColumns ? '内容・品名' : '内容'}
+                                        {showCategoryColumns ? '内容・品名' : '内容'}
                                     </th>
                                 </>
                             )}
 
                             {showSupplier && <th style={{ padding: '0.5rem', textAlign: 'left', width: '18%' }}>仕入先</th>}
+                            {showPurchaseDate && <th style={{ padding: '0.5rem', textAlign: 'center', width: '72px', whiteSpace: 'nowrap' }}>仕入日</th>}
                             <th style={{ padding: '0.5rem', textAlign: 'center', width: '70px', whiteSpace: 'nowrap' }}>
                                 {(type === 'labor' || (type === 'outsourcing' && subType === 'labor'))
                                     ? (sectionDetails.some(d => d.laborType === 'fixed') ? '数量' : '時間')
@@ -1692,8 +1767,8 @@ const Repairs: React.FC = () => {
                             {type !== 'discount' && <th style={{ padding: '0.5rem', textAlign: 'right', minWidth: '95px', whiteSpace: 'nowrap' }}>請求額</th>}
 
                             {/* Remarks Header for Labor */}
-                            {type === 'labor' && (
-                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '20%', minWidth: '150px' }}>備考</th>
+                            {showRemarksColumn && (
+                                <th style={{ padding: '0.5rem', textAlign: 'left', width: '24%', minWidth: '180px' }}>備考</th>
                             )}
 
                             <th style={{ width: '40px' }}></th>
@@ -1753,29 +1828,32 @@ const Repairs: React.FC = () => {
                             //    Adding `section` field to `DetailItem` is safe. It won't be saved to DB directly (or ignored).
 
                             const currentSection = detail.section || selectedCategory?.section || '';
+                            // 「詳細」を開かなくても入力済みだと分かるようにするための判定
+                            const hasDetailInput = !!(detail.remarks || (detail.listPrice != null && Number(detail.listPrice) !== 0));
 
                             return (
                                 <React.Fragment key={detail.originalIndex}>
                                 <tr style={{ borderBottom: expandedDetails.has(detail.originalIndex) ? 'none' : '1px solid #f1f5f9' }}>
-                                    {showPartColumns && (
+                                    {showDetailToggle && (
                                         <td style={{ padding: '0.25rem', textAlign: 'center' }}>
                                             <button
                                                 type="button"
                                                 onClick={() => toggleDetailExpand(detail.originalIndex)}
                                                 style={{
                                                     display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center',
-                                                    background: expandedDetails.has(detail.originalIndex) ? '#e2e8f0' : '#f1f5f9',
-                                                    border: '1px solid #cbd5e1', borderRadius: '4px',
-                                                    padding: '2px 6px', fontSize: '0.75rem', color: '#475569',
+                                                    background: expandedDetails.has(detail.originalIndex) ? '#e2e8f0' : (hasDetailInput ? '#fef9c3' : '#f1f5f9'),
+                                                    border: hasDetailInput ? '1px solid #eab308' : '1px solid #cbd5e1', borderRadius: '4px',
+                                                    padding: '2px 6px', fontSize: '0.75rem', color: hasDetailInput ? '#854d0e' : '#475569',
+                                                    fontWeight: hasDetailInput ? 600 : undefined,
                                                     cursor: 'pointer', whiteSpace: 'nowrap', width: '100%'
                                                 }}
-                                                title="詳細設定を開く"
+                                                title={hasDetailInput ? '詳細が入力されています' : '詳細設定を開く'}
                                             >
-                                                {expandedDetails.has(detail.originalIndex) ? <><ChevronUp size={12} /> 閉じる</> : <><ChevronDown size={12} /> 詳細</>}
+                                                {expandedDetails.has(detail.originalIndex) ? <><ChevronUp size={12} /> 閉じる</> : <><ChevronDown size={12} /> 詳細{hasDetailInput ? '●' : ''}</>}
                                             </button>
                                         </td>
                                     )}
-                                    {showPartColumns && (
+                                    {showCategoryColumns && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -1792,7 +1870,7 @@ const Repairs: React.FC = () => {
                                             </select>
                                         </td>
                                     )}
-                                    {showPartColumns && (
+                                    {showCategoryColumns && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <select
                                                 className={styles.tableInput}
@@ -1817,7 +1895,7 @@ const Repairs: React.FC = () => {
                                         </td>
                                     )}
 
-                                    {showPartColumns && (
+                                    {showCategoryColumns && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <input
                                                 type="text"
@@ -1995,6 +2073,25 @@ const Repairs: React.FC = () => {
                                             />
                                         </td>
                                     )}
+                                    {showPurchaseDate && (
+                                        <td style={{ padding: '0.25rem' }}>
+                                            <input
+                                                type="text"
+                                                className={styles.tableInput}
+                                                style={{ textAlign: 'center', width: '64px' }}
+                                                value={detail.purchaseDateText ?? formatPurchaseDateInput(detail.purchaseDate, formState.orderDate)}
+                                                onChange={(e) => handleDetailChange(detail.originalIndex, 'purchaseDateText', e.target.value)}
+                                                onBlur={(e) => {
+                                                    // 入力を日付に直し、表記も「12/30」の形に揃える
+                                                    const iso = parsePurchaseDateInput(e.target.value, formState.orderDate);
+                                                    handleDetailChange(detail.originalIndex, 'purchaseDate', iso || '');
+                                                    handleDetailChange(detail.originalIndex, 'purchaseDateText', iso ? formatPurchaseDateInput(iso, formState.orderDate) : e.target.value.trim());
+                                                }}
+                                                placeholder="12/30"
+                                                title="仕入日。「12/30」のように入力できます（年は受付日から判断します）"
+                                            />
+                                        </td>
+                                    )}
                                     <td style={{ padding: '0.25rem' }}>
                                         <div className={styles.currencyWrapper} style={{ justifyContent: 'center' }}>
                                             <input
@@ -2057,7 +2154,7 @@ const Repairs: React.FC = () => {
                                     {type !== 'discount' && <td style={{ padding: '0.25rem', textAlign: 'right' }}>{salesTotal.toLocaleString()}円</td>}
 
                                     {/* Remarks Column for Labor */}
-                                    {type === 'labor' && (
+                                    {showRemarksColumn && (
                                         <td style={{ padding: '0.25rem' }}>
                                             <textarea
                                                 className={styles.tableInput}
@@ -2083,15 +2180,11 @@ const Repairs: React.FC = () => {
                                         </div>
                                     </td>
                                 </tr>
-                                {showPartColumns && expandedDetails.has(detail.originalIndex) && (
+                                {showDetailToggle && expandedDetails.has(detail.originalIndex) && (
                                     <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                         <td></td>
                                         <td colSpan={showSupplier ? 12 : 11} style={{ padding: '0.5rem 1rem 1rem 1rem' }}>
                                             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                                                <div style={{ width: '150px' }}>
-                                                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>仕入日</label>
-                                                    <input type="date" className={styles.tableInput} value={detail.purchaseDate ? detail.purchaseDate.split('T')[0] : ''} onChange={(e) => handleDetailChange(detail.originalIndex, 'purchaseDate', e.target.value)} />
-                                                </div>
                                                 <div style={{ width: '150px' }}>
                                                     <label style={{ display: 'block', fontSize: '0.8rem', color: '#475569', marginBottom: '4px' }}>定価</label>
                                                     <div className={styles.currencyWrapper}>
@@ -2110,23 +2203,160 @@ const Repairs: React.FC = () => {
                                 </React.Fragment>
                             );
                         })}
-                        {/* Subtotal Row */}
+                        {/* Subtotal Row: 見出しの列数から「小計」の幅を計算し、金額が各列の真下に来るようにする */}
                         <tr style={{ background: '#fffbeb', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                            <td colSpan={(type === 'part' || type === 'inventory') ? (showSupplier ? 6 : 5) : (showSupplier ? 3 : 2)} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
-                            {(type !== 'discount') && (
+                            <td colSpan={leadingColumnCount} style={{ textAlign: 'right', padding: '0.4rem' }}>小計</td>
+                            {type !== 'discount' && (
                                 <>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
                                     <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalCost.toLocaleString()}円</td>
+                                    <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
                                 </>
                             )}
-                            <td style={{ padding: '0.4rem', textAlign: 'right' }}></td>
                             <td style={{ padding: '0.4rem', textAlign: 'right' }}>{subtotalSales.toLocaleString()}円</td>
-                            <td colSpan={2}></td>
+                            {showRemarksColumn && <td></td>}
+                            <td></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         );
+    };
+
+    // 案件を「完了」にしないと請求書は出せない。仮登録のままなら確認して完了にし、
+    // その月が締め済みなら締め解除の確認まで行う。
+    const ensureCompletedForInvoice = async (): Promise<boolean> => {
+        if (!selectedProjectId || formState.status !== 'received') return true;
+        if (!window.confirm('ステータスが「仮登録」です。請求書を発行するために「完了」に変更してもよろしいですか？')) return false;
+        try {
+            await RepairService.update(selectedProjectId, { status: 'completed' });
+            setFormState(prev => ({ ...prev, status: 'completed' }));
+            return true;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            if (!error?.isBillingLock) {
+                console.error('Failed to update status', error);
+                alert('ステータスの更新に失敗しました。');
+                return false;
+            }
+            if (error.isHardLock) {
+                alert(error.message);
+                return false;
+            }
+            if (!window.confirm(`${error.message}\n\n今すぐ締め処理を解除してステータスを変更しますか？`)) return false;
+            await RepairService.update(selectedProjectId, { status: 'completed', allowReopenBilling: true });
+            setFormState(prev => ({ ...prev, status: 'completed' }));
+            return true;
+        }
+    };
+
+    const handleIssueDeliveryNote = () => {
+        if (!selectedProjectId) return;
+        window.open(`${API_BASE_URL}/projects/${selectedProjectId}/pdf/delivery`, '_blank');
+        setFormState(prev => ({ ...prev, isDeliveryNoteIssued: true }));
+        loadProjects(); // Refresh the list in background
+    };
+
+    const handleIssueInvoice = async () => {
+        if (!selectedProjectId) return;
+        if (!await ensureCompletedForInvoice()) return;
+        window.open(`${API_BASE_URL}/projects/${selectedProjectId}/pdf/invoice`, '_blank');
+        setFormState(prev => ({ ...prev, isInvoiceIssued: true }));
+        loadProjects(); // Refresh the list in background
+    };
+
+    /**
+     * 編集画面の操作ボタン。同じものを画面の上（固定ヘッダー）と下の両方に出すため関数にしている。
+     * 上のボタンはフォームの外に置くので、form 属性で送信先のフォームを指している。
+     */
+    const renderFormActions = (placement: 'top' | 'bottom') => {
+        const isTop = placement === 'top';
+        const size = isTop ? 'sm' : undefined;
+
+        return (
+            <div
+                className={isTop ? undefined : styles.formActions}
+                style={isTop ? { display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' } : undefined}
+            >
+                {selectedProjectId && (
+                    <>
+                        {!isTop && (
+                            <Button type="button" variant="ghost" onClick={() => handleDeleteProject(selectedProjectId)} style={{ color: '#ef4444', marginRight: 'auto' }}>
+                                <Trash2 size={16} style={{ marginRight: '4px' }} /> 削除
+                            </Button>
+                        )}
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size={size}
+                            onClick={handleIssueDeliveryNote}
+                            icon={<FileText size={isTop ? 15 : 18} />}
+                            style={{
+                                color: formState.isDeliveryNoteIssued ? '#166534' : '#059669',
+                                fontWeight: 'bold',
+                                background: formState.isDeliveryNoteIssued ? '#dcfce7' : (isTop ? 'white' : undefined),
+                                border: formState.isDeliveryNoteIssued ? '1px solid #86efac' : undefined,
+                                marginRight: isTop ? undefined : '0.5rem'
+                            }}
+                        >
+                            {formState.isDeliveryNoteIssued ? '納品書発行(済)' : '納品書発行'}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size={size}
+                            onClick={handleIssueInvoice}
+                            icon={<FileText size={isTop ? 15 : 18} />}
+                            style={{
+                                color: formState.isInvoiceIssued ? '#1e40af' : '#2563eb',
+                                fontWeight: 'bold',
+                                background: formState.isInvoiceIssued ? '#dbeafe' : (isTop ? 'white' : undefined),
+                                border: formState.isInvoiceIssued ? '1px solid #93c5fd' : undefined
+                            }}
+                        >
+                            {formState.isInvoiceIssued ? '請求書発行(済)' : '請求書発行'}
+                        </Button>
+                    </>
+                )}
+                <Button type="button" variant="secondary" size={size} onClick={handleCloseForm} style={isTop ? { background: 'white' } : undefined}>キャンセル</Button>
+                <Button type="submit" size={size} form={isTop ? PROJECT_FORM_ID : undefined} disabled={isSubmitting}>
+                    {isSubmitting ? '保存中...' : (selectedProjectId ? '更新する' : '保存する')}
+                </Button>
+            </div>
+        );
+    };
+
+    // 一覧のステータス欄をその場で変更する。「翌月繰越」への切り替えを
+    // 案件を開かずにできるようにするためのもの。
+    const handleListStatusChange = async (project: Repair, newStatus: RepairStatus) => {
+        if (newStatus === project.status) return;
+
+        const applyLocal = (status: RepairStatus) =>
+            setProjects(prev => prev.map(p => (p.id === project.id ? { ...p, status } : p)));
+
+        try {
+            await RepairService.update(project.id, { status: newStatus });
+            applyLocal(newStatus);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            if (!error?.isBillingLock) {
+                console.error('Failed to update status', error);
+                alert('ステータスの更新に失敗しました。');
+                return;
+            }
+            if (error.isHardLock) {
+                alert(error.message);
+                return;
+            }
+            if (!window.confirm(`${error.message}\n\n今すぐ締め処理を解除してステータスを変更しますか？`)) return;
+            try {
+                await RepairService.update(project.id, { status: newStatus, allowReopenBilling: true });
+                applyLocal(newStatus);
+            } catch (retryError) {
+                console.error('Failed to update status after reopening billing', retryError);
+                alert('ステータスの更新に失敗しました。');
+            }
+        }
     };
 
     const handleSort = (field: 'createdAt' | 'status' | 'projectNo') => {
@@ -2159,9 +2389,8 @@ const Repairs: React.FC = () => {
                 const bVal = orderMap[b.status] || 99;
                 return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
             } else if (sortField === 'projectNo') {
-                const aNo = a.projectNo || '';
-                const bNo = b.projectNo || '';
-                return sortOrder === 'asc' ? aNo.localeCompare(bNo) : bNo.localeCompare(aNo);
+                const cmp = compareProjectNo(a.projectNo, b.projectNo);
+                return sortOrder === 'asc' ? cmp : -cmp;
             } else {
                 const aDate = a.orderDate ? new Date(a.orderDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
                 const bDate = b.orderDate ? new Date(b.orderDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
@@ -2510,7 +2739,36 @@ const Repairs: React.FC = () => {
                                                         project.type === 'rental' ? 'レンタル' : '修理'}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}><StatusBadge status={project.status || 'received'} /></td>
+                                    <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                        <select
+                                            value={project.status || 'received'}
+                                            onChange={(e) => handleListStatusChange(project, e.target.value as RepairStatus)}
+                                            title="ステータスを変更"
+                                            style={{
+                                                width: '100%',
+                                                minWidth: '84px',
+                                                padding: '0.25rem 0.3rem',
+                                                borderRadius: '12px',
+                                                border: '1px solid transparent',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                textAlign: 'center',
+                                                cursor: 'pointer',
+                                                backgroundColor: getStatusStyle(project.status || 'received').bg,
+                                                color: getStatusStyle(project.status || 'received').color
+                                            }}
+                                        >
+                                            <option value="received" style={{ backgroundColor: '#e2e8f0', color: '#1e293b' }}>仮登録</option>
+                                            <option value="estimating" style={{ backgroundColor: '#fef08a', color: '#854d0e' }}>見積中</option>
+                                            <option value="carried_over" style={{ backgroundColor: '#ffe4e6', color: '#9f1239' }}>翌月繰越</option>
+                                            {project.type === 'rental' && <option value="on_rental" style={{ backgroundColor: '#d1fae5', color: '#065f46' }}>貸出中</option>}
+                                            <option value="completed" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>完了</option>
+                                            {/* 旧データのステータスは、選ばれている場合だけ選択肢として残す */}
+                                            {!['received', 'estimating', 'carried_over', 'on_rental', 'completed'].includes(project.status || '') && (
+                                                <option value={project.status}>{getStatusStyle(project.status || '').label}</option>
+                                            )}
+                                        </select>
+                                    </td>
                                     <td>{project.orderDate ? new Date(project.orderDate).toLocaleDateString() : (project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-')}</td>
                                     <td className={styles.customerName}>{project.customer?.name || '-'}</td>
                                     <td>
@@ -2648,12 +2906,14 @@ const Repairs: React.FC = () => {
                                     '新規修理受付'
                                 )}
                             </h2>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                 {selectedProjectId && (
-                                    <Button variant="outline" size="sm" onClick={() => handleDuplicateProject(selectedProjectId)}>
+                                    <Button variant="outline" size="sm" onClick={() => handleDuplicateProject(selectedProjectId)} style={{ background: 'white' }}>
                                         <Copy size={16} style={{ marginRight: '0.25rem' }} /> 複製して新規作成
                                     </Button>
                                 )}
+                                {/* 明細が長いと下までスクロールしないと保存できないため、上にも同じ操作ボタンを置く */}
+                                {activeTab === 'details' && renderFormActions('top')}
                                 <button className={styles.closeButton} onClick={handleCloseForm}><X size={24} /></button>
                             </div>
                         </div>
@@ -2690,6 +2950,7 @@ const Repairs: React.FC = () => {
 
                         <div style={{ display: activeTab === 'details' ? 'block' : 'none' }}>
                             <form 
+                                id={PROJECT_FORM_ID}
                                 onSubmit={handleSubmit} 
                                 className={styles.form}
                                 onKeyDown={(e) => {
@@ -2730,7 +2991,11 @@ const Repairs: React.FC = () => {
                                                     >
                                                         <option value="repair" style={{ backgroundColor: '#fef9c3', color: '#854d0e' }}>修理案件</option>
                                                         <option value="inspection" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>特定自主検査案件</option>
-                                                        <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件</option>
+                                                        {/* 整備案件は廃止（月例点検は修理案件として登録する）。
+                                                            過去に整備で登録された案件を開いたときだけ選択肢として残す。 */}
+                                                        {formType === 'maintenance' && (
+                                                            <option value="maintenance" style={{ backgroundColor: '#ffedd5', color: '#c2410c' }}>整備案件（廃止）</option>
+                                                        )}
                                                         <option value="sales" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>販売案件</option>
                                                         <option value="rental" style={{ backgroundColor: '#d1fae5', color: '#047857' }}>レンタル案件</option>
                                                     </select>
@@ -2901,7 +3166,24 @@ const Repairs: React.FC = () => {
                                                             <span className={styles.hourMeterUnit}>hr</span>
                                                         </div>
                                                     </div>
-                                                    
+
+                                                    {/* 修理場所。納品書にのみ印字し、請求書には出さない。 */}
+                                                    <div>
+                                                        <Input
+                                                            label="修理場所"
+                                                            name="repairLocation"
+                                                            value={formState.repairLocation}
+                                                            onChange={handleInputChange}
+                                                            placeholder="例: 自社工場 / 倉敷市○○ 現場"
+                                                            list="repair-location-list"
+                                                            autoComplete="off"
+                                                        />
+                                                        <datalist id="repair-location-list">
+                                                            {pastRepairLocations.map(loc => <option key={loc} value={loc} />)}
+                                                        </datalist>
+                                                        <div className={styles.fieldHint}>※納品書にのみ印字されます（請求書には出ません）</div>
+                                                    </div>
+
                                                     {formType !== 'sales' && formType !== 'rental' && (
                                                         <div className={styles.issueField}>
                                                             <Textarea 
@@ -2993,7 +3275,8 @@ const Repairs: React.FC = () => {
                                 {/* Details Sections */}
                                 <div className={styles.detailsSection} style={{ background: 'none', border: 'none', padding: 0 }}>
                                     {sectionOrder.map((section, index) => {
-                                        if (formType === 'sales' && (section.type === 'labor' || section.type === 'travel')) return null;
+                                        // 販売案件でも中古車を自社整備して販売することがあるため、
+                                        // 自社工賃・自社出張費を入力できるようにしている。
 
                                         const key = `${section.type}-${section.subType || ''}`;
                                         if (formType === 'rental') {
@@ -3166,83 +3449,7 @@ const Repairs: React.FC = () => {
                                     </div>
                                 )}
 
-                                <div className={styles.formActions}>
-                                    {selectedProjectId && (
-                                        <>
-                                            <Button type="button" variant="ghost" onClick={() => handleDeleteProject(selectedProjectId)} style={{ color: '#ef4444', marginRight: 'auto' }}>
-                                                <Trash2 size={16} style={{ marginRight: '4px' }} /> 削除
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                onClick={() => {
-                                                    window.open(`${API_BASE_URL}/projects/${selectedProjectId}/pdf/delivery`, '_blank');
-                                                    setFormState(prev => ({ ...prev, isDeliveryNoteIssued: true }));
-                                                    loadProjects(); // Refresh the list in background
-                                                }}
-                                                icon={<FileText size={18} />}
-                                                style={{ 
-                                                    color: formState.isDeliveryNoteIssued ? '#166534' : '#059669', 
-                                                    fontWeight: 'bold',
-                                                    background: formState.isDeliveryNoteIssued ? '#dcfce7' : undefined,
-                                                    border: formState.isDeliveryNoteIssued ? '1px solid #86efac' : undefined,
-                                                    marginRight: '0.5rem'
-                                                }}
-                                            >
-                                                {formState.isDeliveryNoteIssued ? '納品書発行(済)' : '納品書発行'}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                onClick={async () => {
-                                                    if (formState.status === 'received') {
-                                                        if (window.confirm('ステータスが「仮登録」です。請求書を発行するために「完了」に変更してもよろしいですか？')) {
-                                                            try {
-                                                                await RepairService.update(selectedProjectId!, { status: 'completed' });
-                                                                setFormState(prev => ({ ...prev, status: 'completed' }));
-                                                            } catch (error: any) {
-                                                                if (error.isBillingLock) {
-                                                                    if (error.isHardLock) {
-                                                                        alert(error.message);
-                                                                        return;
-                                                                    }
-                                                                    if (window.confirm(`${error.message}\n\n今すぐ締め処理を解除してステータスを変更しますか？`)) {
-                                                                        await RepairService.update(selectedProjectId!, { status: 'completed', allowReopenBilling: true });
-                                                                        setFormState(prev => ({ ...prev, status: 'completed' }));
-                                                                    } else {
-                                                                        return;
-                                                                    }
-                                                                } else {
-                                                                    console.error('Failed to update status', error);
-                                                                    alert('ステータスの更新に失敗しました。');
-                                                                    return;
-                                                                }
-                                                            }
-                                                        } else {
-                                                            return;
-                                                        }
-                                                    }
-                                                    window.open(`${API_BASE_URL}/projects/${selectedProjectId}/pdf/invoice`, '_blank');
-                                                    setFormState(prev => ({ ...prev, isInvoiceIssued: true }));
-                                                    loadProjects(); // Refresh the list in background
-                                                }}
-                                                icon={<FileText size={18} />}
-                                                style={{ 
-                                                    color: formState.isInvoiceIssued ? '#1e40af' : '#2563eb', 
-                                                    fontWeight: 'bold',
-                                                    background: formState.isInvoiceIssued ? '#dbeafe' : undefined,
-                                                    border: formState.isInvoiceIssued ? '1px solid #93c5fd' : undefined
-                                                }}
-                                            >
-                                                {formState.isInvoiceIssued ? '請求書発行(済)' : '請求書発行'}
-                                            </Button>
-                                        </>
-                                    )}
-                                    <Button type="button" variant="secondary" onClick={handleCloseForm}>キャンセル</Button>
-                                    <Button type="submit" disabled={isSubmitting}>
-                                        {isSubmitting ? '保存中...' : (selectedProjectId ? '更新する' : '保存する')}
-                                    </Button>
-                                </div>
+                                {renderFormActions('bottom')}
                             </form>
                         </div>{/* End Details Tab */}
 

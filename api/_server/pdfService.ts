@@ -100,6 +100,7 @@ interface Project {
     machineModel: string;
     serialNumber: string;
     hourMeter?: string | null;
+    repairLocation?: string | null;
     customerContactName?: string | null;
     internalRep?: string | null;
 
@@ -867,6 +868,12 @@ export const generateDeliveryNote = (project: Project) => {
                                 text: `機種: ${project.machineModel || (project.serialNumber || project.hourMeter ? '型式不明' : '')}${project.serialNumber ? `\nS/N : ${project.serialNumber}` : ''}${project.hourMeter ? `\nアワーメーター: ${formatHourMeter(project.hourMeter)}` : ''}`.trim(), 
                                 fontSize: 9, 
                                 margin: [0, 2, 0, 0] 
+                            }] : []),
+                            // 修理場所は納品書にだけ印字する（請求書には出さない）
+                            ...(project.repairLocation ? [{
+                                text: `修理場所: ${project.repairLocation}`,
+                                fontSize: 9,
+                                margin: [0, 2, 0, 0]
                             }] : []),
                             { text: '\n\n' },
                             { text: '毎度ありがとうございます。', fontSize: 9 },

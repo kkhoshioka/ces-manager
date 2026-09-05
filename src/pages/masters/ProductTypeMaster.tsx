@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Plus, Edit, Trash2, X, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -39,9 +39,28 @@ const ProductTypeMaster: React.FC = () => {
     const [formData, setFormData] = useState({ section: '', code: '', name: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [renameSectionModal, setRenameSectionModal] = useState<{ isOpen: boolean; oldSection: string; newSection: string }>({ isOpen: false, oldSection: '', newSection: '' });
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Unique sections for suggestion/dropdown
     const sections = Array.from(new Set(categories.map(c => c.section)));
+
+    // 検索の絞り込み。部門・コード・種別名のどれかに当たれば残す。
+    // 一覧を読み直しても条件がそのまま効くよう、常に派生値として計算する。
+    const filteredCategories = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return categories;
+        return categories.filter(c =>
+            c.section.toLowerCase().includes(query) ||
+            (c.code || '').toLowerCase().includes(query) ||
+            c.name.toLowerCase().includes(query)
+        );
+    }, [categories, searchQuery]);
+
+    // 該当のない部門は見出しごと隠す
+    const visibleSections = useMemo(
+        () => sections.filter(sec => filteredCategories.some(c => c.section === sec)),
+        [sections, filteredCategories]
+    );
 
     useEffect(() => {
         fetchCategories();
@@ -235,6 +254,38 @@ const ProductTypeMaster: React.FC = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>商品種別マスタ</h2>
+            </div>
+
+            <div className={styles.controls}>
+                <div className={styles.searchWrapper}>
+                    <Search className={styles.searchIcon} size={18} />
+                    <input
+                        type="text"
+                        placeholder="部門、コード、種別名で検索..."
+                        className={styles.searchInput}
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                fetchCategories();
+                            }
+                        }}
+                    />
+                </div>
+                {/* 入力するとその場で絞り込まれるが、検索欄が分かりにくいので
+                    最新データを取り直して検索し直すボタンも用意する */}
+                <Button icon={<Search size={18} />} onClick={fetchCategories} disabled={isLoading}>
+                    検索
+                </Button>
+                <Button
+                    variant="secondary"
+                    icon={<X size={18} />}
+                    onClick={() => setSearchQuery('')}
+                    disabled={!searchQuery}
+                >
+                    クリア
+                </Button>
                 <Button icon={<Plus size={18} />} onClick={() => openAdd()}>
                     新規部門登録
                 </Button>
@@ -253,10 +304,12 @@ const ProductTypeMaster: React.FC = () => {
                     <tbody>
                         {isLoading ? (
                             <tr><td colSpan={4} style={{ padding: '2rem' }}><LoadingSpinner /></td></tr>
-                        ) : categories.length === 0 ? (
+                        ) : filteredCategories.length === 0 ? (
                             <tr><td colSpan={4} className={styles.emptyState}>データがありません</td></tr>
                         ) : (
-                            sections.map((section, sectionIndex) => (
+                            visibleSections.map((section) => {
+                            const sectionIndex = sections.indexOf(section);
+                            return (
                                 <React.Fragment key={section}>
                                     <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
                                         <td colSpan={4} style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: '#1e293b' }}>
@@ -303,7 +356,7 @@ const ProductTypeMaster: React.FC = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                    {categories.filter(c => c.section === section).map((category) => {
+                                    {filteredCategories.filter(c => c.section === section).map((category) => {
                                         const globalIndex = categories.findIndex(c => c.id === category.id);
                                         return (
                                             <tr key={category.id}>
@@ -342,7 +395,8 @@ const ProductTypeMaster: React.FC = () => {
                                         );
                                     })}
                                 </React.Fragment>
-                            ))
+                            );
+                            })
                         )}
                     </tbody>
                 </table>
