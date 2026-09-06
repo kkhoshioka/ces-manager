@@ -13,7 +13,16 @@ interface ProductCategory {
     code: string | null;
     name: string;
     sortOrder: number;
+    plCategory?: string | null;
+    // 損益区分が未設定でも、実際に集計されている区分がサーバーから返る
+    effectivePlCategory?: string | null;
 }
+
+// 年間損益概況の売上行。部門をどの行に集計するかをここから選ぶ。
+const PL_SALES_CATEGORIES = [
+    '新車販売', '中古車販売', 'アタッチメント販売', '部品販売',
+    'レンタル', '修理', '美容品販売', 'その他'
+];
 
 const getSectionPrefix = (section: string) => {
     if (section.includes('修理') || section.includes('整備')) return 'M';
@@ -218,6 +227,30 @@ const ProductTypeMaster: React.FC = () => {
         }
     };
 
+    // その部門が今どの売上行に集計されているか（未設定なら部門名からの推定値）
+    const sectionPlCategory = (section: string) => {
+        const first = categories.find(c => c.section === section);
+        return first?.effectivePlCategory || first?.plCategory || 'その他';
+    };
+
+    const handlePlCategoryChange = async (section: string, plCategory: string) => {
+        // 表示を先に切り替えて、保存できなければ元に戻す
+        const previous = categories;
+        setCategories(prev => prev.map(c => (c.section === section ? { ...c, plCategory, effectivePlCategory: plCategory } : c)));
+        try {
+            const res = await fetch(`${API_BASE_URL}/categories/section/pl-category`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ section, plCategory })
+            });
+            if (!res.ok) throw new Error('failed');
+        } catch (error) {
+            console.error('Failed to update pl category', error);
+            setCategories(previous);
+            alert('損益区分の変更に失敗しました');
+        }
+    };
+
     const openEdit = (category: ProductCategory) => {
         setEditingId(category.id);
         const initial = {
@@ -344,6 +377,27 @@ const ProductTypeMaster: React.FC = () => {
                                                     >
                                                         <Edit size={14} />
                                                     </button>
+                                                    {/* この部門の売上を年間損益概況のどの行に集計するか */}
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 'normal', fontSize: '0.8rem', color: '#475569' }}>
+                                                        損益区分
+                                                        <select
+                                                            value={sectionPlCategory(section)}
+                                                            onChange={(e) => handlePlCategoryChange(section, e.target.value)}
+                                                            style={{
+                                                                padding: '2px 6px',
+                                                                borderRadius: '4px',
+                                                                border: '1px solid #cbd5e1',
+                                                                fontSize: '0.8rem',
+                                                                background: 'white',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                            title="この部門の売上を、年間損益概況のどの行に集計するかを選びます"
+                                                        >
+                                                            {PL_SALES_CATEGORIES.map(pl => (
+                                                                <option key={pl} value={pl}>{pl}</option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
                                                     {section === 'メンテナンス' && (
                                                         <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'normal' }}>
                                                             ※ここに登録された種別名は、修理案件の「自社工賃」の費目として選択できるようになります。

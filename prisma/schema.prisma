@@ -308,10 +308,12 @@ model Purchase {
 model ProductCategory {
   id        Int      @id @default(autoincrement())
   // Flattened structure as requested: Section (Department) -> Code -> Name
-  section   String   // e.g. "新車販売", "レンタル"
+  section   String   // e.g. "中古車", "機械部品"
   code      String?  @unique
   name      String
   sortOrder Int      @default(0) // Custom display order
+  // 損益概況のどの売上区分に集計するか。未設定なら部門名から自動で判断する。
+  plCategory String? // 新車販売 / 中古車販売 / アタッチメント販売 / 部品販売 / レンタル / 修理 / 美容品販売 / その他
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -12,6 +12,7 @@ const __dirname = dirname(__filename);
 
 import 'dotenv/config';
 import { generateInvoice, generateDeliveryNote, generateQuotation, generateMonthlyInventoryPdf, generateMachineRegistryPdf } from './pdfService';
+import { PL_SALES_CATEGORIES, guessPlCategory, resolveCostCategory } from './plCategory';
 import systemSettingsRouter from './routes/systemSettings';
 import quotationRouter from './routes/quotations';
 import travelExpenseRouter from './routes/travelExpenses';
@@ -335,9 +336,38 @@ app.get('/api/categories', async (req, res) => {
                 { id: 'asc' }
             ]
         });
-        res.json(categories);
+        // 損益区分が未設定の部門は、部門名から推定した区分で集計している。
+        // 画面でも実際の集計先が見えるよう、推定結果を添えて返す。
+        res.json(categories.map(c => ({
+            ...c,
+            effectivePlCategory: (c.plCategory && PL_SALES_CATEGORIES.includes(c.plCategory))
+                ? c.plCategory
+                : guessPlCategory(c.section)
+        })));
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+});
+
+// 部門ごとの損益区分をまとめて設定する。同じ部門の種別はすべて同じ区分になる。
+app.put('/api/categories/section/pl-category', async (req, res) => {
+    try {
+        const { section, plCategory } = req.body;
+        if (!section) {
+            return res.status(400).json({ error: '部門名が指定されていません' });
+        }
+        if (plCategory && !PL_SALES_CATEGORIES.includes(plCategory)) {
+            return res.status(400).json({ error: '損益区分の指定が正しくありません' });
+        }
+
+        await prisma.productCategory.updateMany({
+            where: { section },
+            data: { plCategory: plCategory || null }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to update pl category', error);
+        res.status(500).json({ error: '損益区分の変更に失敗しました' });
     }
 });
 
@@ -1876,7 +1906,7 @@ app.get('/api/dashboard/sales', async (req, res) => {
                     label = detail.product.productCategory.section || '未分類';
                 } else {
                     // 部門が選ばれていない部品・商品の行
-                    label = '部品販売';
+                    label = '未分類';
                 }
 
                 if (!summary.categories[label]) {
@@ -2074,7 +2104,7 @@ app.get('/api/dashboard/details', async (req, res) => {
                     label = detail.product.productCategory.section || '未分類';
                 } else {
                     // 部門が選ばれていない部品・商品の行
-                    label = '部品販売';
+                    label = '未分類';
                 }
 
                 if (label === category) {
@@ -3667,26 +3697,28 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
         // Months: 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6
         const months = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
 
-        // 売上区分。商品種別マスターの「部門」と同じ名前で並べる。
-        // 旧名「部品・他」は「部品販売」に読み替えるので、マスターを改称する前でも同じ行に集まる。
-        const SALES_CATEGORY_ALIASES: Record<string, string> = { '部品・他': '部品販売' };
-        const normalizeSalesLabel = (label: string) => SALES_CATEGORY_ALIASES[label] || label;
-
-        const baseSalesCategories = ["新車販売", "中古車販売", "アタッチメント販売", "部品販売", "レンタル", "修理", "美容品販売"];
-
-        // マスターに独自の部門が増えていても行が消えないよう、登録済みの部門も足しておく
-        const masterCategories = await prisma.productCategory.findMany({
-            select: { section: true },
-            orderBy: { sortOrder: 'asc' }
-        });
-        const salesCategories = [...baseSalesCategories];
-        const addSalesCategory = (name: string) => {
-            if (name && !salesCategories.includes(name)) salesCategories.push(name);
-        };
-        masterCategories.forEach(({ section }) => addSalesCategory(normalizeSalesLabel(section || '')));
-        addSalesCategory('その他'); // どの区分にも当てはまらない分の受け皿
-
+        // 売上区分は固定。商品種別マスターの「部門」は、この区分のどれかに集約する。
+        // 例）ATT新品・ATT中古品 → アタッチメント販売、機械部品・中古部品・経費・消耗品 → 部品販売
+        const salesCategories = [...PL_SALES_CATEGORIES];
         const costCategories = ["商品仕入", "レンタル仕入", "外注費", "材料費", "荷造運賃", "その他", "美容品仕入"];
+
+        // 部門 → 売上区分の対応表。マスターで指定があればそれを使い、無ければ部門名から推定する。
+        const masterCategories = await prisma.productCategory.findMany({
+            select: { section: true, plCategory: true }
+        });
+        const sectionToPl = new Map<string, string>();
+        masterCategories.forEach(({ section, plCategory }) => {
+            if (!section || sectionToPl.has(section)) return;
+            const resolved = plCategory && salesCategories.includes(plCategory)
+                ? plCategory
+                : guessPlCategory(section);
+            sectionToPl.set(section, resolved);
+        });
+        const resolveSectionPl = (section?: string | null) => {
+            const key = section || '';
+            if (!key) return 'その他';
+            return sectionToPl.get(key) || guessPlCategory(key);
+        };
 
         // Helper to get month key: "YYYY-M"
         const getMonthKey = (y: number, m: number) => `${y}-${m}`;
@@ -3727,51 +3759,18 @@ app.get('/api/dashboard/annual-summary', async (req, res) => {
                 const sales = qty * Number(d.unitPrice);
                 const cost = qty * Number(d.unitCost || 0);
 
-                // 明細の「部門」で振り分ける。部門が選ばれていない行は明細区分から推定する。
-                let rawLabel = '';
-                if (d.category?.section) rawLabel = d.category.section;
-                else if (d.product?.productCategory?.section) rawLabel = d.product.productCategory.section;
-                else if (d.lineType === 'labor' || d.lineType === 'travel') rawLabel = '修理';
-                else rawLabel = '部品・他'; // 部品・商品・外注などの既定。下で「部品販売」に読み替わる。
-
-                const label = normalizeSalesLabel(rawLabel);
-
-                // Map label to Sales/Cost categories
-                // If label matches a Sales Category, add to Sales.
-                // For Cost, we need to know WHICH cost category it maps to.
-                // Usually Sales Category "新車販売" corresponds to Cost Category "商品仕入"?
-                // Or does the line item explicitly say "Cost Type"?
-                // In this system, we only have one category per line.
-                // Heuristic: 
-                // - Sales Amount goes to matched Sales Category.
-                // - Cost Amount goes to matched Cost Category... BUT proper cost accounting usually maps Line -> Cost Type.
-                // The current schema doesn't have separate "Cost Type".
-                // We will assume:
-                //   If Category is "新車販売", sales goes to "新車販売", cost goes to "商品仕入".
-                //   If Category is "レンタル", sales -> "レンタル", cost -> "レンタル仕入".
-                //   If Category is "修理", sales -> "修理", cost -> "材料費" or "外注費" (if outsourcing).
-
-                // 原価の振り分け。売上区分の名前ではなく、読み替え前の部門名で判断する。
-                // （「部品・他」を「部品販売」に改称しても原価が商品仕入に移らないようにするため）
-                let costLabel = 'その他';
-
-                if (d.lineType === 'forwarding') {
-                    costLabel = '荷造運賃';
-                } else if (d.lineType === 'outsourcing') {
-                    costLabel = '外注費';
-                } else if (d.lineType === 'part' || d.lineType === 'inventory') {
-                    if (rawLabel === '部品・他' || rawLabel === '部品販売') {
-                        costLabel = '材料費';
-                    } else if (rawLabel === 'レンタル') {
-                        costLabel = 'レンタル仕入';
-                    } else if (rawLabel.includes('販売')) {
-                        costLabel = '商品仕入';
-                    } else {
-                        costLabel = '材料費';
-                    }
+                // 自社工賃・出張費は役務なので、部門にかかわらず「修理」の売上とする。
+                // それ以外は明細で選ばれた部門から売上区分を引く。部門が未選択なら部品販売に入れる。
+                let label: string;
+                if (d.lineType === 'labor' || d.lineType === 'travel') {
+                    label = '修理';
                 } else {
-                    costLabel = 'その他';
+                    const section = d.category?.section || d.product?.productCategory?.section || '';
+                    label = section ? resolveSectionPl(section) : '部品販売';
                 }
+
+                // 原価は売上区分に合わせて振り分ける（中古車の仕入は商品仕入、部品は材料費 など）
+                const costLabel = resolveCostCategory(d.lineType, label);
 
                 if (salesCategories.includes(label)) {
                     monthlyData[key].sales[label] += sales;
