@@ -1663,6 +1663,43 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
     }
 });
 
+// 名前・権限の変更。メールアドレスはログインIDそのものなので、ここでは変更しない。
+app.put('/api/admin/users/:id', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, role } = req.body;
+
+        const target = await prisma.profile.findUnique({ where: { id } });
+        if (!target) {
+            return res.status(404).json({ error: '対象のユーザーが見つかりません' });
+        }
+
+        if (role !== undefined && role !== 'admin' && role !== 'staff') {
+            return res.status(400).json({ error: '権限の指定が正しくありません' });
+        }
+
+        // 自分自身を staff に落とすと、その場で管理画面に入れなくなってしまう
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const actor = (req as any).authUser;
+        if (actor?.id === id && role === 'staff') {
+            return res.status(400).json({ error: 'ログイン中のご自身の権限は変更できません' });
+        }
+
+        const updated = await prisma.profile.update({
+            where: { id },
+            data: {
+                ...(name !== undefined && { name: name === '' ? null : String(name) }),
+                ...(role !== undefined && { role })
+            }
+        });
+
+        res.json(updated);
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({ error: 'ユーザー情報の更新に失敗しました' });
+    }
+});
+
 // パスワードの再設定。忘れた利用者の代わりに管理者が新しいパスワードを決める。
 // 保存されているのはハッシュ化されたパスワードなので、元の文字列は読み出せない。
 // そのため「確認する」ではなく「上書きする」という形になる。

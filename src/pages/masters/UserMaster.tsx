@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Plus, Trash2, X, Save, Eye, EyeOff, UserCircle, KeyRound, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, X, Save, Eye, EyeOff, UserCircle, KeyRound, RefreshCw, Pencil } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
 import { preventImplicitSubmit } from '../../utils/formUtils';
@@ -24,6 +24,13 @@ const UserMaster: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     // パスワードは既定で伏字。管理者は目のアイコンで打った内容を確認できる。
     const [showPassword, setShowPassword] = useState(false);
+
+    // 名前・権限の編集
+    const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editRole, setEditRole] = useState('staff');
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
 
     // パスワード再設定
     const [resetTarget, setResetTarget] = useState<UserProfile | null>(null);
@@ -117,6 +124,40 @@ const UserMaster: React.FC = () => {
             }
         } catch (error) {
             console.error('Error deleting user:', error);
+        }
+    };
+
+    const openEditModal = (user: UserProfile) => {
+        setEditTarget(user);
+        setEditName(user.name || '');
+        setEditRole(user.role);
+        setEditError(null);
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editTarget) return;
+        setEditError(null);
+        setIsSavingEdit(true);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/users/${editTarget.id}`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ name: editName, role: editRole })
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || 'ユーザー情報の更新に失敗しました');
+            }
+
+            setEditTarget(null);
+            fetchUsers();
+        } catch (err) {
+            setEditError(err instanceof Error ? err.message : '不明なエラー');
+        } finally {
+            setIsSavingEdit(false);
         }
     };
 
@@ -294,6 +335,13 @@ const UserMaster: React.FC = () => {
                                 <td>
                                     <div className={styles.actions} style={{ justifyContent: 'flex-end' }}>
                                         <button
+                                            onClick={() => openEditModal(user)}
+                                            className={styles.actionButton}
+                                            title="名前・権限を編集"
+                                        >
+                                            <Pencil size={16} />
+                                        </button>
+                                        <button
                                             onClick={() => openResetModal(user)}
                                             className={styles.actionButton}
                                             title="パスワードを再設定"
@@ -323,6 +371,89 @@ const UserMaster: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {editTarget && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modal} style={{ maxWidth: '480px' }}>
+                        <div className={styles.modalHeader}>
+                            <h2>ユーザー情報の編集</h2>
+                            <button className={styles.closeButton} onClick={() => setEditTarget(null)}>
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {editError && (
+                            <div style={{
+                                padding: '1rem',
+                                margin: '0 1.5rem',
+                                backgroundColor: '#fef2f2',
+                                color: '#dc2626',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.875rem'
+                            }}>
+                                {editError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleEditSubmit} onKeyDown={preventImplicitSubmit} className={styles.form}>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>メールアドレス</label>
+                                <div style={{
+                                    padding: '0.6rem 0.75rem',
+                                    background: '#f1f5f9',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '0.375rem',
+                                    color: '#475569',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    {editTarget.email}
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem' }}>
+                                    ※ログインIDのため、ここでは変更できません
+                                </div>
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <Input
+                                    label="名前"
+                                    type="text"
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    placeholder="例: 星岡敬佑"
+                                    autoComplete="off"
+                                />
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>権限</label>
+                                <select
+                                    className={styles.select}
+                                    value={editRole}
+                                    onChange={e => setEditRole(e.target.value)}
+                                    disabled={isCurrentUser(editTarget)}
+                                >
+                                    <option value="staff">Staff (一般)</option>
+                                    <option value="admin">Admin (管理者)</option>
+                                </select>
+                                {isCurrentUser(editTarget) && (
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem' }}>
+                                        ※ログイン中のご自身の権限は変更できません
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={styles.formActions}>
+                                <Button type="button" variant="secondary" onClick={() => setEditTarget(null)}>
+                                    キャンセル
+                                </Button>
+                                <Button type="submit" disabled={isSavingEdit} icon={<Save size={16} />}>
+                                    {isSavingEdit ? '保存中...' : '保存'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {resetTarget && (
                 <div className={styles.modalOverlay}>
