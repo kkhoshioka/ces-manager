@@ -3,10 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Plus, Trash2, X, Save } from 'lucide-react';
+import { Plus, Trash2, X, Save, Eye, EyeOff, UserCircle } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
 import { preventImplicitSubmit } from '../../utils/formUtils';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface UserProfile {
     id: string;
@@ -17,9 +18,12 @@ interface UserProfile {
 }
 
 const UserMaster: React.FC = () => {
+    const { user: currentUser, isAdmin } = useAuth();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    // パスワードは既定で伏字。管理者は目のアイコンで打った内容を確認できる。
+    const [showPassword, setShowPassword] = useState(false);
 
     // Form State
     const [email, setEmail] = useState('');
@@ -100,8 +104,16 @@ const UserMaster: React.FC = () => {
         setPassword('');
         setName('');
         setRole('staff');
+        setShowPassword(false);
         setError(null);
     };
+
+    // 今ログインしているのが誰かを一覧から引く。プロフィールが未登録でも
+    // ログイン中のメールアドレスは出せるようにしておく。
+    const isCurrentUser = (u: UserProfile) =>
+        !!currentUser && (u.id === currentUser.id || u.email === currentUser.email);
+    const currentProfile = users.find(isCurrentUser);
+    const currentUserLabel = currentProfile?.name || currentUser?.email || '不明';
 
     return (
         <div className={styles.container}>
@@ -113,6 +125,38 @@ const UserMaster: React.FC = () => {
                 <Button onClick={() => setShowModal(true)} icon={<Plus size={18} />}>
                     新規ユーザー登録
                 </Button>
+            </div>
+
+            {/* 今どのIDで操作しているかが分かるようにする */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+                padding: '0.6rem 0.9rem',
+                marginBottom: '1rem',
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '0.5rem',
+                fontSize: '0.9rem',
+                color: '#1e3a8a'
+            }}>
+                <UserCircle size={18} />
+                <span>ログイン中：</span>
+                <strong>{currentUserLabel}</strong>
+                {currentProfile?.name && (
+                    <span style={{ color: '#3b82f6' }}>（{currentProfile.email}）</span>
+                )}
+                <span style={{
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    backgroundColor: isAdmin ? '#f3e8ff' : '#d1fae5',
+                    color: isAdmin ? '#7e22ce' : '#047857'
+                }}>
+                    {isAdmin ? 'admin' : 'staff'}
+                </span>
             </div>
 
             <div className={styles.tableContainer}>
@@ -133,9 +177,24 @@ const UserMaster: React.FC = () => {
                                     <LoadingSpinner />
                                 </td>
                             </tr>
-                        ) : users.map((user) => (
-                            <tr key={user.id}>
-                                <td style={{ fontWeight: 500 }}>{user.name || '-'}</td>
+                        ) : users.map((user) => {
+                            const isMe = isCurrentUser(user);
+                            return (
+                            <tr key={user.id} className={isMe ? styles.highlightRow : undefined}>
+                                <td style={{ fontWeight: 500 }}>
+                                    {user.name || '-'}
+                                    {isMe && (
+                                        <span style={{
+                                            marginLeft: '0.5rem',
+                                            padding: '0.1rem 0.45rem',
+                                            borderRadius: '9999px',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 700,
+                                            backgroundColor: '#2563eb',
+                                            color: 'white'
+                                        }}>ログイン中</span>
+                                    )}
+                                </td>
                                 <td>{user.email}</td>
                                 <td>
                                     <span style={{
@@ -153,17 +212,21 @@ const UserMaster: React.FC = () => {
                                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                                 <td>
                                     <div className={styles.actions} style={{ justifyContent: 'flex-end' }}>
+                                        {/* ログイン中の自分を消すと操作できなくなるため押せないようにする */}
                                         <button
                                             onClick={() => handleDelete(user.id, user.email)}
                                             className={`${styles.actionButton} ${styles.deleteButton}`}
-                                            title="削除"
+                                            disabled={isMe}
+                                            style={isMe ? { opacity: 0.3, cursor: 'not-allowed' } : undefined}
+                                            title={isMe ? 'ログイン中のユーザーは削除できません' : '削除'}
                                         >
                                             <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
                         {!loading && users.length === 0 && (
                             <tr>
                                 <td colSpan={5} className={styles.emptyState}>データがありません</td>
@@ -207,14 +270,42 @@ const UserMaster: React.FC = () => {
                                 />
                             </div>
                             <div className={styles.formGroup}>
-                                <Input
-                                    label="パスワード (必須: 6文字以上)"
-                                    type="password"
-                                    required
-                                    minLength={6}
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                />
+                                {/* 既定では伏字。管理者は目のアイコンで入力内容を確認できる。 */}
+                                <div style={{ position: 'relative' }}>
+                                    <Input
+                                        label="パスワード (必須: 6文字以上)"
+                                        type={showPassword ? 'text' : 'password'}
+                                        required
+                                        minLength={6}
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        style={isAdmin ? { paddingRight: '2.75rem' } : undefined}
+                                    />
+                                    {isAdmin && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(v => !v)}
+                                            aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示する'}
+                                            title={showPassword ? 'パスワードを隠す' : 'パスワードを表示する'}
+                                            style={{
+                                                position: 'absolute',
+                                                right: 0,
+                                                bottom: 0,
+                                                height: '40px',
+                                                width: '2.75rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                background: 'none',
+                                                border: 'none',
+                                                color: '#64748b',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className={styles.formGroup}>
                                 <Input
