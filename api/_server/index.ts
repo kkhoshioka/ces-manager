@@ -1,4 +1,5 @@
 import express from 'express';
+import type { RequestHandler } from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
@@ -1573,10 +1574,43 @@ app.delete('/api/product-categories/:id', async (req, res) => {
 });
 
 // --- User Management (Admin Only) ---
-// Note: In a real app, you MUST verify the caller is an admin here.
-// We will assume the frontend protects access, but for extra security we should verify the JWT.
 
-app.get('/api/admin/users', async (req, res) => {
+/**
+ * 管理者だけが実行できるようにする。
+ * 画面側のガードだけだと API を直接叩かれたときに素通りしてしまうため、
+ * ログイン時のトークンを検証し、そのユーザーの権限が admin かどうかまで見る。
+ */
+const requireAdmin: RequestHandler = async (req, res, next) => {
+    try {
+        const header = req.headers.authorization || '';
+        const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+        if (!token) {
+            res.status(401).json({ error: 'ログインが必要です' });
+            return;
+        }
+
+        const { data, error } = await supabaseAdmin.auth.getUser(token);
+        if (error || !data?.user) {
+            res.status(401).json({ error: 'ログイン情報を確認できませんでした。再度ログインしてください。' });
+            return;
+        }
+
+        const profile = await prisma.profile.findUnique({ where: { id: data.user.id } });
+        if (!profile || profile.role !== 'admin') {
+            res.status(403).json({ error: 'この操作には管理者権限が必要です' });
+            return;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (req as any).authUser = { id: data.user.id, email: data.user.email, role: profile.role };
+        next();
+    } catch (err) {
+        console.error('Admin auth check failed:', err);
+        res.status(500).json({ error: '権限の確認に失敗しました' });
+    }
+};
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {
         // Fetch all profiles
         const profiles = await prisma.profile.findMany({
@@ -1589,7 +1623,7 @@ app.get('/api/admin/users', async (req, res) => {
     }
 });
 
-app.post('/api/admin/users', async (req, res) => {
+app.post('/api/admin/users', requireAdmin, async (req, res) => {
     try {
         const { email, password, role, name } = req.body;
 
@@ -1629,7 +1663,44 @@ app.post('/api/admin/users', async (req, res) => {
     }
 });
 
-app.delete('/api/admin/users/:id', async (req, res) => {
+// パスワードの再設定。忘れた利用者の代わりに管理者が新しいパスワードを決める。
+// 保存されているのはハッシュ化されたパスワードなので、元の文字列は読み出せない。
+// そのため「確認する」ではなく「上書きする」という形になる。
+app.put('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { password } = req.body;
+
+        if (!password || String(password).length < 6) {
+            return res.status(400).json({ error: 'パスワードは6文字以上で入力してください' });
+        }
+
+        const target = await prisma.profile.findUnique({ where: { id } });
+        if (!target) {
+            return res.status(404).json({ error: '対象のユーザーが見つかりません' });
+        }
+
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+            password: String(password)
+        });
+
+        if (authError) {
+            console.error('Password reset error:', authError);
+            return res.status(400).json({ error: authError.message || 'パスワードの再設定に失敗しました' });
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const actor = (req as any).authUser;
+        console.log(`[Password Reset] ${target.email} was reset by ${actor?.email ?? 'unknown'}`);
+
+        res.json({ success: true, email: target.email });
+    } catch (error) {
+        console.error('Password reset error:', error);
+        res.status(500).json({ error: 'パスワードの再設定に失敗しました' });
+    }
+});
+
+app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params; // Using UUID string
 

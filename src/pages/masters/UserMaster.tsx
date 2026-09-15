@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Plus, Trash2, X, Save, Eye, EyeOff, UserCircle } from 'lucide-react';
+import { Plus, Trash2, X, Save, Eye, EyeOff, UserCircle, KeyRound, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 import styles from '../Inventory.module.css';
 import { preventImplicitSubmit } from '../../utils/formUtils';
@@ -18,12 +18,20 @@ interface UserProfile {
 }
 
 const UserMaster: React.FC = () => {
-    const { user: currentUser, isAdmin } = useAuth();
+    const { user: currentUser, isAdmin, session } = useAuth();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     // パスワードは既定で伏字。管理者は目のアイコンで打った内容を確認できる。
     const [showPassword, setShowPassword] = useState(false);
+
+    // パスワード再設定
+    const [resetTarget, setResetTarget] = useState<UserProfile | null>(null);
+    const [resetPassword, setResetPassword] = useState('');
+    const [showResetPassword, setShowResetPassword] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
+    const [resetError, setResetError] = useState<string | null>(null);
+    const [resetDone, setResetDone] = useState(false);
 
     // Form State
     const [email, setEmail] = useState('');
@@ -37,16 +45,28 @@ const UserMaster: React.FC = () => {
         fetchUsers();
     }, []);
 
+    // サーバー側で管理者かどうかを見るようになったので、どの呼び出しにもトークンを付ける
+    const authHeaders = (): Record<string, string> => ({
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+    });
+
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE_URL}/admin/users`);
+            const response = await fetch(`${API_BASE_URL}/admin/users`, { headers: authHeaders() });
             if (response.ok) {
                 const data = await response.json();
                 setUsers(data);
+                setError(null);
+            } else {
+                // 権限チェックを入れたので、期限切れ等で弾かれたときに黙って空にならないようにする
+                const data = await response.json().catch(() => ({}));
+                setError(data.error || 'ユーザー一覧を取得できませんでした');
             }
         } catch (error) {
             console.error('Failed to fetch users', error);
+            setError('ユーザー一覧の取得に失敗しました');
         } finally {
             setLoading(false);
         }
@@ -60,7 +80,7 @@ const UserMaster: React.FC = () => {
         try {
             const response = await fetch(`${API_BASE_URL}/admin/users`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authHeaders(),
                 body: JSON.stringify({ email, password, name, role })
             });
 
@@ -86,7 +106,8 @@ const UserMaster: React.FC = () => {
 
         try {
             const response = await fetch(`${API_BASE_URL}/admin/users/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: authHeaders()
             });
 
             if (response.ok) {
@@ -96,6 +117,52 @@ const UserMaster: React.FC = () => {
             }
         } catch (error) {
             console.error('Error deleting user:', error);
+        }
+    };
+
+    const openResetModal = (user: UserProfile) => {
+        setResetTarget(user);
+        setResetPassword('');
+        setShowResetPassword(false);
+        setResetError(null);
+        setResetDone(false);
+    };
+
+    /** 覚えやすく、そこそこ安全な仮パスワードを作る（紛らわしい 0/O/1/l は使わない） */
+    const generatePassword = () => {
+        const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const picked = Array.from(
+            crypto.getRandomValues(new Uint32Array(10)),
+            n => chars[n % chars.length]
+        ).join('');
+        setResetPassword(picked);
+        setShowResetPassword(true);
+    };
+
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!resetTarget) return;
+        setResetError(null);
+        setIsResetting(true);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/users/${resetTarget.id}/password`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ password: resetPassword })
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || 'パスワードの再設定に失敗しました');
+            }
+            // 新しいパスワードを本人に伝えてもらうため、閉じずに画面に残す
+            setResetDone(true);
+            setShowResetPassword(true);
+        } catch (err) {
+            setResetError(err instanceof Error ? err.message : '不明なエラー');
+        } finally {
+            setIsResetting(false);
         }
     };
 
@@ -159,6 +226,20 @@ const UserMaster: React.FC = () => {
                 </span>
             </div>
 
+            {error && !showModal && (
+                <div style={{
+                    padding: '0.75rem 1rem',
+                    marginBottom: '1rem',
+                    backgroundColor: '#fef2f2',
+                    color: '#dc2626',
+                    border: '1px solid #fecaca',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.9rem'
+                }}>
+                    {error}
+                </div>
+            )}
+
             <div className={styles.tableContainer}>
                 <table className={styles.table}>
                     <thead>
@@ -212,6 +293,13 @@ const UserMaster: React.FC = () => {
                                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                                 <td>
                                     <div className={styles.actions} style={{ justifyContent: 'flex-end' }}>
+                                        <button
+                                            onClick={() => openResetModal(user)}
+                                            className={styles.actionButton}
+                                            title="パスワードを再設定"
+                                        >
+                                            <KeyRound size={16} />
+                                        </button>
                                         {/* ログイン中の自分を消すと操作できなくなるため押せないようにする */}
                                         <button
                                             onClick={() => handleDelete(user.id, user.email)}
@@ -235,6 +323,140 @@ const UserMaster: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {resetTarget && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modal} style={{ maxWidth: '480px' }}>
+                        <div className={styles.modalHeader}>
+                            <h2>パスワードの再設定</h2>
+                            <button className={styles.closeButton} onClick={() => setResetTarget(null)}>
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '0 1.5rem', marginBottom: '0.5rem' }}>
+                            <div style={{
+                                padding: '0.75rem 1rem',
+                                background: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.5rem',
+                                fontSize: '0.9rem'
+                            }}>
+                                <div style={{ fontWeight: 600 }}>{resetTarget.name || '(名前なし)'}</div>
+                                <div style={{ color: '#64748b' }}>{resetTarget.email}</div>
+                            </div>
+                        </div>
+
+                        {resetDone ? (
+                            <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                                <div style={{
+                                    padding: '1rem',
+                                    background: '#f0fdf4',
+                                    border: '1px solid #86efac',
+                                    borderRadius: '0.5rem',
+                                    color: '#166534',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    パスワードを再設定しました。<br />
+                                    下の新しいパスワードを本人にお伝えください。この画面を閉じると二度と表示できません。
+                                </div>
+                                <div style={{
+                                    marginTop: '0.75rem',
+                                    padding: '0.75rem 1rem',
+                                    background: '#0f172a',
+                                    color: 'white',
+                                    borderRadius: '0.5rem',
+                                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                                    fontSize: '1.1rem',
+                                    letterSpacing: '0.05em',
+                                    wordBreak: 'break-all'
+                                }}>
+                                    {resetPassword}
+                                </div>
+                                <div className={styles.formActions} style={{ marginTop: '1rem' }}>
+                                    <Button type="button" variant="secondary" onClick={() => navigator.clipboard?.writeText(resetPassword)}>
+                                        コピー
+                                    </Button>
+                                    <Button type="button" onClick={() => setResetTarget(null)}>
+                                        閉じる
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {resetError && (
+                                    <div style={{
+                                        padding: '1rem',
+                                        margin: '0 1.5rem',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        borderRadius: '0.375rem',
+                                        fontSize: '0.875rem'
+                                    }}>
+                                        {resetError}
+                                    </div>
+                                )}
+
+                                <form onSubmit={handleResetPassword} onKeyDown={preventImplicitSubmit} className={styles.form}>
+                                    <div className={styles.formGroup}>
+                                        <div style={{ position: 'relative' }}>
+                                            <Input
+                                                label="新しいパスワード (6文字以上)"
+                                                type={showResetPassword ? 'text' : 'password'}
+                                                required
+                                                minLength={6}
+                                                value={resetPassword}
+                                                onChange={e => setResetPassword(e.target.value)}
+                                                style={{ paddingRight: '2.75rem' }}
+                                                autoComplete="new-password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowResetPassword(v => !v)}
+                                                aria-label={showResetPassword ? 'パスワードを隠す' : 'パスワードを表示する'}
+                                                title={showResetPassword ? 'パスワードを隠す' : 'パスワードを表示する'}
+                                                style={{
+                                                    position: 'absolute', right: 0, bottom: 0,
+                                                    height: '40px', width: '2.75rem',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer'
+                                                }}
+                                            >
+                                                {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={generatePassword}
+                                            icon={<RefreshCw size={14} />}
+                                            style={{ marginTop: '0.5rem' }}
+                                        >
+                                            自動で作る
+                                        </Button>
+                                    </div>
+
+                                    <div style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.7 }}>
+                                        保存されているパスワードはハッシュ化されていて、元の文字列は誰にも読み出せません。
+                                        そのため「確認する」のではなく、新しいパスワードで上書きする形になります。
+                                        再設定後は、今までのパスワードでは入れなくなります。
+                                    </div>
+
+                                    <div className={styles.formActions}>
+                                        <Button type="button" variant="secondary" onClick={() => setResetTarget(null)}>
+                                            キャンセル
+                                        </Button>
+                                        <Button type="submit" disabled={isResetting} icon={<KeyRound size={16} />}>
+                                            {isResetting ? '再設定中...' : '再設定する'}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {showModal && (
                 <div className={styles.modalOverlay}>
